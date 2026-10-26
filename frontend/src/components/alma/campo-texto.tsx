@@ -23,11 +23,17 @@ function CampoTexto({
   invalido,
   id,
   className,
+  "aria-describedby": describedByExterno,
   ...props
 }: CampoTextoProps) {
   const idGenerado = React.useId()
   const idCampo = id ?? idGenerado
   const idError = `${idCampo}-error`
+  // El id del mensaje del campo se suma al que llegue por props (por ejemplo el de un
+  // aviso de la pantalla); ninguno pisa al otro.
+  const describedBy =
+    [error ? idError : undefined, describedByExterno].filter(Boolean).join(" ") ||
+    undefined
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
@@ -35,8 +41,8 @@ function CampoTexto({
       <Input
         id={idCampo}
         aria-invalid={error || invalido ? true : undefined}
-        aria-describedby={error ? idError : undefined}
         {...props}
+        aria-describedby={describedBy}
       />
       {error ? (
         <p id={idError} className="flex items-start gap-2 text-destructive">

@@ -1,14 +1,8 @@
 // Depende de POST /api/auth/login y GET /api/auth/me del contrato (docs/contrato-login.md).
+import type { PreferenciasAccesibilidad } from "@/features/accesibilidad/tipos"
 import { api } from "@/lib/api"
 
 export type Rol = "PERSONA_MAYOR" | "ADMINISTRADOR"
-
-export type TamanioLetra = "NORMAL" | "GRANDE" | "MUY_GRANDE"
-
-export type PreferenciasAccesibilidad = {
-  tamanioLetra: TamanioLetra
-  altoContraste: boolean
-}
 
 export type Usuario = {
   id: number

@@ -5,7 +5,8 @@ let tokenEnMemoria: string | null = null
 
 function leerDe(almacen: () => Storage): string | null {
   try {
-    return almacen().getItem(CLAVE)
+    // Una clave con valor vacío no es un token: se trata como si no hubiera sesión.
+    return almacen().getItem(CLAVE) || null
   } catch {
     return null
   }

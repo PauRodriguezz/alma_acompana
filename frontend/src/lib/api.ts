@@ -3,6 +3,10 @@ import { borrarToken, leerToken } from "@/lib/token"
 const BASE = "/api"
 const RUTA_LOGIN = "/auth/login"
 
+// Tiempo máximo de cada llamada (incluye leer la respuesta). Al vencerse se trata como
+// "sin conexión": ApiError con status 0.
+const TIEMPO_MAXIMO_MS = 10_000
+
 export const MENSAJE_SESION_VENCIDA = "Tu sesión terminó. Ingresá de nuevo."
 
 type Problema = {
@@ -68,6 +72,7 @@ export async function api<T>(
       method,
       headers,
       body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
+      signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
     })
   } catch {
     throw new ApiError(0)
@@ -82,5 +87,10 @@ export async function api<T>(
   }
 
   if (respuesta.status === 204) return undefined as T
-  return (await respuesta.json()) as T
+  try {
+    return (await respuesta.json()) as T
+  } catch {
+    // Se cortó o venció el tiempo mientras llegaba el cuerpo
+    throw new ApiError(0)
+  }
 }

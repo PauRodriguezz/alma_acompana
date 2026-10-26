@@ -158,6 +158,14 @@
 
     --sombra-sm: 0 1px 3px 0 #2b41501f;
 
+    /* Pantalla de login. PROPUESTO, NO ESTÁ EN EL FIGMA: degradé de la banda, derivado de
+       primary, accent y accent-soft (sin colores nuevos), y sombras de Alma y de la tarjeta
+       de escritorio con el color de sombra del Figma (#2B4150). Validar con el diseño. */
+    --banda-arriba: color-mix(in srgb, var(--primary) 45%, var(--accent-soft));
+    --banda-abajo: color-mix(in srgb, var(--accent) 40%, var(--accent-soft));
+    --sombra-alma: drop-shadow(0 2px 4px #2b415040);
+    --sombra-tarjeta: 0 12px 32px -8px #2b415040, 0 2px 6px 0 #2b41501f;
+
     /* Foco visible: anillo con separación (se ve el fondo entre el anillo y el control) */
     --foco-ancho: calc(3rem / 17);
     --foco-separacion: calc(2rem / 17);
@@ -239,6 +247,11 @@
     --ring: #000000;
 
     --sombra-sm: 0 0 #0000;
+    /* Login en alto contraste: sin degradé ni sombras; panel blanco con borde negro */
+    --banda-arriba: var(--card);
+    --banda-abajo: var(--card);
+    --sombra-alma: drop-shadow(0 0 #0000);
+    --sombra-tarjeta: 0 0 #0000;
     --foco-ancho: calc(4rem / 17);
     /* Los colores de los juegos no cambian: el Figma no define otros */
 }

@@ -1,10 +1,10 @@
 import { useState } from "react"
-import { useForm } from "react-hook-form"
+import { Controller, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Navigate, useLocation } from "react-router-dom"
 
-import almaMarca from "@/assets/alma-marca.svg"
-import almaSaludando from "@/assets/alma-saludando.png"
+import alma from "@/assets/alma_acompana.webp"
+import { BotonAccesibilidad } from "@/components/alma/boton-accesibilidad"
 import { CampoTexto } from "@/components/alma/campo-texto"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,6 @@ import { esquemaLogin, type DatosLogin } from "./schemas"
 import { useAuth } from "./useAuth"
 
 const TEXTO_CREDENCIALES = "Usuario o contraseña incorrectos. Intentá nuevamente."
-// PROPUESTO: este texto no está en el contrato ni en los casos de uso.
 const TEXTO_CONEXION = "No pudimos conectarnos. Probá de nuevo en un rato."
 
 const ID_ERROR = "login-error"
@@ -31,6 +30,7 @@ export function LoginPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<DatosLogin>({
@@ -60,25 +60,32 @@ export function LoginPage() {
   const describedBy = falla ? ID_ERROR : undefined
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-(--narrow-max) flex-col px-(--page-x) pt-13 pb-6 lg:items-center lg:justify-center lg:py-(--page-top)">
-      <div className="flex w-full flex-col gap-5 lg:max-w-[calc(480rem/17)] lg:gap-4 lg:rounded-xl lg:bg-card lg:p-8 lg:shadow-sm">
-        {/* Celular: Alma saludando, título y subtítulo, centrados */}
-        <div className="flex flex-col items-center gap-2 text-center lg:hidden">
+    <main className="min-h-dvh w-full lg:flex lg:items-center lg:justify-center lg:px-(--page-x) lg:py-(--page-top)">
+      {/* CU-13: botón flotante de accesibilidad. En celular queda sobre la banda de color. */}
+      <BotonAccesibilidad />
+      <div className="mx-auto flex min-h-dvh w-full flex-col lg:min-h-0 lg:max-w-(--content-max) lg:flex-row lg:rounded-xl lg:bg-card lg:[box-shadow:var(--sombra-tarjeta)] contraste-alto:lg:border-2 contraste-alto:lg:border-foreground">
+        {/* Panel de color, con degradé. Sin overflow oculto: Alma se sale de él a propósito. */}
+        <div className="relative h-[calc(190rem/17)] shrink-0 bg-[linear-gradient(160deg,var(--banda-arriba),var(--banda-abajo))] lg:h-auto lg:w-2/5 lg:rounded-l-xl contraste-alto:lg:rounded-l-[calc(22rem/17)] contraste-alto:lg:border-r-2 contraste-alto:lg:border-foreground">
           <img
-            src={almaSaludando}
+            src={alma}
             alt=""
-            className="h-[calc(113rem/17)] w-[calc(94rem/17)] object-cover"
+            className="pointer-events-none absolute bottom-[calc(24rem/17)] left-1/2 z-10 h-[calc(160rem/17)] w-auto max-w-none -translate-x-1/2 translate-y-1/2 object-contain [filter:var(--sombra-alma)] lg:top-1/2 lg:bottom-auto lg:left-[calc(100%_-_calc(56rem/17))] lg:h-[calc(360rem/17)] lg:max-h-[90%] lg:-translate-y-1/2"
           />
-          <h1>¡Hola! Soy Alma</h1>
-          <p className="text-muted-foreground">Ingresá con tu usuario y tu contraseña.</p>
         </div>
 
-        {/* Escritorio: marca a la izquierda dentro de la tarjeta */}
-        <div className="hidden items-center gap-4 lg:flex">
-          <img src={almaMarca} alt="" className="size-14 shrink-0" />
-          <div className="flex flex-col gap-0.5">
-            <h1 className="text-h2-desktop">Ingresá a Alma</h1>
-            <p className="text-muted-foreground">Alma Acompaña</p>
+        {/* Celular: hoja blanca con las esquinas de arriba redondeadas, sobre la banda.
+            Escritorio: panel del formulario, sin fondo propio (lo da la tarjeta). */}
+        <div className="relative -mt-[calc(24rem/17)] flex w-full flex-1 flex-col gap-5 rounded-t-xl bg-card px-(--page-x) pt-[calc(88rem/17)] pb-6 contraste-alto:border-t-2 contraste-alto:border-foreground lg:mt-0 lg:justify-center lg:gap-4 lg:rounded-none lg:bg-transparent lg:py-12 lg:pr-[calc(48rem/17)] lg:pl-[calc(96rem/17)] contraste-alto:lg:border-t-0">
+        <div className="flex flex-col items-center gap-2 text-center lg:items-start lg:text-left">
+          {/* Celular */}
+          <div className="flex flex-col items-center gap-2 lg:hidden">
+            <h1>¡Hola! Soy Alma</h1>
+            <p className="text-muted-foreground">Ingresá con tu usuario y tu contraseña.</p>
+          </div>
+          {/* Escritorio */}
+          <div className="hidden flex-col items-start gap-0.5 lg:flex">
+            <h1 className="text-h2-desktop">¡Hola! Soy Alma</h1>
+            <p className="text-muted-foreground">Ingresá con tu usuario y tu contraseña.</p>
           </div>
         </div>
 
@@ -121,15 +128,30 @@ export function LoginPage() {
             <Casilla
               label="Mostrar contraseña"
               checked={mostrarContrasenia}
-              onChange={(evento) => setMostrarContrasenia(evento.target.checked)}
+              onCheckedChange={(marcada) => setMostrarContrasenia(marcada)}
             />
-            <Casilla label="Mantener sesión iniciada" {...register("mantenerSesion")} />
+            {/* La cajita no es un <input> nativo: va con Controller (marcada por defecto) */}
+            <Controller
+              control={control}
+              name="mantenerSesion"
+              render={({ field }) => (
+                <Casilla
+                  label="Mantener sesión iniciada"
+                  name={field.name}
+                  ref={field.ref}
+                  checked={field.value}
+                  onCheckedChange={(marcada) => field.onChange(marcada)}
+                  onBlur={field.onBlur}
+                />
+              )}
+            />
           </div>
 
           <Button type="submit" disabled={isSubmitting} className="w-full">
             {isSubmitting ? "Ingresando…" : "Ingresar"}
           </Button>
         </form>
+        </div>
       </div>
     </main>
   )
