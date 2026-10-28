@@ -45,6 +45,13 @@ public class RecordatorioController {
         this.recordatorioService = recordatorioService;
     }
 
+    @GetMapping
+    @Operation(summary = "Listar todos mis recordatorios, con filtro opcional por tipo")
+    public List<RecordatorioResponse> listar(@AuthenticationPrincipal Jwt jwt,
+            @RequestParam(required = false) TipoRecordatorio tipo) {
+        return recordatorioService.listar(cuentaId(jwt), tipo);
+    }
+
     @GetMapping("/agenda")
     @Operation(summary = "Ver mis avisos entre dos fechas (máximo 62 días)")
     public List<ItemAgendaResponse> agenda(@AuthenticationPrincipal Jwt jwt,

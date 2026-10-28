@@ -601,6 +601,91 @@ class RecordatorioIntegrationTests {
         agenda(tokenA, "2026-10-28", "2026-10-29", "OTRO").andExpect(status().isBadRequest());
     }
 
+    // --- Listado (6.8) ---
+
+    @Test
+    void listarSinTokenDevuelve401YAdministradorDevuelve403() throws Exception {
+        mockMvc.perform(get(BASE)).andExpect(status().isUnauthorized());
+        mockMvc.perform(get(BASE).header(HttpHeaders.AUTHORIZATION, bearer(tokenAdmin)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value("No tenés permiso para ver esta pantalla."));
+    }
+
+    @Test
+    void listarDevuelveTodoLoDeLaPersonaTambienLoQueEmpiezaMasAdelanteYLoQueYaTermino() throws Exception {
+        // La API no deja crear una medicación con inicio pasado: la que ya terminó se inserta directo.
+        long terminada = medicacionConInicioPasado(LocalDate.of(2026, 8, 1));
+        long futura = idDe(crear(tokenA, "/medicacion", medicacion("SEMANAL", 31, "2026-11-10")));
+        String cita = crear(tokenA, "/citas", cita("2026-10-30T10:30"));
+        long idCita = idDe(cita);
+        long notificacionCita = ((Number) JsonPath.read(cita, "$.notificacionId")).longValue();
+
+        mockMvc.perform(get(BASE).header(HttpHeaders.AUTHORIZATION, bearer(tokenA)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)))
+                // Por id ascendente
+                .andExpect(jsonPath("$[0].id").value(terminada))
+                .andExpect(jsonPath("$[0].tipo").value("MEDICACION"))
+                .andExpect(jsonPath("$[0].fechaInicio").value("2026-08-01"))
+                .andExpect(jsonPath("$[0].nombreMedicamento").value("Enalapril"))
+                .andExpect(jsonPath("$[0].notificacionId").doesNotExist())
+                .andExpect(jsonPath("$[1].id").value(futura))
+                .andExpect(jsonPath("$[1].fechaInicio").value("2026-11-10"))
+                .andExpect(jsonPath("$[1].frecuencia").value("SEMANAL"))
+                .andExpect(jsonPath("$[1].estado").doesNotExist())
+                // La cita trae su notificación y su estado
+                .andExpect(jsonPath("$[2].id").value(idCita))
+                .andExpect(jsonPath("$[2].tipo").value("CITA"))
+                .andExpect(jsonPath("$[2].titulo").value("Control anual"))
+                .andExpect(jsonPath("$[2].notificacionId").value(notificacionCita))
+                .andExpect(jsonPath("$[2].estado").value("PENDIENTE"));
+    }
+
+    @Test
+    void listarFiltraPorTipoYUnTipoInvalidoDevuelve400() throws Exception {
+        crear(tokenA, "/medicacion", medicacion("DIARIA", 3, "2026-10-29"));
+        crear(tokenA, "/citas", cita("2026-10-30T10:30"));
+
+        mockMvc.perform(get(BASE + "?tipo=MEDICACION").header(HttpHeaders.AUTHORIZATION, bearer(tokenA)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].tipo").value("MEDICACION"));
+        mockMvc.perform(get(BASE + "?tipo=CITA").header(HttpHeaders.AUTHORIZATION, bearer(tokenA)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].tipo").value("CITA"))
+                .andExpect(jsonPath("$[0].notificacionId", notNullValue()));
+        mockMvc.perform(get(BASE).header(HttpHeaders.AUTHORIZATION, bearer(tokenA)))
+                .andExpect(jsonPath("$", hasSize(2)));
+        // Mismo manejo de error que el tipo inválido de la agenda
+        mockMvc.perform(get(BASE + "?tipo=OTRO").header(HttpHeaders.AUTHORIZATION, bearer(tokenA)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value("Revisá los datos ingresados."))
+                .andExpect(jsonPath("$.errores").doesNotExist());
+    }
+
+    @Test
+    void listarSoloDevuelveLoDeLaPersonaDelTokenYUnaPersonaSinNadaRecibeListaVacia() throws Exception {
+        crear(tokenA, "/medicacion", medicacion("DIARIA", 3, "2026-10-29"));
+        crear(tokenA, "/citas", cita("2026-10-30T10:30"));
+        crear(tokenB, "/citas", cita("2026-11-03T09:00"));
+
+        mockMvc.perform(get(BASE).header(HttpHeaders.AUTHORIZATION, bearer(tokenB)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].fechaHora").value("2026-11-03T09:00:00"));
+        mockMvc.perform(get(BASE + "?tipo=MEDICACION").header(HttpHeaders.AUTHORIZATION, bearer(tokenB)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+
+        // Sin nada cargado: lista vacía, no 404
+        limpiarRecordatorios();
+        mockMvc.perform(get(BASE).header(HttpHeaders.AUTHORIZATION, bearer(tokenB)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
     // --- Ayudas ---
 
     private Long cuentaDePrueba(String nombreUsuario, String nombre, String apellido) {

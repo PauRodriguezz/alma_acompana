@@ -118,6 +118,21 @@ Preferencias de la persona del token (CU-13). Según el DC, `PreferenciaAccesibi
 - `PUT` recibe el objeto completo y devuelve el objeto guardado.
 - Un `ADMINISTRADOR` recibe `403` en estas rutas.
 
+### 4.4 `GET /api/perfil` (solo `PERSONA_MAYOR`)
+
+Datos personales de la persona del token, para la pantalla Perfil (CU-13 y CU-14). Es de solo lectura: no hay `PUT`, porque la persona no edita sus datos en este alcance.
+
+**200 OK**
+```json
+{ "nombre": "Ana", "apellido": "Pérez", "fechaNacimiento": "1950-05-12", "nombreUsuario": "ana" }
+```
+
+- `fechaNacimiento` viene como `yyyy-MM-dd`, o `null` si la persona no la tiene cargada.
+- No incluye `id`, `rol` ni la contraseña.
+- `nombre` y `apellido` salen de `PersonaMayor`. `nombreUsuario` sale de `Cuenta`.
+
+**Errores:** `401` si falta el token, es inválido o venció. `403` para un `ADMINISTRADOR`. `404` si la cuenta no tiene `PersonaMayor`.
+
 ---
 
 ## 5. Token
@@ -145,6 +160,7 @@ No se incluyen nombre, apellido ni datos sensibles: para eso está `/api/auth/me
 | `GET /actuator/health` | Público (lo usa el healthcheck de Docker) |
 | `/v3/api-docs/**`, `/swagger-ui/**`, `/swagger-ui.html` | Público en el MVP (cerrar en una entrega real) |
 | `/api/admin/**` | Solo `ADMINISTRADOR` |
+| `/api/accesibilidad/**` y `/api/perfil/**` | Solo `PERSONA_MAYOR` |
 | Resto de `/api/**` | Cualquier cuenta autenticada. Cada módulo verifica que el dato pertenezca a quien lo pide |
 | Rutas que no empiezan con `/api` (archivos del front) | Públicas. La regla para devolver `index.html` en las rutas de react-router queda para la Etapa 3 |
 
@@ -197,7 +213,7 @@ Paquete base: `ar.edu.utn.frm.gelab.alma`
 - `auth/`: `domain/Cuenta`, `domain/Rol`, `repository/CuentaRepository`, `service/AuthService`, `service/JwtService`, `controller/AuthController`, `dto/` (`LoginRequest`, `LoginResponse`, `UsuarioResponse`).
 - `config/`: ya existen `SecurityConfig` y `OpenApiConfig`. Falta `JwtConfig` (beans `JwtEncoder` y `JwtDecoder`).
 - `common/`: manejo global de errores (`@RestControllerAdvice`), entry point y access denied handler.
-- `persona/`: `PersonaMayor`, `PreferenciaAccesibilidad`, `TamanioLetra` y el controlador de accesibilidad.
+- `persona/`: `PersonaMayor`, `PreferenciaAccesibilidad`, `TamanioLetra`, el controlador de accesibilidad y el de perfil (`GET /api/perfil`, sección 4.4).
 - `administrador/`: `Administrador`.
 
 **Entidades** (según el DC; no se agregan campos que el DC no tiene, y si se necesitan, primero se actualiza el DC):
@@ -314,6 +330,7 @@ Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay
 
 - **v1 (23/10/2026):** primera propuesta.
 - **v2 (23/10/2026, contra el commit `b47fe79`):** se marcó lo que ya está hecho (springdoc, `OpenApiConfig`, parte de `SecurityConfig`), se agregó lo que falta en `SecurityConfig` y en Swagger, se aclaró que la zona horaria es la de Jackson, y se avisó que el `CLAUDE.md` debe estar en la raíz.
+- **v6 (28/10/2026):** se agregó `GET /api/perfil` (sección 4.4) para la pantalla Perfil, y la fila de accesibilidad y perfil en las reglas de acceso (sección 6).
 - **v5 (23/10/2026):** sección 7: el campo `type` no viaja cuando vale `about:blank` (comportamiento de Spring 7, equivalente según RFC 9457); se quitó de los ejemplos.
 - **v4 (23/10/2026):** se ajustó al diagrama de clases (DC_PPS_3): `nombre` y `apellido` salen de `PersonaMayor` y `Administrador`; las preferencias de accesibilidad quedan en `tamanioLetra` y `altoContraste` (se quitó `reducirMovimiento`), solo para `PERSONA_MAYOR`, y viajan en el login y en `/me`; se agregaron las entidades y el seed correspondiente.
 - **v3 (23/10/2026):** se alineó con la documentación (CU-12, CU-14, DC): credenciales por nombre de usuario y contraseña en lugar de email; mensaje de error exacto de los CU; "Mantener sesión iniciada" (token en `localStorage` o `sessionStorage` y expiración de 30 días); confirmación al cerrar sesión; `Cuenta` sin campos fuera del DC; seed por nombre de usuario; se resolvió que operador y administrador son el mismo rol.

@@ -36,6 +36,10 @@ public interface NotificacionRecordatorioRepository extends JpaRepository<Notifi
     List<NotificacionRecordatorio> findByRecordatorioIdAndRecordatorioPersonaMayorCuentaId(
             Long recordatorioId, Long cuentaId);
 
+    /** Las notificaciones de varios recordatorios de la persona, en una sola consulta. */
+    List<NotificacionRecordatorio> findByRecordatorioIdInAndRecordatorioPersonaMayorCuentaId(
+            Collection<Long> recordatorioIds, Long cuentaId);
+
     /**
      * Borra las notificaciones de un recordatorio. Vuelca los cambios pendientes antes de borrar y
      * limpia el contexto después: no se deben modificar entidades cargadas después de llamarlo.

@@ -1,8 +1,7 @@
 import * as React from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { AlertCircleIcon } from "@hugeicons/core-free-icons"
 import { cn } from "cn"
 
+import { MensajeErrorCampo } from "@/components/alma/mensaje-error-campo"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
@@ -44,16 +43,7 @@ function CampoTexto({
         {...props}
         aria-describedby={describedBy}
       />
-      {error ? (
-        <p id={idError} className="flex items-start gap-2 text-destructive">
-          <HugeiconsIcon
-            icon={AlertCircleIcon}
-            className="mt-0.5 size-6 shrink-0"
-            aria-hidden="true"
-          />
-          <span>{error}</span>
-        </p>
-      ) : null}
+      {error ? <MensajeErrorCampo id={idError}>{error}</MensajeErrorCampo> : null}
     </div>
   )
 }

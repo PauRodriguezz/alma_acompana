@@ -1,3 +1,4 @@
+import { MENSAJE_SESION_VENCIDA } from "@/lib/mensajes"
 import { borrarToken, leerToken } from "@/lib/token"
 
 const BASE = "/api"
@@ -7,7 +8,8 @@ const RUTA_LOGIN = "/auth/login"
 // "sin conexión": ApiError con status 0.
 const TIEMPO_MAXIMO_MS = 10_000
 
-export const MENSAJE_SESION_VENCIDA = "Tu sesión terminó. Ingresá de nuevo."
+// El texto vive en lib/mensajes.ts; se sigue exportando desde acá para quien ya lo importa.
+export { MENSAJE_SESION_VENCIDA }
 
 type Problema = {
   title?: string
@@ -51,7 +53,7 @@ async function leerProblema(respuesta: Response): Promise<Problema> {
 }
 
 type Opciones = {
-  method?: "GET" | "POST" | "PUT"
+  method?: "GET" | "POST" | "PUT" | "DELETE"
   cuerpo?: unknown
 }
 

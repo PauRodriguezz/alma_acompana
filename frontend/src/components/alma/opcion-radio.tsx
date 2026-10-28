@@ -5,11 +5,12 @@ import { cn } from "cn"
 
 import { RadioGroupItem } from "@/components/ui/radio-group"
 
-// Opción de accesibilidad del Figma (22:67 y 25:153): tarjeta de elección. Elegida:
+// Opción de elección del Figma (22:67 y 25:153): tarjeta de un grupo de radios (accesibilidad,
+// tipo de recordatorio, frecuencia). Elegida:
 // accent-soft + borde accent de 2 px + tilde (no solo color). En alto contraste, borde de
 // 4 px en foreground (los 2 px de más se suman con una sombra interior, para que la tarjeta
 // no cambie de tamaño).
-function OpcionAccesibilidad({
+function OpcionRadio({
   className,
   children,
   ...props
@@ -39,4 +40,4 @@ function TildeOpcion({ className }: { className?: string }) {
   )
 }
 
-export { OpcionAccesibilidad, TildeOpcion }
+export { OpcionRadio, TildeOpcion }

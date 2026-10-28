@@ -5,6 +5,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
@@ -70,16 +73,48 @@ public class RecordatorioService {
         if (ChronoUnit.DAYS.between(desde, hasta) + 1 > MensajesRecordatorio.MAX_RANGO_AGENDA_DIAS) {
             throw new DatosInvalidosException("hasta", MensajesRecordatorio.RANGO_DEMASIADO_LARGO);
         }
-        List<Class<? extends Recordatorio>> clases = switch (tipo) {
+        LocalDateTime ahora = LocalDateTime.now(clock);
+        return notificacionRepository
+                .agenda(cuentaId, desde.atStartOfDay(), hasta.plusDays(1).atStartOfDay(), clasesDe(tipo)).stream()
+                .map(notificacion -> ItemAgendaResponse.de(notificacion, ahora))
+                .toList();
+    }
+
+    /**
+     * Todos los recordatorios de la persona (también los que empiezan más adelante y los que ya
+     * terminaron), por id ascendente. Sin tipo trae medicaciones y citas.
+     */
+    @Transactional(readOnly = true)
+    public List<RecordatorioResponse> listar(Long cuentaId, TipoRecordatorio tipo) {
+        List<Recordatorio> recordatorios = recordatorioRepository.listar(cuentaId, clasesDe(tipo));
+
+        // Una cita lleva su única notificación: se piden todas juntas, no una consulta por cita.
+        List<Long> idsDeCitas = recordatorios.stream()
+                .filter(recordatorio -> recordatorio instanceof RecordatorioCita)
+                .map(Recordatorio::getId)
+                .toList();
+        Map<Long, NotificacionRecordatorio> notificacionPorCita = idsDeCitas.isEmpty()
+                ? Map.of()
+                : notificacionRepository
+                        .findByRecordatorioIdInAndRecordatorioPersonaMayorCuentaId(idsDeCitas, cuentaId).stream()
+                        .collect(Collectors.toMap(notificacion -> notificacion.getRecordatorio().getId(),
+                                Function.identity(), (primera, otra) -> primera));
+
+        return recordatorios.stream()
+                .<RecordatorioResponse>map(recordatorio -> switch (recordatorio) {
+                    case RecordatorioMedicacion medicacion -> MedicacionResponse.de(medicacion);
+                    case RecordatorioCita cita -> CitaResponse.de(cita, notificacionPorCita.get(cita.getId()));
+                    default -> throw new IllegalStateException("Tipo de recordatorio desconocido");
+                })
+                .toList();
+    }
+
+    private static List<Class<? extends Recordatorio>> clasesDe(TipoRecordatorio tipo) {
+        return switch (tipo) {
             case MEDICACION -> List.of(RecordatorioMedicacion.class);
             case CITA -> List.of(RecordatorioCita.class);
             case null -> List.of(RecordatorioMedicacion.class, RecordatorioCita.class);
         };
-        LocalDateTime ahora = LocalDateTime.now(clock);
-        return notificacionRepository
-                .agenda(cuentaId, desde.atStartOfDay(), hasta.plusDays(1).atStartOfDay(), clases).stream()
-                .map(notificacion -> ItemAgendaResponse.de(notificacion, ahora))
-                .toList();
     }
 
     @Transactional(readOnly = true)

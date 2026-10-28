@@ -127,7 +127,7 @@ Los avisos salen de la agenda de hoy. Lo que decide cada pantalla:
 
 - La tarjeta "Para hoy" muestra la primera notificación `PENDIENTE` del día, en orden de hora (las atrasadas cuentan: "si no se marca, se vuelve a recordar"), con "Ya la tomé" para medicaciones o el acceso al detalle para citas.
 - Si hay varias en la misma franja horaria, se muestran como un único aviso.
-- Cerrar la tarjeta con la X la oculta "por ahora": no cambia ningún estado y vuelve a aparecer la próxima vez que se carga la agenda de hoy o se ingresa a la app.
+- Cerrar la tarjeta con la X la oculta "por ahora" (v3): no cambia ningún estado y el aviso queda oculto **solo en memoria** (no se guarda en el navegador). Vuelve a aparecer al recargar la página, al volver a ingresar a la app, o cuando otro aviso pasa a ser el primero del día. No reaparece en cada actualización automática de la agenda.
 - Un recordatorio sin atender no se pierde: sigue `PENDIENTE` y aparece en la agenda.
 
 ### 5.8 Validaciones
@@ -297,6 +297,49 @@ Cambia el estado de una notificación (5.5). `{id}` es el `notificacionId`.
 **200 OK:** el ítem de la agenda actualizado (misma forma que los de 6.1).
 
 **Errores:** `400` si falta `estado` ("Indicá el estado.") o no corresponde al tipo (campo `estado`: "Ese estado no corresponde a este recordatorio."); `404` si no existe o no es de la persona.
+
+### 6.8 `GET /api/recordatorios` (v3)
+
+Lista todos los recordatorios de la persona del token: también los que empiezan más adelante y los que ya terminaron. No hay paginado. Sirve a la sección "Mis medicaciones" de la lista, para poder editar y eliminar cada medicación aunque hoy no tenga avisos.
+
+**Parámetros**
+
+| Parámetro | Obligatorio | Descripción |
+|---|---|---|
+| `tipo` | No | `MEDICACION` o `CITA`. Sin este parámetro trae los dos |
+
+**200 OK:** lista ordenada por `id` ascendente (el front la ordena como necesite). Vacía si no hay nada. Cada elemento tiene la forma de 6.2 según su `tipo`: las citas incluyen `notificacionId` y `estado`; las medicaciones no.
+
+```json
+[
+  {
+    "id": 7,
+    "tipo": "MEDICACION",
+    "fechaCreacion": "2026-10-27T18:03:11",
+    "nombreMedicamento": "Enalapril",
+    "dosis": "1 pastilla",
+    "horaToma": "09:00:00",
+    "frecuencia": "DIARIA",
+    "fechaInicio": "2026-10-27",
+    "duracionDias": 31
+  },
+  {
+    "id": 12,
+    "tipo": "CITA",
+    "fechaCreacion": "2026-10-26T11:00:00",
+    "titulo": "Control anual",
+    "especialidad": "Cardiología",
+    "medico": "Dra. Pérez",
+    "lugar": "Consultorio Centro",
+    "fechaHora": "2026-10-29T10:30:00",
+    "indicacionesPrevias": "Llevar los últimos estudios.",
+    "notificacionId": 58,
+    "estado": "PENDIENTE"
+  }
+]
+```
+
+**Errores:** `400` si `tipo` no es `MEDICACION` ni `CITA` (texto general, sin lista `errores`, igual que en la agenda). No hay `404`: una persona sin recordatorios recibe `[]`.
 
 ---
 
@@ -500,6 +543,10 @@ El Figma es una referencia: puede cambiar para mejor, pero donde difiere en func
 - `DELETE`: `204` y desaparecen sus notificaciones.
 - Estado: medicación → `TOMADA` (con `fechaHoraToma`) y vuelta a `PENDIENTE` (sin `fechaHoraToma`); cita → `VISTA`; `VISTA` en una medicación: `400`; repetir el mismo estado: `200` sin cambios.
 - `agenda`: filtra por rango y por `tipo`, solo trae lo de la persona del token, y rechaza rangos inválidos con `400`. `atrasada` es `true` solo en medicaciones `PENDIENTE` ya pasadas.
+- **(v3)** `GET /api/recordatorios`: sin token `401`; token de `admin` `403`.
+- **(v3)** Devuelve todos los recordatorios de la persona, también una medicación que empieza más adelante y una que ya terminó (sin avisos futuros), con la forma de 6.2. Las citas traen `notificacionId` y `estado`.
+- **(v3)** Solo devuelve lo de la persona del token: `carlos` no ve nada de lo de `ana`, y una persona sin recordatorios recibe `[]`.
+- **(v3)** `?tipo=MEDICACION` y `?tipo=CITA` filtran; sin `tipo` trae los dos; un `tipo` inválido da `400`.
 - Las pruebas de login que ya existen siguen pasando.
 
 **Front (manuales)**
@@ -544,3 +591,4 @@ Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay
 
 - **v1 (28/10/2026):** primera propuesta, contra el commit `19764e1`.
 - **v2 (28/10/2026):** notas de implementación del back: `fechaInicio` se conserva si el `PUT` no la manda (5.8 y 6.5); la edición de una medicación conserva el id de las notificaciones que coinciden (5.3); el rango de la agenda cuenta los dos extremos (6.1).
+- **v3 (28/10/2026):** `GET /api/recordatorios` (6.8), sus pruebas (sección 13) y la X de la tarjeta "Para hoy", que se oculta solo en memoria (regla 5.7).

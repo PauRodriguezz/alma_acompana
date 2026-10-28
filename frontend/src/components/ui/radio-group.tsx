@@ -4,7 +4,7 @@ import { cn } from "cn"
 
 // Grupo de radio: Base UI maneja el teclado (Tab entra al grupo, las flechas cambian la
 // opción y Espacio elige). Cada opción se dibuja con su propio estilo (ver
-// components/alma/opcion-accesibilidad.tsx); el foco es el anillo global de index.css.
+// components/alma/opcion-radio.tsx); el foco es el anillo global de index.css.
 
 function RadioGroup({ className, ...props }: RadioGroupPrimitive.Props) {
   return (
