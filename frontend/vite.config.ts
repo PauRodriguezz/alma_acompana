@@ -6,5 +6,11 @@ import tailwindcss from "@tailwindcss/vite"
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
-  server: { proxy: { "/api": "http://localhost:8080/" } },
+  server: {
+    proxy: {
+      "/api": "http://localhost:8080/",
+      // Imágenes subidas desde el panel (públicas, las sirve el back)
+      "/imagenes": "http://localhost:8080/",
+    },
+  },
 })

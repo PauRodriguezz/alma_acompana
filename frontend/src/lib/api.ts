@@ -51,7 +51,8 @@ async function leerProblema(respuesta: Response): Promise<Problema> {
 }
 
 type Opciones = {
-  method?: "GET" | "POST" | "PUT"
+  method?: "GET" | "POST" | "PUT" | "DELETE"
+  /** Se manda como JSON. Si es un FormData (subida de archivos) se manda tal cual. */
   cuerpo?: unknown
 }
 
@@ -62,8 +63,11 @@ export async function api<T>(
   // El login es público: no se le manda un token viejo (el back lo rechazaría con 401).
   const token = ruta === RUTA_LOGIN ? null : leerToken()
 
+  // Con FormData no se pone Content-Type: el navegador arma multipart/form-data con su boundary.
+  const esFormulario = cuerpo instanceof FormData
+
   const headers = new Headers({ Accept: "application/json" })
-  if (cuerpo !== undefined) headers.set("Content-Type", "application/json")
+  if (cuerpo !== undefined && !esFormulario) headers.set("Content-Type", "application/json")
   if (token) headers.set("Authorization", `Bearer ${token}`)
 
   let respuesta: Response
@@ -71,7 +75,12 @@ export async function api<T>(
     respuesta = await fetch(`${BASE}${ruta}`, {
       method,
       headers,
-      body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
+      body:
+        cuerpo === undefined
+          ? undefined
+          : esFormulario
+            ? cuerpo
+            : JSON.stringify(cuerpo),
       signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
     })
   } catch {

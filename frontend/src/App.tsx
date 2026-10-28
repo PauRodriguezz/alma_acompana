@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 
-import { PanelOperadorPage } from "@/features/admin/PanelOperadorPage"
+import { RutasAdmin } from "@/features/admin/RutasAdmin"
 import { AuthProvider } from "@/features/auth/AuthProvider"
 import { LoginPage } from "@/features/auth/LoginPage"
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute"
@@ -17,7 +17,7 @@ function App() {
             <Route path="/" element={<InicioPage />} />
           </Route>
           <Route element={<ProtectedRoute roles={["ADMINISTRADOR"]} />}>
-            <Route path="/admin" element={<PanelOperadorPage />} />
+            <Route path="/admin/*" element={<RutasAdmin />} />
           </Route>
           <Route element={<ProtectedRoute />}>
             <Route path="/sin-permiso" element={<SinPermisoPage />} />

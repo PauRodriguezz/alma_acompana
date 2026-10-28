@@ -1,2 +1,5 @@
 .env
 .vscode
+
+# Imágenes subidas desde el panel de operador
+uploads/
