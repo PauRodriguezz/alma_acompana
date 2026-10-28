@@ -27,7 +27,7 @@ Compañero digital para personas mayores: chat con "Alma", recordatorios de medi
 alma_acompana/
 ├── backend/alma/        Spring Boot (código en src/main/java/ar/edu/utn/frm/gelab/alma/)
 ├── frontend/            Vite + React (código en src/)
-├── docs/                documentación (contrato-login.md)
+├── docs/                documentación (contrato-login.md, contrato-recordatorios.md)
 ├── docker-compose.yml   postgres, neo4j, ollama
 ├── Dockerfile           vacío hasta la Etapa 3
 ├── .env / .env.example  variables (el .env no se sube)
@@ -79,6 +79,7 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 ## Documentos
 
 - `docs/contrato-login.md`: contrato de autenticación. Leelo antes de tocar el login, la seguridad o las rutas protegidas.
+- `docs/contrato-recordatorios.md`: contrato del módulo de recordatorios (medicación, citas y avisos). Leelo antes de tocar `recordatorios/` o la agenda que usa el chat.
 - Casos de uso (CU-xx) y diagrama de clases (`DC_PPS`) del informe: son la fuente de verdad funcional.
 
 ## Plan por etapas

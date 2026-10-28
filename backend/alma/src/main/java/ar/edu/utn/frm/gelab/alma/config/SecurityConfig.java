@@ -36,6 +36,7 @@ public class SecurityConfig {
                                  "/v3/api-docs/**").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/api/accesibilidad/**").hasRole("PERSONA_MAYOR")
+                .requestMatchers("/api/recordatorios/**").hasRole("PERSONA_MAYOR")
                 .requestMatchers("/api/**").authenticated()
                 // Lo que no empieza con /api son archivos del front: público.
                 .anyRequest().permitAll())

@@ -22,6 +22,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import ar.edu.utn.frm.gelab.alma.common.exception.CredencialesInvalidasException;
+import ar.edu.utn.frm.gelab.alma.common.exception.DatosInvalidosException;
 import ar.edu.utn.frm.gelab.alma.common.exception.RecursoNoEncontradoException;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -50,6 +51,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ProblemDetail sinPermiso(AccessDeniedException ex, HttpServletRequest request) {
         return problema(HttpStatus.FORBIDDEN, MensajesError.TITULO_SIN_PERMISO,
                 MensajesError.SIN_PERMISO, request);
+    }
+
+    /** 400 por una regla que Bean Validation no expresa: mismo formato, con la lista "errores". */
+    @ExceptionHandler(DatosInvalidosException.class)
+    public ProblemDetail datosInvalidos(DatosInvalidosException ex, HttpServletRequest request) {
+        ProblemDetail problema = problema(HttpStatus.BAD_REQUEST, MensajesError.TITULO_DATOS_INVALIDOS,
+                MensajesError.DATOS_INVALIDOS, request);
+        problema.setProperty("errores", ex.getErrores());
+        return problema;
     }
 
     @ExceptionHandler(RecursoNoEncontradoException.class)

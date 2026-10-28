@@ -856,13 +856,13 @@ Se actualiza al terminar cada funcionalidad, del lado del back y del front.
 | CU-04 | Pendiente | Pendiente |
 | CU-05 | Pendiente | Pendiente |
 | CU-06 | Pendiente | Pendiente |
-| CU-07 | Pendiente | Pendiente |
-| CU-08 | Pendiente | Pendiente |
-| CU-09 | Pendiente | Pendiente |
+| CU-07 | Hecho: alta, edición, baja y consulta de medicaciones con sus notificaciones (`/api/recordatorios/medicacion`, `GET` y `DELETE /api/recordatorios/{id}`), solo `PERSONA_MAYOR`; las pruebas de integración están escritas pero todavía no se corrieron contra la base | Pendiente |
+| CU-08 | Hecho: alta, edición, baja y consulta de citas con su notificación (`/api/recordatorios/citas`); las pruebas de integración están escritas pero todavía no se corrieron contra la base | Pendiente |
+| CU-09 | Parcial: `GET /api/recordatorios/agenda`, `PUT /api/recordatorios/notificaciones/{id}/estado` (tomada, vista, deshacer) y `RecordatorioService.agenda(...)` para el módulo de Chat; falta el saludo de Alma (CU-02) | Pendiente |
 | CU-10 | Pendiente | Pendiente |
 | CU-11 | Pendiente | Pendiente |
 | CU-12 | Hecho: `POST /api/auth/login` con rol `ADMINISTRADOR` y `/api/admin/**` reservado a ese rol (todavía no hay endpoints de administración) | Hecho: login compartido y redirección a `/admin`; el panel de operador es una pantalla provisoria con un "Salir" temporal, sin confirmación |
 | CU-13 | Hecho: `GET` y `PUT /api/accesibilidad` solo para `PERSONA_MAYOR`, y las preferencias viajan en el login y en `/api/auth/me`; faltan pruebas automáticas de esos dos endpoints | Parcial: botón flotante y panel (tamaño de letra, alto contraste, "Volver a lo original") solo en el Login; se guardan en el dispositivo y, con sesión de persona mayor, con `PUT` (implementado, pero hoy no se puede usar con sesión); falta el botón en las demás pantallas y la entrada desde Perfil, que todavía no existe |
 | CU-14 | Hecho: `POST /api/auth/login` y `GET /api/auth/me`; no hay endpoint para cerrar sesión (el contrato lo resuelve en el front) | Parcial: login con "Mostrar contraseña" y "Mantener sesión iniciada", recuperación de la sesión con `/api/auth/me` y redirección por rol; falta la confirmación de cerrar sesión: "Salir" es provisorio y sin confirmación, y la pantalla de Perfil no existe todavía |
 
-Clases del diagrama ya creadas en el back: `Cuenta`, `PersonaMayor`, `Administrador`, `PreferenciaAccesibilidad` y los enums `Rol` y `TamanioLetra`.
+Clases del diagrama ya creadas en el back: `Cuenta`, `PersonaMayor`, `Administrador`, `PreferenciaAccesibilidad`, `Recordatorio`, `RecordatorioMedicacion`, `RecordatorioCita`, `NotificacionRecordatorio` y los enums `Rol`, `TamanioLetra`, `FrecuenciaToma` y `EstadoNotificacion`.
