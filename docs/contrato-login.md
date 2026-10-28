@@ -152,11 +152,10 @@ No se incluyen nombre, apellido ni datos sensibles: para eso está `/api/auth/me
 
 ## 7. Errores
 
-Formato Problem Details, con `Content-Type: application/problem+json`:
+Formato Problem Details, con `Content-Type: application/problem+json`. El campo `type` no se envía cuando vale `about:blank` (así lo hace Spring 7); según RFC 9457, si falta, vale `about:blank`. El front no debe depender de `type`:
 
 ```json
 {
-  "type": "about:blank",
   "title": "No autorizado",
   "status": 401,
   "detail": "Usuario o contraseña incorrectos. Intentá nuevamente.",
@@ -168,7 +167,6 @@ Para errores de validación (`400`) se agrega una lista:
 
 ```json
 {
-  "type": "about:blank",
   "title": "Datos inválidos",
   "status": 400,
   "detail": "Revisá los datos ingresados.",
@@ -215,7 +213,7 @@ Paquete base: `ar.edu.utn.frm.gelab.alma`
 3. `SecurityConfig`: ya tiene sesión stateless, CSRF desactivado, y Swagger y `/actuator/health` públicos. **Falta:** desactivar `httpBasic` y `formLogin`, activar `oauth2ResourceServer` con JWT, permitir `POST /api/auth/login`, exigir `ADMINISTRADOR` en `/api/admin/**`, y dejar públicas las rutas que no empiezan con `/api`. Hoy `anyRequest().authenticated()` bloquearía el front cuando lo sirva Spring.
 4. `JwtEncoder` y `JwtDecoder` con la clave HMAC de `alma.security.jwt.secret`. Si la clave tiene menos de 32 bytes, la app debe **fallar al arrancar** con un mensaje claro.
 5. Carga de usuarios de prueba (sección 10), **idempotente**: solo crea la cuenta si el nombre de usuario no existe. Para cada persona mayor crea también su `PersonaMayor` y su `PreferenciaAccesibilidad`; para el administrador, su `Administrador`. Controlada por `alma.seed.enabled`.
-6. Corregir el comentario de `application.properties` que todavía dice "JPA y Flyway" (ahora el esquema lo crea Hibernate con `ddl-auto=update`).
+6. **Hecho:** `application.properties` ya no menciona Flyway; el esquema lo crea Hibernate con `ddl-auto=update`.
 7. **Hecho a medias:** `OpenApiConfig` ya declara el esquema `bearerAuth` y lo aplica a todos los endpoints. Falta marcar `POST /api/auth/login` como endpoint sin seguridad (`@SecurityRequirements` vacío); si no, Swagger muestra el candado y pide un token para poder loguearse.
 8. Pruebas de la sección 11.
 
@@ -316,5 +314,6 @@ Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay
 
 - **v1 (23/10/2026):** primera propuesta.
 - **v2 (23/10/2026, contra el commit `b47fe79`):** se marcó lo que ya está hecho (springdoc, `OpenApiConfig`, parte de `SecurityConfig`), se agregó lo que falta en `SecurityConfig` y en Swagger, se aclaró que la zona horaria es la de Jackson, y se avisó que el `CLAUDE.md` debe estar en la raíz.
+- **v5 (23/10/2026):** sección 7: el campo `type` no viaja cuando vale `about:blank` (comportamiento de Spring 7, equivalente según RFC 9457); se quitó de los ejemplos.
 - **v4 (23/10/2026):** se ajustó al diagrama de clases (DC_PPS_3): `nombre` y `apellido` salen de `PersonaMayor` y `Administrador`; las preferencias de accesibilidad quedan en `tamanioLetra` y `altoContraste` (se quitó `reducirMovimiento`), solo para `PERSONA_MAYOR`, y viajan en el login y en `/me`; se agregaron las entidades y el seed correspondiente.
 - **v3 (23/10/2026):** se alineó con la documentación (CU-12, CU-14, DC): credenciales por nombre de usuario y contraseña en lugar de email; mensaje de error exacto de los CU; "Mantener sesión iniciada" (token en `localStorage` o `sessionStorage` y expiración de 30 días); confirmación al cerrar sesión; `Cuenta` sin campos fuera del DC; seed por nombre de usuario; se resolvió que operador y administrador son el mismo rol.

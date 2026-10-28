@@ -1,130 +1,310 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/inter";
+@import "@fontsource/poppins/latin-500.css";
+@import "@fontsource/source-sans-3/latin-400.css";
+@import "@fontsource/source-sans-3/latin-600.css";
+@import "@fontsource/source-sans-3/latin-700.css";
 
+/* No hay modo oscuro en el Figma: la clase .dark nunca se pone, así que las
+   utilidades dark: de shadcn no se activan (ni con el modo oscuro del sistema). */
 @custom-variant dark (&:is(.dark *));
 
+/* Para los ajustes puntuales del modo Alto contraste: contraste-alto:border-success */
+@custom-variant contraste-alto (:root[data-contraste="alto"] &);
+
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Inter Variable', sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
+    /* Fuentes */
+    --font-sans: 'Source Sans 3', sans-serif;
+    --font-heading: 'Poppins', sans-serif;
+
+    /* Colores (los valores están más abajo, en :root) */
     --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    --color-foreground: var(--foreground);
+    --color-heading: var(--heading);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-hover: var(--primary-hover);
+    --color-primary-pressed: var(--primary-pressed);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-hover: var(--secondary-hover);
+    --color-secondary-edge: var(--secondary-edge);
+    --color-outline-hover: var(--outline-hover);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-soft: var(--accent-soft);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-hover: var(--destructive-hover);
+    --color-destructive-edge: var(--destructive-edge);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-success: var(--success);
+    --color-success-soft: var(--success-soft);
+    --color-warning: var(--warning);
+    --color-warning-soft: var(--warning-soft);
+    --color-info: var(--info);
+    --color-info-soft: var(--info-soft);
+    --color-disabled: var(--disabled);
+    --color-disabled-foreground: var(--disabled-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-juego-refranes: var(--juego-refranes);
+    --color-juego-series: var(--juego-series);
+    --color-juego-asociaciones: var(--juego-asociaciones);
+    --color-juego-palabras: var(--juego-palabras);
+
+    /* Radios del Figma: 8, 12 (botones y campos), 16 (tarjetas), 24 (diálogos) y círculo */
+    --radius-sm: calc(8rem / 17);
+    --radius-md: calc(12rem / 17);
+    --radius-lg: calc(16rem / 17);
+    --radius-xl: calc(24rem / 17);
+    --radius-2xl: calc(24rem / 17);
+    --radius-3xl: calc(24rem / 17);
+    --radius-4xl: calc(24rem / 17);
+    --radius-full: 9999px;
+
+    --shadow-sm: var(--sombra-sm);
+}
+
+@theme {
+    /* Espaciado: la raíz vale 17 px al 100 %, así que p-1 = 4 px, p-2 = 8, p-3 = 12,
+       p-4 = 16, p-6 = 24, p-8 = 32 y p-12 = 48 (space/4 a space/48 del Figma). Todo en
+       rem: crece con el tamaño de letra. */
+    --spacing: calc(4rem / 17);
+
+    /* Escala de texto (estilos alma/* del Figma; tamaño en px a 100 % / 17 px).
+       Falta "display" (30 px en el slide 07): no tiene estilo en el Figma, se suma
+       cuando haya una pantalla que lo use. */
+    --text-h1: calc(25.5rem / 17);
+    --text-h1--line-height: 1.31;
+    --text-h2: calc(22.3rem / 17);
+    --text-h2--line-height: 1.36;
+    --text-h3: calc(19.1rem / 17);
+    --text-h3--line-height: 1.37;
+    --text-h2-desktop: calc(21.25rem / 17);
+    --text-h2-desktop--line-height: 1.4;
+    --text-body: 1rem;
+    --text-body--line-height: 1.625;
+    --text-label: 1rem;
+    --text-label--line-height: 1.5;
+    --text-caption: 1rem;
+    --text-caption--line-height: 1.5;
+    --text-button: calc(18.1rem / 17);
+    --text-button--line-height: 1.33;
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    /* ── Modo Claro: valores del Figma (variables de la página Componentes) ── */
+    --background: #fffcf5;
+    --foreground: #2b4150;
+    --heading: #124e73;
+    --card: #ffffff;
+    --card-foreground: var(--foreground);
+    --popover: #ffffff;
+    --popover-foreground: var(--foreground);
+
+    --primary: #8a199c;
+    --primary-hover: #751685;
+    --primary-pressed: #5f1470; /* también es el borde inferior del botón principal */
+    --primary-foreground: #ffffff;
+
+    --secondary: #f3eee3;
+    --secondary-edge: #d6cdb7; /* borde inferior del botón secundario */
+    --secondary-foreground: #2b4150;
+    /* Hover de secondary y outline: DERIVADO de primary-hover, no está en el Figma
+       (ahí hover se ve igual que el estado normal). Un toque del violeta sobre la
+       superficie del botón. El presionado sí es del Figma: misma superficie, sin borde
+       inferior y el botón baja. */
+    --secondary-hover: color-mix(in srgb, var(--primary-hover) 12%, var(--secondary));
+    --outline-hover: color-mix(in srgb, var(--primary-hover) 8%, var(--card));
+
+    --muted: #f3eee3;
+    --muted-foreground: #566673;
+
+    --accent: #c41e7a;
+    --accent-soft: #fbe3f0;
+    --accent-foreground: #ffffff;
+
+    --destructive: #b3261e;
+    --destructive-edge: #7a1712; /* color/destructive-edge: borde inferior del botón */
+    /* Hover derivado (no está en el Figma): destructive hacia su borde inferior */
+    --destructive-hover: color-mix(in srgb, var(--destructive-edge) 25%, var(--destructive));
+    --destructive-foreground: #ffffff;
+    --success: #2a7400;
+    --success-soft: #ddf6c8;
+    --warning: #8a5a00;
+    --warning-soft: #fcf2b5;
+    --info: #0a6fb8;
+    --info-soft: #ddf1ff;
+
+    --disabled: #e8e4da;
+    --disabled-foreground: #5b6770;
+
+    --border: #e5e0d2;
+    --input: #8a8575;
+    --ring: #124e73; /* foco = color de los títulos */
+
+    --juego-refranes: #e8d896;
+    --juego-series: #e88e55;
+    --juego-asociaciones: #b366ba;
+    --juego-palabras: #966f53;
+
+    --sombra-sm: 0 1px 3px 0 #2b41501f;
+
+    /* Pantalla de login. PROPUESTO, NO ESTÁ EN EL FIGMA: degradé de la banda, derivado de
+       primary, accent y accent-soft (sin colores nuevos), y sombras de Alma y de la tarjeta
+       de escritorio con el color de sombra del Figma (#2B4150). Validar con el diseño. */
+    --banda-arriba: color-mix(in srgb, var(--primary) 45%, var(--accent-soft));
+    --banda-abajo: color-mix(in srgb, var(--accent) 40%, var(--accent-soft));
+    --sombra-alma: drop-shadow(0 2px 4px #2b415040);
+    --sombra-tarjeta: 0 12px 32px -8px #2b415040, 0 2px 6px 0 #2b41501f;
+
+    /* Foco visible: anillo con separación (se ve el fondo entre el anillo y el control) */
+    --foco-ancho: calc(3rem / 17);
+    --foco-separacion: calc(2rem / 17);
+    /* Cuánto crece el borde de 2 px cuando el control tiene foco: en el Figma pasa a
+       3 px con el color de foco (campos y botones), sin mover el contenido. */
+    --foco-extra: calc(var(--foco-ancho) - var(--borde-ancho));
+
+    /* Medidas de controles */
+    --altura-boton: calc(48rem / 17); /* mínimo táctil */
+    --altura-boton-chat: calc(56rem / 17);
+    --altura-campo: calc(55.2rem / 17); /* input-height del Figma */
+    --borde-ancho: calc(2rem / 17); /* grosor real del trazo en el Figma (campos, casillas, avisos) */
+    --borde-boton: calc(4rem / 17); /* borde inferior que se "hunde" al apretar */
+
+    /* ── Layout (variables del Figma, modo Mobile) ── */
+    --sidebar: 0px;
+    --page-x: calc(24rem / 17);
+    --page-top: calc(16rem / 17);
+    --slot: 0px;
+    --content-max: min(100%, calc(390rem / 17));
+    --narrow-max: min(100%, calc(390rem / 17));
+    --dialog-width: min(100%, calc(340rem / 17));
 }
 
-.dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+/* Layout Desktop: el Figma corta en 1024 px */
+@media (min-width: 64rem) {
+    :root {
+        --sidebar: min(calc(288rem / 17), 30vw);
+        --page-x: calc(64rem / 17);
+        --page-top: calc(48rem / 17);
+        --slot: calc(32rem / 17);
+        --content-max: min(100%, calc(1040rem / 17));
+        --narrow-max: min(100%, calc(880rem / 17));
+        --dialog-width: min(100%, calc(560rem / 17));
+    }
+}
+
+/* ── Alto contraste ──
+   PROPUESTO, NO ESTÁ EN EL FIGMA: el slide 09 solo dice "texto negro sobre blanco
+   (21:1), bordes de 2 px, sin sombras". Los valores de abajo (y el foco negro de 4 px)
+   se propusieron y aprobaron aparte; hay que validarlos con el diseño.
+   Contrastes calculados: texto sobre fondo 21:1, texto blanco sobre primary 14:1,
+   accent 9,38:1, destructive 9,75:1, estados 8,8:1 a 9,6:1, disabled 5,61:1. */
+:root[data-contraste="alto"] {
+    --background: #ffffff;
+    --foreground: #000000;
+    --heading: #000000;
+    --card: #ffffff;
+    --popover: #ffffff;
+
+    --primary: #4a0f58;
+    --primary-hover: #380b43;
+    --primary-pressed: #26072e;
+
+    --secondary: #ededed;
+    --secondary-edge: #000000;
+    --secondary-foreground: #000000;
+
+    --muted: #ededed;
+    --muted-foreground: #333333;
+
+    --accent: #8a0b4e;
+    --accent-soft: #fde6f2;
+
+    --destructive: #8a0f0a;
+    --destructive-edge: color-mix(in srgb, var(--destructive) 55%, #000000);
+    --success: #124d00;
+    --success-soft: #e6f7d6;
+    --warning: #5a3800;
+    --warning-soft: #fff6c2;
+    --info: #04466f;
+    --info-soft: #e3f4ff;
+
+    --disabled: #e6e6e6;
+    --disabled-foreground: #595959;
+
+    --border: #000000;
+    --input: #000000;
+    --ring: #000000;
+
+    --sombra-sm: 0 0 #0000;
+    /* Login en alto contraste: sin degradé ni sombras; panel blanco con borde negro */
+    --banda-arriba: var(--card);
+    --banda-abajo: var(--card);
+    --sombra-alma: drop-shadow(0 0 #0000);
+    --sombra-tarjeta: 0 0 #0000;
+    --foco-ancho: calc(4rem / 17);
+    /* Los colores de los juegos no cambian: el Figma no define otros */
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+    /* Tamaño de letra: base de 17 px = 106,25 % del tamaño del navegador (así respeta
+       lo que la persona haya elegido en su navegador). El atributo lo pone la app en <html>. */
+    html {
+        font-size: 106.25%;
     }
-  body {
-    @apply bg-background text-foreground;
+    html[data-tamanio="NORMAL"] {
+        font-size: 106.25%;
     }
-  html {
-    @apply font-sans;
+    html[data-tamanio="GRANDE"] {
+        font-size: 132.8125%;
+    }
+    html[data-tamanio="MUY_GRANDE"] {
+        font-size: 159.375%;
+    }
+
+    * {
+        @apply border-border;
+    }
+
+    /* Foco: campos de texto y casillas usan un borde de 3 px color ring sin separación
+       (4 px negro en alto contraste), como el Figma. Botones y links usan este anillo con
+       2 px de separación: ring (#124E73) contra primary da 1,14:1 y contra destructive
+       1,36:1 (en alto contraste, negro contra primary da 1,5:1), así que sin separación
+       no se vería. */
+    :focus-visible {
+        outline: var(--foco-ancho) solid var(--ring);
+        outline-offset: var(--foco-separacion);
+    }
+
+    body {
+        @apply bg-background font-sans text-foreground;
+        font-size: var(--text-body);
+        line-height: var(--text-body--line-height);
+    }
+
+    h1, h2, h3 {
+        @apply font-heading font-medium text-heading;
+    }
+    h1 {
+        font-size: var(--text-h1);
+        line-height: var(--text-h1--line-height);
+    }
+    h2 {
+        font-size: var(--text-h2);
+        line-height: var(--text-h2--line-height);
+    }
+    h3 {
+        font-size: var(--text-h3);
+        line-height: var(--text-h3--line-height);
     }
 }
