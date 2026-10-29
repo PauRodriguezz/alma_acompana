@@ -18,6 +18,9 @@ public final class MensajesError {
     public static final String NO_ENCONTRADO = "No encontramos lo que buscás.";
     public static final String ERROR_INTERNO = "Algo salió mal. Probá de nuevo en un rato.";
 
+    public static final String TITULO_IMAGEN_PESADA = "Imagen muy pesada";
+    public static final String IMAGEN_PESADA = "La imagen no puede pesar más de 2 MB.";
+
     private MensajesError() {
     }
 }

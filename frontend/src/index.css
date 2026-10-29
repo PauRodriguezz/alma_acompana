@@ -59,6 +59,10 @@
     --color-juego-series: var(--juego-series);
     --color-juego-asociaciones: var(--juego-asociaciones);
     --color-juego-palabras: var(--juego-palabras);
+    --color-juego-refranes-soft: var(--juego-refranes-soft);
+    --color-juego-series-soft: var(--juego-series-soft);
+    --color-juego-asociaciones-soft: var(--juego-asociaciones-soft);
+    --color-juego-palabras-soft: var(--juego-palabras-soft);
 
     /* Radios del Figma: 8, 12 (botones y campos), 16 (tarjetas), 24 (diálogos) y círculo */
     --radius-sm: calc(8rem / 17);
@@ -88,6 +92,8 @@
     --text-h2--line-height: 1.36;
     --text-h3: calc(19.1rem / 17);
     --text-h3--line-height: 1.37;
+    --text-h1-desktop: calc(31.875rem / 17);
+    --text-h1-desktop--line-height: 1.3;
     --text-h2-desktop: calc(21.25rem / 17);
     --text-h2-desktop--line-height: 1.4;
     --text-body: 1rem;
@@ -155,6 +161,11 @@
     --juego-series: #e88e55;
     --juego-asociaciones: #b366ba;
     --juego-palabras: #966f53;
+    /* Fondos de las etiquetas de categoría (game-*-soft del Figma, panel de operador) */
+    --juego-refranes-soft: #f9f5e5;
+    --juego-series-soft: #f9e3d4;
+    --juego-asociaciones-soft: #ecd9ee;
+    --juego-palabras-soft: #e5dbd4;
 
     --sombra-sm: 0 1px 3px 0 #2b41501f;
 

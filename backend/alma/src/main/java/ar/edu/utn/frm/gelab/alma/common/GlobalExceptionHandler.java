@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import ar.edu.utn.frm.gelab.alma.common.exception.CredencialesInvalidasException;
@@ -68,6 +69,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 MensajesError.NO_ENCONTRADO, request);
     }
 
+    /** 400 de reglas validadas en un servicio: detail propio del caso de uso y la lista "errores". */
+    @ExceptionHandler(DatosInvalidosException.class)
+    public ProblemDetail datosInvalidos(DatosInvalidosException ex, HttpServletRequest request) {
+        ProblemDetail problema = problema(HttpStatus.BAD_REQUEST, MensajesError.TITULO_DATOS_INVALIDOS,
+                ex.getMessage(), request);
+        problema.setProperty("errores", ex.getErrores());
+        return problema;
+    }
+
     /** Cualquier otro error: se loguea completo, pero la persona nunca ve el detalle técnico. */
     @ExceptionHandler(Exception.class)
     public ProblemDetail errorInterno(Exception ex, HttpServletRequest request) {
@@ -85,6 +95,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .toList();
         ProblemDetail problema = ex.getBody();
         problema.setProperty("errores", errores);
+        return handleExceptionInternal(ex, problema, headers, status, request);
+    }
+
+    /** 413 de la subida de imágenes: Spring ya lo maneja, solo se cambia el texto. */
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        ProblemDetail problema = ex.getBody();
+        problema.setTitle(MensajesError.TITULO_IMAGEN_PESADA);
+        problema.setDetail(MensajesError.IMAGEN_PESADA);
         return handleExceptionInternal(ex, problema, headers, status, request);
     }
 

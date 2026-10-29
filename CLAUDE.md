@@ -34,7 +34,7 @@ alma_acompana/
 └── CLAUDE.md
 ```
 
-- **Back:** un paquete por módulo (`auth`, `persona`, `administrador`, `bienestar`, `chat`, `historiavida`, `juegos`, `microcapsulas`, `recordatorios`), cada uno con `controller/`, `service/`, `repository/`, `domain/`, `dto/`. Los paquetes transversales son `config/`, `common/` e `ia/`.
+- **Back:** un paquete por módulo (`auth`, `persona`, `administrador`, `bienestar`, `chat`, `ejercicios` (catálogo; el juego de la persona mayor irá después en `juegos`), `historiavida`, `juegos`, `microcapsulas`, `recordatorios`), cada uno con `controller/`, `service/`, `repository/`, `domain/`, `dto/`. Los paquetes transversales son `config/`, `common/` e `ia/`.
 - **Front:** `src/` con `app/`, `styles/`, `components/ui/` (shadcn), `components/alma/`, `features/<modulo>/` y `lib/`.
 
 ## Comandos
