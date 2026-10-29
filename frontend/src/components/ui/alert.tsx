@@ -7,7 +7,7 @@ import {
   CheckmarkCircle02Icon,
   InformationCircleIcon,
 } from "@hugeicons/core-free-icons"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 import { alertVariants } from "@/components/ui/alert-variants"
 

@@ -2,10 +2,20 @@ import { Card } from "@/components/ui/card"
 import { useAuth } from "@/features/auth/useAuth"
 
 import { EncabezadoPagina } from "./EncabezadoPagina"
+import {
+  ADMIN_PANEL,
+  ADMIN_PERFIL,
+  ADMIN_PERFIL_APELLIDO,
+  ADMIN_PERFIL_NOMBRE,
+  ADMIN_PERFIL_NOMBRE_USUARIO,
+  ADMIN_PERFIL_ROL,
+  ADMIN_ROL_ADMINISTRADOR,
+  ADMIN_ROL_PERSONA_MAYOR,
+} from "./mensajes"
 
 const TEXTO_ROL = {
-  ADMINISTRADOR: "Administrador",
-  PERSONA_MAYOR: "Persona mayor",
+  ADMINISTRADOR: ADMIN_ROL_ADMINISTRADOR,
+  PERSONA_MAYOR: ADMIN_ROL_PERSONA_MAYOR,
 } as const
 
 /**
@@ -18,18 +28,18 @@ export function PerfilPage() {
 
   const datos = usuario
     ? [
-        { nombre: "Nombre", valor: usuario.nombre },
-        { nombre: "Apellido", valor: usuario.apellido },
-        { nombre: "Nombre de usuario", valor: usuario.nombreUsuario },
-        { nombre: "Rol", valor: TEXTO_ROL[usuario.rol] },
+        { nombre: ADMIN_PERFIL_NOMBRE, valor: usuario.nombre },
+        { nombre: ADMIN_PERFIL_APELLIDO, valor: usuario.apellido },
+        { nombre: ADMIN_PERFIL_NOMBRE_USUARIO, valor: usuario.nombreUsuario },
+        { nombre: ADMIN_PERFIL_ROL, valor: TEXTO_ROL[usuario.rol] },
       ]
     : []
 
   return (
     <>
       <EncabezadoPagina
-        titulo="Perfil"
-        migas={[{ texto: "Panel de operador", a: "/admin" }, { texto: "Perfil" }]}
+        titulo={ADMIN_PERFIL}
+        migas={[{ texto: ADMIN_PANEL, a: "/admin" }, { texto: ADMIN_PERFIL }]}
       />
       <Card className="max-w-(--narrow-max)">
         <dl className="flex flex-col gap-4">

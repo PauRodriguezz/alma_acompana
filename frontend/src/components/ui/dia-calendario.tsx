@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 /**
  * Aspecto de un día de calendario (lo comparten la grilla del mes y la tira de la semana): el

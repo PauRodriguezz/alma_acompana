@@ -4,9 +4,9 @@ import { hoyArgentina, sumarDias } from "@/lib/fechas"
 import { Alert } from "@/components/ui/alert"
 import { mensajeDeError } from "@/lib/errores"
 import { useAhora } from "@/lib/useAhora"
+import { ESTADO_CARGANDO } from "@/lib/mensajes"
 
 import {
-  CARGANDO,
   SIN_CITAS,
   SIN_MEDICACION_HOY,
   SIN_MEDICACIONES,
@@ -51,7 +51,7 @@ function Estado({
   if (cargando) {
     return (
       <p role="status" className="py-3 text-muted-foreground">
-        {CARGANDO}
+        {ESTADO_CARGANDO}
       </p>
     )
   }

@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Input as InputPrimitive } from "@base-ui/react/input"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 // Campo del Figma: 55,2 px de alto, borde de 2 px (input, 3,6:1); con foco el borde pasa
 // a 3 px de color ring; con error, borde destructive (el mensaje con ícono va en CampoTexto).

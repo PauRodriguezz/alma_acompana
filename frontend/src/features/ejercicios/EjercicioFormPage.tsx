@@ -12,13 +12,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { CampoAreaTexto } from "@/components/alma/campo-area-texto"
-import { tamanioTextoBoton } from "@/components/alma/estilos"
 import { SelectorChips } from "@/components/alma/selector-chips"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
-import { conAviso } from "@/features/admin/aviso"
 import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
 import { mensajeDeError } from "@/lib/errores"
 import {
@@ -30,6 +28,7 @@ import {
   TEXTO_NIVEL,
   type FormatoEjercicio,
 } from "@/features/admin/etiquetas"
+import { useAviso } from "@/features/avisos/useAviso"
 import { ApiError } from "@/lib/api"
 
 import {
@@ -48,13 +47,38 @@ import {
   TEXTO_REVISAR,
   type DatosEjercicio,
   type EntradaEjercicio,
-} from "./esquema"
+} from "./schemas"
 import type { EjercicioDetalle } from "./tipos"
 import { VistaPreviaEjercicio } from "./VistaPreviaEjercicio"
+import {
+  ACCION_CANCELAR,
+  ACCION_GUARDANDO,
+  ESTADO_CARGANDO,
+  ETIQUETA_CATEGORIA,
+  MENSAJE_NO_ENCONTRADO,
+} from "@/lib/mensajes"
+import { ADMIN_EJERCICIOS, ADMIN_PANEL } from "@/features/admin/mensajes"
+import {
+  AVISO_ACTUALIZADO,
+  AVISO_CREADO,
+  AYUDA_EXPLICACION,
+  AYUDA_TEXTO_A_MEMORIZAR,
+  BOTON_GUARDAR,
+  EJEMPLO_CONSIGNA,
+  ERROR_TEXTO_A_MEMORIZAR,
+  ETIQUETA_CONSIGNA,
+  ETIQUETA_EXPLICACION,
+  ETIQUETA_FORMATO,
+  ETIQUETA_NIVEL,
+  ETIQUETA_TEXTO_A_MEMORIZAR,
+  MIGA_EDITAR,
+  MIGA_NUEVO,
+  NUEVO_EJERCICIO,
+  TITULO_EDITAR,
+  VOLVER_A_EJERCICIOS,
+} from "./mensajes"
 
 const RUTA_LISTA = "/admin/ejercicios"
-const AYUDA_EXPLICACION =
-  "Se muestra después de responder. Ejemplo: Este ejercicio trata sobre completar con la palabra correcta el refrán que te aparece."
 
 const OPCIONES_CATEGORIA = CATEGORIAS_EJERCICIO.map((valor) => ({
   valor,
@@ -122,6 +146,7 @@ type Franja = { texto: string; clave: number }
 function FormularioEjercicio({ id, inicial }: { id?: number; inicial: DefaultValues<EntradaEjercicio> }) {
   const navigate = useNavigate()
   const clienteConsultas = useQueryClient()
+  const { avisar } = useAviso()
   const refFranja = useRef<HTMLDivElement>(null)
   const [franja, setFranja] = useState<Franja | null>(null)
 
@@ -157,10 +182,8 @@ function FormularioEjercicio({ id, inicial }: { id?: number; inicial: DefaultVal
       id === undefined ? crearEjercicio(aCuerpo(datos)) : editarEjercicio(id, aCuerpo(datos)),
     onSuccess: async () => {
       await refrescarEjercicios(clienteConsultas)
-      navigate(
-        RUTA_LISTA,
-        conAviso(id === undefined ? "El ejercicio fue creado." : "El ejercicio fue actualizado.")
-      )
+      avisar(id === undefined ? AVISO_CREADO : AVISO_ACTUALIZADO)
+      navigate(RUTA_LISTA)
     },
     onError: (e) => {
       mostrarFranja(mensajeDeError(e))
@@ -190,7 +213,7 @@ function FormularioEjercicio({ id, inicial }: { id?: number; inicial: DefaultVal
     // zod corre la regla del texto a memorizar solo si el resto de los campos pasó: si falta
     // junto con otros, se marca acá para que el campo también muestre su mensaje.
     if (v.categoria === "MEMORIA" && !v.textoAMemorizar.trim() && !errores.textoAMemorizar) {
-      setError("textoAMemorizar", { type: "required", message: "Ingresá el texto a memorizar." })
+      setError("textoAMemorizar", { type: "required", message: ERROR_TEXTO_A_MEMORIZAR })
     }
     const errorOpciones = errores.opciones?.root?.message ?? errores.opciones?.message
     mostrarFranja(faltaAlgo ? TEXTO_CAMPOS_REQUERIDOS : (errorOpciones ?? TEXTO_REVISAR))
@@ -227,7 +250,7 @@ function FormularioEjercicio({ id, inicial }: { id?: number; inicial: DefaultVal
             name="categoria"
             render={({ field }) => (
               <SelectorChips
-                etiqueta="Categoría"
+                etiqueta={ETIQUETA_CATEGORIA}
                 opciones={OPCIONES_CATEGORIA}
                 valor={field.value}
                 alCambiar={field.onChange}
@@ -236,16 +259,16 @@ function FormularioEjercicio({ id, inicial }: { id?: number; inicial: DefaultVal
             )}
           />
           <CampoAreaTexto
-            label="Consigna"
-            placeholder="Por ejemplo: Completá el refrán: «Más vale pájaro en mano…»"
+            label={ETIQUETA_CONSIGNA}
+            placeholder={EJEMPLO_CONSIGNA}
             rows={3}
             error={errors.consigna?.message}
             {...register("consigna")}
           />
           {categoria === "MEMORIA" ? (
             <CampoAreaTexto
-              label="Texto a memorizar"
-              ayuda="Es lo que la persona lee antes de responder."
+              label={ETIQUETA_TEXTO_A_MEMORIZAR}
+              ayuda={AYUDA_TEXTO_A_MEMORIZAR}
               rows={5}
               error={errors.textoAMemorizar?.message}
               {...register("textoAMemorizar")}
@@ -256,7 +279,7 @@ function FormularioEjercicio({ id, inicial }: { id?: number; inicial: DefaultVal
             name="formato"
             render={({ field }) => (
               <SelectorChips
-                etiqueta="Formato del ejercicio"
+                etiqueta={ETIQUETA_FORMATO}
                 opciones={OPCIONES_FORMATO}
                 valor={field.value}
                 alCambiar={(nuevo) => cambiarFormato(nuevo, field.onChange)}
@@ -270,7 +293,7 @@ function FormularioEjercicio({ id, inicial }: { id?: number; inicial: DefaultVal
             name="nivelDificultad"
             render={({ field }) => (
               <SelectorChips
-                etiqueta="Nivel de dificultad"
+                etiqueta={ETIQUETA_NIVEL}
                 opciones={OPCIONES_NIVEL}
                 valor={field.value}
                 alCambiar={field.onChange}
@@ -279,7 +302,7 @@ function FormularioEjercicio({ id, inicial }: { id?: number; inicial: DefaultVal
             )}
           />
           <CampoAreaTexto
-            label="Explicación"
+            label={ETIQUETA_EXPLICACION}
             opcional
             ayuda={AYUDA_EXPLICACION}
             rows={3}
@@ -299,10 +322,10 @@ function FormularioEjercicio({ id, inicial }: { id?: number; inicial: DefaultVal
 
       <div className="flex flex-wrap justify-end gap-3">
         <Link to={RUTA_LISTA} className={buttonVariants({ variant: "outline" })}>
-          Cancelar
+          {ACCION_CANCELAR}
         </Link>
-        <Button type="submit" className={tamanioTextoBoton} disabled={guardar.isPending}>
-          {guardar.isPending ? "Guardando…" : "Guardar ejercicio"}
+        <Button type="submit" disabled={guardar.isPending}>
+          {guardar.isPending ? ACCION_GUARDANDO : BOTON_GUARDAR}
         </Button>
       </div>
     </form>
@@ -324,11 +347,11 @@ export function EjercicioFormPage() {
 
   const encabezado = (
     <EncabezadoPagina
-      titulo={editando ? "Editar ejercicio" : "Nuevo ejercicio"}
+      titulo={editando ? TITULO_EDITAR : NUEVO_EJERCICIO}
       migas={[
-        { texto: "Panel de operador", a: "/admin" },
-        { texto: "Ejercicios", a: RUTA_LISTA },
-        { texto: editando ? "Editar" : "Nuevo" },
+        { texto: ADMIN_PANEL, a: "/admin" },
+        { texto: ADMIN_EJERCICIOS, a: RUTA_LISTA },
+        { texto: editando ? MIGA_EDITAR : MIGA_NUEVO },
       ]}
     />
   )
@@ -348,9 +371,9 @@ export function EjercicioFormPage() {
         {encabezado}
         <Alert variant="error">
           <div className="flex flex-col items-start gap-3">
-            <p>{idValido ? mensajeDeError(detalle.error) : "No encontramos lo que buscás."}</p>
+            <p>{idValido ? mensajeDeError(detalle.error) : MENSAJE_NO_ENCONTRADO}</p>
             <Link to={RUTA_LISTA} className={buttonVariants({ variant: "outline" })}>
-              Volver a ejercicios
+              {VOLVER_A_EJERCICIOS}
             </Link>
           </div>
         </Alert>
@@ -362,7 +385,7 @@ export function EjercicioFormPage() {
     return (
       <>
         {encabezado}
-        <p role="status">Cargando…</p>
+        <p role="status">{ESTADO_CARGANDO}</p>
       </>
     )
   }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Cancel01Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 import { alertVariants } from "@/components/ui/alert-variants"
 import { Button } from "@/components/ui/button"

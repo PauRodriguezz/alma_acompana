@@ -10,7 +10,6 @@ export const ETIQUETA_FECHA_NACIMIENTO = "Fecha de nacimiento"
 export const ETIQUETA_USUARIO = "Usuario"
 
 export const AJUSTE_ACCESIBILIDAD = "Tamaño de letra y contraste"
-export const AJUSTE_CERRAR_SESION = "Cerrar sesión"
 
 // PROPUESTOS (aprobados): no están en el Figma ni en los casos de uso.
 export const CARGANDO_DATOS = "Cargando…"

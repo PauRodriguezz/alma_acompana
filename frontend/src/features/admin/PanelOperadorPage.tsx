@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom"
 import { useQuery } from "@tanstack/react-query"
 
-import { tamanioTextoBoton } from "@/components/alma/estilos"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Alert } from "@/components/ui/alert"
@@ -10,6 +9,16 @@ import { Card } from "@/components/ui/card"
 import { CLAVE_RESUMEN, obtenerResumen } from "./api"
 import { EncabezadoPagina } from "./EncabezadoPagina"
 import { mensajeDeError } from "@/lib/errores"
+import { ACCION_PROBAR_DE_NUEVO, ESTADO_CARGANDO } from "@/lib/mensajes"
+import {
+  ADMIN_EJERCICIOS,
+  ADMIN_MICROCAPSULAS,
+  ADMIN_NUEVA_MICROCAPSULA,
+  ADMIN_NUEVO_EJERCICIO,
+  ADMIN_PANEL,
+  ADMIN_VER_EJERCICIOS,
+  ADMIN_VER_MICROCAPSULAS,
+} from "./mensajes"
 
 type TarjetaConteoProps = {
   titulo: string
@@ -31,7 +40,7 @@ function TarjetaConteo({ titulo, cantidad, cargando, ver, nuevo }: TarjetaConteo
         <h2 className="font-sans text-body font-bold text-foreground">{titulo}</h2>
         {cargando ? (
           <p role="status" className="text-muted-foreground">
-            Cargando…
+            {ESTADO_CARGANDO}
           </p>
         ) : (
           <p className="font-heading text-h1 font-medium text-heading lg:text-h1-desktop">
@@ -57,7 +66,7 @@ export function PanelOperadorPage() {
 
   return (
     <>
-      <EncabezadoPagina titulo="Panel de operador" />
+      <EncabezadoPagina titulo={ADMIN_PANEL} />
 
       {resumen.isError ? (
         <Alert variant="error">
@@ -65,10 +74,9 @@ export function PanelOperadorPage() {
             <p>{mensajeDeError(resumen.error)}</p>
             <Button
               variant="outline"
-              className={tamanioTextoBoton}
               onClick={() => resumen.refetch()}
             >
-              Probar de nuevo
+              {ACCION_PROBAR_DE_NUEVO}
             </Button>
           </div>
         </Alert>
@@ -76,18 +84,18 @@ export function PanelOperadorPage() {
 
       <div className="flex flex-col gap-6 @xl:flex-row">
         <TarjetaConteo
-          titulo="Ejercicios"
+          titulo={ADMIN_EJERCICIOS}
           cantidad={resumen.data?.ejerciciosActivos}
           cargando={resumen.isPending && !resumen.isError}
-          ver={{ texto: "Ver ejercicios", a: "/admin/ejercicios" }}
-          nuevo={{ texto: "Nuevo ejercicio", a: "/admin/ejercicios/nuevo" }}
+          ver={{ texto: ADMIN_VER_EJERCICIOS, a: "/admin/ejercicios" }}
+          nuevo={{ texto: ADMIN_NUEVO_EJERCICIO, a: "/admin/ejercicios/nuevo" }}
         />
         <TarjetaConteo
-          titulo="Microcápsulas"
+          titulo={ADMIN_MICROCAPSULAS}
           cantidad={resumen.data?.microcapsulasVigentes}
           cargando={resumen.isPending && !resumen.isError}
-          ver={{ texto: "Ver microcápsulas", a: "/admin/microcapsulas" }}
-          nuevo={{ texto: "Nueva microcápsula", a: "/admin/microcapsulas/nueva" }}
+          ver={{ texto: ADMIN_VER_MICROCAPSULAS, a: "/admin/microcapsulas" }}
+          nuevo={{ texto: ADMIN_NUEVA_MICROCAPSULA, a: "/admin/microcapsulas/nueva" }}
         />
       </div>
     </>

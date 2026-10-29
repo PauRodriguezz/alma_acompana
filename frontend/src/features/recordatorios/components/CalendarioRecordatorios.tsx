@@ -10,19 +10,19 @@ import {
   startOfWeek,
 } from "date-fns"
 import { es } from "date-fns/locale"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 import { hoyArgentina, mayuscula, nombreDelDia } from "@/lib/fechas"
 import { Alert } from "@/components/ui/alert"
 import { Calendar } from "@/components/ui/calendar"
 import { mensajeDeError } from "@/lib/errores"
 import { useAhora } from "@/lib/useAhora"
+import { ESTADO_CARGANDO } from "@/lib/mensajes"
 
 import { fechaCompleta } from "../fechas"
 import {
   anuncioMes,
   anuncioSemana,
-  CARGANDO,
   LEYENDA_PUNTO,
   NOMBRE_DIA_CON_CITA,
   SIN_AVISOS_DEL_DIA,
@@ -183,7 +183,7 @@ export function CalendarioRecordatorios() {
         {errorEstado ? <Alert variant="error">{mensajeDeError(errorEstado)}</Alert> : null}
         {delDia.isPending ? (
           <p role="status" className="text-muted-foreground">
-            {CARGANDO}
+            {ESTADO_CARGANDO}
           </p>
         ) : null}
         {/* Si ya falló el mes, el aviso de arriba alcanza: no se repite el mismo texto */}

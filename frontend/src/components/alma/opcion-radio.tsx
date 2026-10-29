@@ -1,7 +1,7 @@
 import { type Radio as RadioPrimitive } from "@base-ui/react/radio"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Tick02Icon } from "@hugeicons/core-free-icons"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 import { RadioGroupItem } from "@/components/ui/radio-group"
 

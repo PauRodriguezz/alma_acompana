@@ -2,7 +2,6 @@ import { useId, useRef } from "react"
 import { Controller, useFieldArray, useWatch, type UseFormReturn } from "react-hook-form"
 
 import { CampoTexto } from "@/components/alma/campo-texto"
-import { tamanioTextoBoton } from "@/components/alma/estilos"
 import { MensajeError } from "@/components/alma/mensaje-error"
 import { SubirImagen } from "@/components/alma/subir-imagen"
 import { Button } from "@/components/ui/button"
@@ -15,7 +14,22 @@ import {
   opcionVacia,
   type DatosEjercicio,
   type EntradaEjercicio,
-} from "./esquema"
+} from "./schemas"
+import {
+  IMAGEN_AGREGAR,
+  OPCIONES_AYUDA,
+  OPCIONES_TITULO,
+  OPCION_CORRECTA,
+  PASOS_AYUDA,
+  PASOS_TITULO,
+  TEXTOS_ELEMENTO,
+  agregarElemento,
+  ariaOpcionCorrecta,
+  etiquetaImagen,
+  etiquetaPosicion,
+  maximoCargado,
+  quitarElemento,
+} from "./mensajes"
 
 type EditorOpcionesProps = {
   formulario: UseFormReturn<EntradaEjercicio, unknown, DatosEjercicio>
@@ -47,8 +61,9 @@ export function EditorOpciones({ formulario, formato }: EditorOpcionesProps) {
 
   const ordenar = formato === "ORDENAR"
   const { min, max } = LIMITES_OPCIONES[formato]
-  const nombre = ordenar ? "paso" : "opción"
-  const Nombre = ordenar ? "Paso" : "Opción"
+  const elemento = ordenar ? TEXTOS_ELEMENTO.paso : TEXTOS_ELEMENTO.opcion
+  const nombre = elemento.minuscula
+  const Nombre = elemento.mayuscula
   const errorGrupo = errors.opciones?.root?.message ?? errors.opciones?.message
 
   function marcarCorrecta(indice: number) {
@@ -72,13 +87,11 @@ export function EditorOpciones({ formulario, formato }: EditorOpcionesProps) {
       className="min-w-0"
     >
       <legend className="text-label font-semibold">
-        {ordenar ? "Pasos y orden correcto" : "Opciones y respuesta correcta"}
+        {ordenar ? PASOS_TITULO : OPCIONES_TITULO}
       </legend>
       <div className="mt-2 flex flex-col gap-3">
         <p id={idAyuda} className="text-muted-foreground">
-          {ordenar
-            ? "Cargá de 3 a 5 pasos. En «Posición» poné el lugar de cada paso en el orden correcto (1 es el primero)."
-            : "Cargá de 3 a 4 opciones y marcá cuál es la correcta."}
+          {ordenar ? PASOS_AYUDA : OPCIONES_AYUDA}
         </p>
         {errorGrupo ? <MensajeError id={idError}>{errorGrupo}</MensajeError> : null}
 
@@ -104,10 +117,10 @@ export function EditorOpciones({ formulario, formato }: EditorOpcionesProps) {
                           name={`${id}-correcta`}
                           checked={opciones?.[i]?.esCorrecta ?? false}
                           onChange={() => marcarCorrecta(i)}
-                          aria-label={`Correcta: opción ${n}`}
+                          aria-label={ariaOpcionCorrecta(n)}
                           className="size-5 shrink-0 cursor-pointer accent-accent"
                         />
-                        Correcta
+                        {OPCION_CORRECTA}
                       </label>
                     ) : null}
                     <Input
@@ -124,7 +137,7 @@ export function EditorOpciones({ formulario, formato }: EditorOpcionesProps) {
 
                 {ordenar ? (
                   <CampoTexto
-                    label={`Posición del paso ${n}`}
+                    label={etiquetaPosicion(n)}
                     type="number"
                     inputMode="numeric"
                     min={1}
@@ -139,8 +152,8 @@ export function EditorOpciones({ formulario, formato }: EditorOpcionesProps) {
                   name={`opciones.${i}.imagen`}
                   render={({ field }) => (
                     <SubirImagen
-                      etiqueta={`Imagen ${ordenar ? "del paso" : "de la opción"} ${n}`}
-                      textoBoton="Agregar imagen"
+                      etiqueta={etiquetaImagen(elemento.imagenDe, n)}
+                      textoBoton={IMAGEN_AGREGAR}
                       valor={field.value}
                       alCambiar={field.onChange}
                       textoAlternativo={textoOpcion || `${Nombre} ${n}`}
@@ -152,10 +165,10 @@ export function EditorOpciones({ formulario, formato }: EditorOpcionesProps) {
                 {fields.length > min ? (
                   <Button
                     variant="outline"
-                    className={`self-start ${tamanioTextoBoton}`}
+                    className="self-start"
                     onClick={() => quitar(i)}
                   >
-                    {`Quitar ${nombre} ${n}`}
+                    {quitarElemento(nombre, n)}
                   </Button>
                 ) : null}
               </li>
@@ -166,14 +179,14 @@ export function EditorOpciones({ formulario, formato }: EditorOpcionesProps) {
         <Button
           ref={botonAgregar}
           variant="secondary"
-          className={`self-start ${tamanioTextoBoton}`}
+          className="self-start"
           disabled={fields.length >= max}
           onClick={() => append(opcionVacia(fields.length + 1))}
         >
-          {`Agregar ${nombre}`}
+          {agregarElemento(nombre)}
         </Button>
         {fields.length >= max ? (
-          <p className="text-muted-foreground">{`Ya cargaste el máximo: ${max} ${ordenar ? "pasos" : "opciones"}.`}</p>
+          <p className="text-muted-foreground">{maximoCargado(max, elemento.plural)}</p>
         ) : null}
       </div>
     </fieldset>

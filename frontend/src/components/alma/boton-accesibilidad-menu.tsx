@@ -2,7 +2,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { AccessibilityIcon } from "@hugeicons/core-free-icons"
 
 import { usePanelAccesibilidad } from "@/features/accesibilidad/usePanelAccesibilidad"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 /**
  * Botón de accesibilidad de las pantallas de la persona mayor (CU-13). Es un solo elemento:

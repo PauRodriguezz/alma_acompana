@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 import { MensajeError } from "@/components/alma/mensaje-error"
 import { Input } from "@/components/ui/input"

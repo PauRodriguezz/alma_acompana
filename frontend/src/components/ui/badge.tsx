@@ -1,6 +1,6 @@
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 // Chip del Figma (21:107): "Etiqueta de tipo o categoría. Siempre lleva texto; ícono cuando
 // el tipo importa. En alto contraste: fondo card y borde de 2 px."

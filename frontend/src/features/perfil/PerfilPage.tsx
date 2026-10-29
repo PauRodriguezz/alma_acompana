@@ -12,10 +12,10 @@ import { DialogoCerrarSesion } from "@/features/auth/DialogoCerrarSesion"
 import { useAuth } from "@/features/auth/useAuth"
 
 import { fechaCorta } from "@/lib/fechas"
+import { CERRAR_SESION } from "@/lib/mensajes"
 
 import {
   AJUSTE_ACCESIBILIDAD,
-  AJUSTE_CERRAR_SESION,
   CARGANDO_DATOS,
   ERROR_CARGA,
   ETIQUETA_APELLIDO,
@@ -111,7 +111,7 @@ export function PerfilPage() {
                 disparador={
                   <button type="button" className={`${FILA_BOTON} text-destructive`}>
                     <HugeiconsIcon icon={Logout01Icon} className="size-6 shrink-0" aria-hidden="true" />
-                    <span className="flex-1">{AJUSTE_CERRAR_SESION}</span>
+                    <span className="flex-1">{CERRAR_SESION}</span>
                   </button>
                 }
               />

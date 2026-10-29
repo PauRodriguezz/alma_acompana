@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 // Área de texto del Figma (Microcápsula nueva, campo "Texto"): mismos bordes, foco y error
 // que el campo de texto (input.tsx). Alto mínimo de unas 4 líneas; la persona la puede

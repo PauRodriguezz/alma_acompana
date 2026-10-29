@@ -10,6 +10,7 @@ import { useAviso } from "@/features/avisos/useAviso"
 import { ApiError } from "@/lib/api"
 import { mensajeDeError } from "@/lib/errores"
 import { useIdDeRuta } from "@/lib/useIdDeRuta"
+import { ACCION_ELIMINAR, ESTADO_CARGANDO } from "@/lib/mensajes"
 
 import { DialogoEliminarRecordatorio } from "../components/DialogoEliminarRecordatorio"
 import { EnlaceVolver } from "../components/EnlaceVolver"
@@ -17,8 +18,6 @@ import { fechaCompleta, horaDeFechaHora } from "../fechas"
 import {
   AVISO_ELIMINADO,
   BOTON_EDITAR,
-  BOTON_ELIMINAR,
-  CARGANDO,
   CHIP_CITA,
   CHIP_PENDIENTE,
   CHIP_VISTA,
@@ -86,7 +85,7 @@ export function DetalleCitaPage() {
       {id === undefined ? <Alert variant="error">{mensajeDeError(new ApiError(404))}</Alert> : null}
       {consulta.isPending && id !== undefined ? (
         <p role="status" className="text-muted-foreground">
-          {CARGANDO}
+          {ESTADO_CARGANDO}
         </p>
       ) : null}
       {consulta.error ? <Alert variant="error">{mensajeDeError(consulta.error)}</Alert> : null}
@@ -129,7 +128,7 @@ export function DetalleCitaPage() {
             </Link>
             <DialogoEliminarRecordatorio onConfirmar={borrar}>
               <Button variant="outline" disabled={eliminar.isPending} className="flex-1">
-                {BOTON_ELIMINAR}
+                {ACCION_ELIMINAR}
               </Button>
             </DialogoEliminarRecordatorio>
           </div>

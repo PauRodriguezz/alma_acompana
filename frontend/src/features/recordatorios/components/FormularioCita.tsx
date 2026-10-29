@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { useAviso } from "@/features/avisos/useAviso"
 import { ApiError } from "@/lib/api"
 import { aplicarErroresDeCampos, mensajeDeError } from "@/lib/errores"
+import { ACCION_GUARDANDO } from "@/lib/mensajes"
 
 import {
   AVISO_ACTUALIZADO,
@@ -28,7 +29,6 @@ import {
   ETIQUETA_LUGAR,
   ETIQUETA_MEDICO,
   ETIQUETA_TITULO,
-  GUARDANDO,
   GUARDAR,
 } from "../mensajes"
 import { esquemaCita, type DatosFormularioCita } from "../schemas"
@@ -150,7 +150,7 @@ export function FormularioCita({ cita }: { cita?: Cita }) {
       />
 
       <Button type="submit" disabled={guardar.isPending} className="w-full">
-        {guardar.isPending ? GUARDANDO : GUARDAR}
+        {guardar.isPending ? ACCION_GUARDANDO : GUARDAR}
       </Button>
     </form>
   )

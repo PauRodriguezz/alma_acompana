@@ -1,7 +1,7 @@
 import * as React from "react"
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 // Migas de pan del Figma (39:289): enlaces en label semibold color heading y subrayados,
 // separador "›" en muted-foreground y la página actual en negrita foreground.

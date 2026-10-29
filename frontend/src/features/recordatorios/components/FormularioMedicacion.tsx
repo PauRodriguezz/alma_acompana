@@ -12,6 +12,7 @@ import { RadioGroup } from "@/components/ui/radio-group"
 import { useAviso } from "@/features/avisos/useAviso"
 import { ApiError } from "@/lib/api"
 import { aplicarErroresDeCampos, mensajeDeError } from "@/lib/errores"
+import { ACCION_GUARDANDO } from "@/lib/mensajes"
 
 import { horaDeToma } from "../fechas"
 import {
@@ -25,7 +26,6 @@ import {
   ETIQUETA_FRECUENCIA_TITULO,
   ETIQUETA_HORA,
   ETIQUETA_NOMBRE_MEDICAMENTO,
-  GUARDANDO,
   GUARDAR,
 } from "../mensajes"
 import { esquemaMedicacion, FRECUENCIAS, type DatosFormularioMedicacion } from "../schemas"
@@ -155,7 +155,7 @@ export function FormularioMedicacion({ medicacion }: { medicacion?: Medicacion }
       />
 
       <Button type="submit" disabled={guardar.isPending} className="w-full">
-        {guardar.isPending ? GUARDANDO : GUARDAR}
+        {guardar.isPending ? ACCION_GUARDANDO : GUARDAR}
       </Button>
     </form>
   )

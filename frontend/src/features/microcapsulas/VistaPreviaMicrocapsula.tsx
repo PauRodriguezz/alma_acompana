@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card"
 import type { CategoriaMicrocapsula } from "@/features/admin/etiquetas"
 
 import { EtiquetaCategoriaMicrocapsula } from "./EtiquetaCategoriaMicrocapsula"
+import { ADMIN_VISTA_PREVIA } from "@/features/admin/mensajes"
+import { PREVIA_LEER, PREVIA_TITULO } from "./mensajes"
 
 type VistaPreviaMicrocapsulaProps = {
   titulo: string
@@ -25,19 +27,19 @@ export function VistaPreviaMicrocapsula({ titulo, categoria, imagen }: VistaPrev
   return (
     <section aria-labelledby={id} className="flex flex-col gap-2">
       <h2 id={id} className="font-sans text-body font-bold text-foreground">
-        Así lo ve la persona
+        {ADMIN_VISTA_PREVIA}
       </h2>
       <Card className="items-start gap-3">
         {imagen ? (
           <img src={imagen} alt="" className="aspect-video w-full rounded-lg object-cover" />
         ) : null}
         {categoria ? <EtiquetaCategoriaMicrocapsula categoria={categoria} /> : null}
-        <h3 className="max-w-full wrap-break-word">{tituloLimpio || "Acá aparece el título"}</h3>
+        <h3 className="max-w-full wrap-break-word">{tituloLimpio || PREVIA_TITULO}</h3>
         <span
           aria-hidden="true"
           className={`${buttonVariants({ variant: "secondary" })} pointer-events-none`}
         >
-          Leer
+          {PREVIA_LEER}
         </span>
       </Card>
     </section>

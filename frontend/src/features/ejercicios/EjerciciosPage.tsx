@@ -5,7 +5,6 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Delete02Icon, PencilEdit02Icon } from "@hugeicons/core-free-icons"
 
 import { DialogoConfirmar } from "@/components/alma/dialogo-confirmar"
-import { tamanioTextoBoton } from "@/components/alma/estilos"
 import { SelectorChips } from "@/components/alma/selector-chips"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -20,11 +19,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { AvisoExito } from "@/features/admin/AvisoExito"
-import { useAvisoExito } from "@/features/admin/aviso"
+import { useAviso } from "@/features/avisos/useAviso"
 import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
 import { mensajeDeError } from "@/lib/errores"
-import { estiloBotonIcono } from "@/features/admin/estilos"
+import { estiloBotonIcono } from "@/components/alma/estilos"
 import {
   CATEGORIAS_EJERCICIO,
   TEXTO_CATEGORIA_EJERCICIO,
@@ -41,13 +39,43 @@ import {
 } from "./api"
 import { EtiquetaCategoriaEjercicio } from "./EtiquetaCategoriaEjercicio"
 import type { EjercicioResumen } from "./tipos"
+import {
+  ACCION_EDITAR,
+  ACCION_ELIMINAR,
+  ACCION_PROBAR_DE_NUEVO,
+  COLUMNA_ACCIONES,
+  ESTADO_CARGANDO,
+  ETIQUETA_CATEGORIA,
+} from "@/lib/mensajes"
+import { ADMIN_EJERCICIOS, ADMIN_PANEL } from "@/features/admin/mensajes"
+import {
+  AVISO_ELIMINADO,
+  BAJA_CONFIRMAR,
+  BAJA_DESCRIPCION,
+  BAJA_TITULO,
+  COLUMNA_CONSIGNA,
+  COLUMNA_DIFICULTAD,
+  COLUMNA_TIPO,
+  CONTEO_UNO,
+  FILTRO_ETIQUETA,
+  FILTRO_TODAS,
+  NUEVO_EJERCICIO,
+  TABLA_DESCRIPCION,
+  TARJETA_DIFICULTAD,
+  TARJETA_TIPO,
+  VACIO_SIN_EJERCICIOS,
+  ariaEditar,
+  ariaEliminar,
+  conteoVarios,
+  vacioDeCategoria,
+} from "./mensajes"
 
 const RUTA_LISTA = "/admin/ejercicios"
 const TODAS = "TODAS"
 type Filtro = CategoriaEjercicio | typeof TODAS
 
 const OPCIONES_FILTRO: { valor: Filtro; texto: string }[] = [
-  { valor: TODAS, texto: "Todas" },
+  { valor: TODAS, texto: FILTRO_TODAS },
   ...CATEGORIAS_EJERCICIO.map((valor) => ({ valor, texto: TEXTO_CATEGORIA_EJERCICIO[valor] })),
 ]
 
@@ -67,9 +95,9 @@ function DialogoEliminar({
 }) {
   return (
     <DialogoConfirmar
-      titulo="¿Eliminar este ejercicio?"
-      descripcion="Se va a eliminar del catálogo. Esta acción no se puede deshacer."
-      textoConfirmar="Sí, eliminar"
+      titulo={BAJA_TITULO}
+      descripcion={BAJA_DESCRIPCION}
+      textoConfirmar={BAJA_CONFIRMAR}
       variante="destructive"
       alConfirmar={() => alConfirmar(ejercicio.id)}
       disparador={disparador}
@@ -94,7 +122,7 @@ export function EjerciciosPage() {
     queryKey: CLAVES_EJERCICIOS.lista(categoria),
     queryFn: () => listarEjercicios(categoria),
   })
-  const [aviso, mostrarAviso] = useAvisoExito()
+  const { avisar } = useAviso()
   const [errorBaja, setErrorBaja] = useState<string | null>(null)
 
   const baja = useMutation({
@@ -102,7 +130,7 @@ export function EjerciciosPage() {
     onMutate: () => setErrorBaja(null),
     onSuccess: async () => {
       await refrescarEjercicios(clienteConsultas)
-      mostrarAviso("El ejercicio fue eliminado.")
+      avisar(AVISO_ELIMINADO)
     },
     onError: (e) => setErrorBaja(mensajeDeError(e)),
   })
@@ -115,26 +143,25 @@ export function EjerciciosPage() {
 
   const textoVacio =
     categoria === null
-      ? "Todavía no hay ejercicios."
-      : `No hay ejercicios de ${TEXTO_CATEGORIA_EJERCICIO[categoria]}.`
+      ? VACIO_SIN_EJERCICIOS
+      : vacioDeCategoria(TEXTO_CATEGORIA_EJERCICIO[categoria])
 
   return (
     <>
       <EncabezadoPagina
-        titulo="Ejercicios"
-        migas={[{ texto: "Panel de operador", a: "/admin" }, { texto: "Ejercicios" }]}
+        titulo={ADMIN_EJERCICIOS}
+        migas={[{ texto: ADMIN_PANEL, a: "/admin" }, { texto: ADMIN_EJERCICIOS }]}
         accion={
           <Link to={`${RUTA_LISTA}/nuevo`} className={buttonVariants()}>
-            Nuevo ejercicio
+            {NUEVO_EJERCICIO}
           </Link>
         }
       />
 
-      <AvisoExito aviso={aviso} />
       {errorBaja ? <Alert variant="error">{errorBaja}</Alert> : null}
 
       <SelectorChips
-        etiqueta="Filtrar por categoría"
+        etiqueta={FILTRO_ETIQUETA}
         opciones={OPCIONES_FILTRO}
         valor={filtro}
         alCambiar={cambiarFiltro}
@@ -145,23 +172,22 @@ export function EjerciciosPage() {
       <p role="status" className="sr-only">
         {lista.isSuccess
           ? lista.data.length === 1
-            ? "Se muestra 1 ejercicio."
-            : `Se muestran ${lista.data.length} ejercicios.`
+            ? CONTEO_UNO
+            : conteoVarios(lista.data.length)
           : ""}
       </p>
 
       {lista.isPending ? (
-        <p role="status">Cargando…</p>
+        <p role="status">{ESTADO_CARGANDO}</p>
       ) : lista.isError ? (
         <Alert variant="error">
           <div className="flex flex-col items-start gap-3">
             <p>{mensajeDeError(lista.error)}</p>
             <Button
               variant="outline"
-              className={tamanioTextoBoton}
               onClick={() => lista.refetch()}
             >
-              Probar de nuevo
+              {ACCION_PROBAR_DE_NUEVO}
             </Button>
           </div>
         </Alert>
@@ -174,15 +200,15 @@ export function EjerciciosPage() {
           {/* Contenido ancho (desde 42rem, crece con la letra): tabla */}
           <Card className="hidden px-6 py-3 @2xl:flex">
             <Table>
-              <TableCaption className="sr-only">Ejercicios del catálogo</TableCaption>
+              <TableCaption className="sr-only">{TABLA_DESCRIPCION}</TableCaption>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Categoría</TableHead>
+                  <TableHead>{ETIQUETA_CATEGORIA}</TableHead>
                   {/* La consigna ocupa el resto del ancho y se recorta con "…" */}
-                  <TableHead className="w-full">Consigna</TableHead>
-                  <TableHead className="whitespace-nowrap">Tipo</TableHead>
-                  <TableHead>Dificultad</TableHead>
-                  <TableHead>Acciones</TableHead>
+                  <TableHead className="w-full">{COLUMNA_CONSIGNA}</TableHead>
+                  <TableHead className="whitespace-nowrap">{COLUMNA_TIPO}</TableHead>
+                  <TableHead>{COLUMNA_DIFICULTAD}</TableHead>
+                  <TableHead>{COLUMNA_ACCIONES}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -204,7 +230,7 @@ export function EjerciciosPage() {
                       <div className="flex gap-4">
                         <Link
                           to={`${RUTA_LISTA}/${e.id}/editar`}
-                          aria-label={`Editar ejercicio: ${e.consigna}`}
+                          aria-label={ariaEditar(e.consigna)}
                           className={`${estiloBotonIcono} text-heading`}
                         >
                           <HugeiconsIcon icon={PencilEdit02Icon} aria-hidden="true" />
@@ -215,7 +241,7 @@ export function EjerciciosPage() {
                           disparador={
                             <button
                               type="button"
-                              aria-label={`Eliminar ejercicio: ${e.consigna}`}
+                              aria-label={ariaEliminar(e.consigna)}
                               className={`${estiloBotonIcono} text-destructive`}
                             >
                               <HugeiconsIcon icon={Delete02Icon} aria-hidden="true" />
@@ -241,22 +267,22 @@ export function EjerciciosPage() {
                   </h2>
                   <dl className="flex flex-wrap gap-x-6 gap-y-1">
                     <div className="flex gap-1">
-                      <dt className="font-semibold">Tipo:</dt>
+                      <dt className="font-semibold">{TARJETA_TIPO}</dt>
                       <dd>{TEXTO_FORMATO_TABLA[e.formato]}</dd>
                     </div>
                     <div className="flex gap-1">
-                      <dt className="font-semibold">Dificultad:</dt>
+                      <dt className="font-semibold">{TARJETA_DIFICULTAD}</dt>
                       <dd>{TEXTO_NIVEL[e.nivelDificultad]}</dd>
                     </div>
                   </dl>
                   <div className="flex flex-wrap gap-3">
                     <Link
                       to={`${RUTA_LISTA}/${e.id}/editar`}
-                      aria-label={`Editar ejercicio: ${e.consigna}`}
+                      aria-label={ariaEditar(e.consigna)}
                       className={buttonVariants({ variant: "outline" })}
                     >
                       <HugeiconsIcon icon={PencilEdit02Icon} className="size-6" aria-hidden="true" />
-                      Editar
+                      {ACCION_EDITAR}
                     </Link>
                     <DialogoEliminar
                       ejercicio={e}
@@ -264,15 +290,14 @@ export function EjerciciosPage() {
                       disparador={
                         <Button
                           variant="outline"
-                          className={tamanioTextoBoton}
-                          aria-label={`Eliminar ejercicio: ${e.consigna}`}
+                          aria-label={ariaEliminar(e.consigna)}
                         >
                           <HugeiconsIcon
                             icon={Delete02Icon}
                             className="size-6 text-destructive"
                             aria-hidden="true"
                           />
-                          Eliminar
+                          {ACCION_ELIMINAR}
                         </Button>
                       }
                     />

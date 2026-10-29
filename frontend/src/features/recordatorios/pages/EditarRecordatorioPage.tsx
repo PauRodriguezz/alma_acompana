@@ -7,12 +7,13 @@ import { useAviso } from "@/features/avisos/useAviso"
 import { ApiError } from "@/lib/api"
 import { mensajeDeError } from "@/lib/errores"
 import { useIdDeRuta } from "@/lib/useIdDeRuta"
+import { ESTADO_CARGANDO } from "@/lib/mensajes"
 
 import { DialogoEliminarRecordatorio } from "../components/DialogoEliminarRecordatorio"
 import { EnlaceVolver } from "../components/EnlaceVolver"
 import { FormularioCita } from "../components/FormularioCita"
 import { FormularioMedicacion } from "../components/FormularioMedicacion"
-import { AVISO_ELIMINADO, BOTON_ELIMINAR_RECORDATORIO, CARGANDO, TITULO_EDITAR } from "../mensajes"
+import { AVISO_ELIMINADO, BOTON_ELIMINAR_RECORDATORIO, TITULO_EDITAR } from "../mensajes"
 import { useDetalle, useEliminar } from "../useRecordatorios"
 
 /** Edición (CU-07 y CU-08): el tipo sale del recordatorio cargado. Desde acá también se elimina. */
@@ -44,7 +45,7 @@ export function EditarRecordatorioPage() {
       {id === undefined ? <Alert variant="error">{mensajeDeError(new ApiError(404))}</Alert> : null}
       {consulta.isPending && id !== undefined ? (
         <p role="status" className="text-muted-foreground">
-          {CARGANDO}
+          {ESTADO_CARGANDO}
         </p>
       ) : null}
       {consulta.error ? <Alert variant="error">{mensajeDeError(consulta.error)}</Alert> : null}

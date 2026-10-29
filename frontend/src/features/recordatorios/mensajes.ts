@@ -16,7 +16,6 @@ export const TITULO_MIS_MEDICACIONES = "Medicaciones cargadas"
 export const SIN_MEDICACION_HOY = "Hoy no tenés medicación para tomar."
 export const SIN_CITAS = "No tenés citas próximas."
 export const SIN_MEDICACIONES = "Todavía no tenés medicaciones cargadas."
-export const CARGANDO = "Cargando…"
 
 // --- Etiquetas de estado y de tipo ---
 export const CHIP_MEDICACION = "Medicación"
@@ -99,7 +98,6 @@ export const TIPO_DE_RECORDATORIO = "Tipo de recordatorio"
 export const OPCION_MEDICACION = "Medicación"
 export const OPCION_CITA = "Cita médica"
 export const GUARDAR = "Guardar recordatorio"
-export const GUARDANDO = "Guardando…"
 
 export const ETIQUETA_NOMBRE_MEDICAMENTO = "Nombre del medicamento"
 export const ETIQUETA_DOSIS = "Dosis"
@@ -134,7 +132,6 @@ export const AVISO_ACTUALIZADO = "Tu recordatorio quedó actualizado."
 export const AVISO_ELIMINADO = "Tu recordatorio fue eliminado."
 
 // Eliminar (contrato, 8.1)
-export const BOTON_ELIMINAR = "Eliminar"
 export const BOTON_ELIMINAR_RECORDATORIO = "Eliminar recordatorio"
 export const ELIMINAR_PREGUNTA = "¿Querés eliminar este recordatorio?"
 export const ELIMINAR_AVISO = "También se van a borrar sus avisos."

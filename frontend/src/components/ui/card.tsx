@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 // Tarjeta del Figma (tablas y formularios del panel de operador): fondo card, radio 24,
 // sombra shadow-sm y 24 px de relleno. En alto contraste no hay sombras: lleva un borde

@@ -9,7 +9,7 @@ import {
   ViewIcon,
 } from "@hugeicons/core-free-icons"
 import { Link } from "react-router-dom"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 import { Chip } from "@/components/alma/chip"
 import { Button } from "@/components/ui/button"

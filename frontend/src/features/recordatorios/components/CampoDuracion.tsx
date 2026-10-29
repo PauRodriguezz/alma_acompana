@@ -1,7 +1,7 @@
 import { useId } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { MinusSignIcon, PlusSignIcon } from "@hugeicons/core-free-icons"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 import { MensajeError } from "@/components/alma/mensaje-error"
 import { buttonVariants } from "@/components/ui/button-variants"

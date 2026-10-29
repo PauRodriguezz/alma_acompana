@@ -27,7 +27,7 @@ Compañero digital para personas mayores: chat con "Alma", recordatorios de medi
 alma_acompana/
 ├── backend/alma/        Spring Boot (código en src/main/java/ar/edu/utn/frm/gelab/alma/)
 ├── frontend/            Vite + React (código en src/)
-├── docs/                documentación (contrato-login.md, contrato-recordatorios.md)
+├── docs/                documentación (contrato-login.md, contrato-recordatorios.md, contrato-panel-operador.md)
 ├── docker-compose.yml   postgres, neo4j, ollama
 ├── Dockerfile           vacío hasta la Etapa 3
 ├── .env / .env.example  variables (el .env no se sube)
@@ -35,7 +35,7 @@ alma_acompana/
 ```
 
 - **Back:** un paquete por módulo (`auth`, `persona`, `administrador`, `bienestar`, `chat`, `ejercicios` (catálogo; el juego de la persona mayor irá después en `juegos`), `historiavida`, `juegos`, `microcapsulas`, `recordatorios`), cada uno con `controller/`, `service/`, `repository/`, `domain/`, `dto/`. Los paquetes transversales son `config/`, `common/` e `ia/`.
-- **Front:** `src/` con `app/`, `styles/`, `components/ui/` (shadcn), `components/alma/`, `features/<modulo>/` y `lib/`.
+- **Front:** `src/` con `App.tsx`, `main.tsx` e `index.css`, `components/ui/` (shadcn), `components/alma/`, `features/<modulo>/` y `lib/` (ver "Carpetas del front").
 
 ## Comandos
 
@@ -64,6 +64,14 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 - Hay layout de celular y de escritorio.
 - **Accesibilidad primero** (el público son personas mayores): letra grande y legible, alto contraste, botones grandes (mínimo 44 px), etiquetas siempre visibles, todo usable con teclado y mensajes de error simples.
 
+### Carpetas del front
+- Un módulo chico queda **plano**: `features/<modulo>/` con sus páginas, componentes, `api.ts`, `tipos.ts`, `schemas.ts` y `mensajes.ts` juntos.
+- Con más de unos 10 archivos, se separa en `pages/` (una por ruta) y `components/` (piezas de esas páginas). Los hooks, `api.ts`, `tipos.ts`, `schemas.ts` y `mensajes.ts` quedan en la raíz del módulo. Hoy lo cumple `recordatorios/`.
+- Lo que usan **varios módulos** va fuera de `features/`: componentes en `components/alma/` (los de shadcn, en `components/ui/`) y funciones y textos generales en `lib/` (`api.ts`, `errores.ts`, `fechas.ts`, `mensajes.ts`).
+- `index.ts` es la **entrada del módulo** y es **opcional**: solo hace falta cuando otro módulo o `App.tsx` importan varias cosas del módulo (por ejemplo, `recordatorios/`). Exporta solo lo que se usa desde afuera. Los módulos que usa únicamente su módulo padre o únicamente `App.tsx` no lo necesitan: se importan por su ruta (`@/features/<modulo>/…`). Dentro del módulo se importa con rutas relativas.
+- Los textos que ve la persona viven en `mensajes.ts`, uno por módulo; los generales, en `lib/mensajes.ts`. Los esquemas de validación se llaman `schemas.ts`.
+- Un componente o hook que ya existe en otro módulo no se duplica: se mueve a `components/alma/` o `lib/` y se actualizan los imports.
+
 ## Decisiones tomadas
 
 - React 19 (el informe decía 18).
@@ -80,6 +88,7 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 
 - `docs/contrato-login.md`: contrato de autenticación. Leelo antes de tocar el login, la seguridad o las rutas protegidas.
 - `docs/contrato-recordatorios.md`: contrato del módulo de recordatorios (medicación, citas y avisos). Leelo antes de tocar `recordatorios/` o la agenda que usa el chat.
+- `docs/contrato-panel-operador.md`: contrato del panel de operador (resumen, ejercicios, microcápsulas, imágenes y perfil del administrador). Leelo antes de tocar `features/admin/`, `features/ejercicios/`, `features/microcapsulas/`, `common/imagenes/` o `/api/admin/**`.
 - Casos de uso (CU-xx) y diagrama de clases (`DC_PPS`) del informe: son la fuente de verdad funcional.
 
 ## Plan por etapas

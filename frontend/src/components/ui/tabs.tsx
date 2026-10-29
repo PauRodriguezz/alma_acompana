@@ -1,5 +1,5 @@
 import { Tabs as TabsPrimitive } from "@base-ui/react/tabs"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 // Pestañas del Figma (Recordatorios: Lista y Calendario). Base UI da role="tablist", "tab" y
 // "tabpanel", las flechas para moverse y el nombre accesible de cada panel. La pestaña activa

@@ -2,13 +2,13 @@ import type { ReactElement } from "react"
 import { useNavigate } from "react-router-dom"
 
 import { DialogoConfirmar } from "@/components/alma/dialogo-confirmar"
+import {
+  CERRAR_SESION_AVISO,
+  CERRAR_SESION_CONFIRMAR,
+  CERRAR_SESION_PREGUNTA,
+} from "@/lib/mensajes"
 
 import { useAuth } from "./useAuth"
-
-// Textos del Figma (Perfil, confirmar cerrar sesión) y del CU-14, camino alterno Nº3.
-const TITULO = "¿Querés cerrar sesión?"
-const TEXTO = "Para volver a entrar vas a necesitar tu usuario y tu contraseña."
-const CONFIRMAR = "Sí, cerrar sesión"
 
 /**
  * Confirmación de cierre de sesión (CU-14), la misma para la persona mayor y para el panel de
@@ -26,9 +26,9 @@ export function DialogoCerrarSesion({ disparador }: { disparador: ReactElement }
 
   return (
     <DialogoConfirmar
-      titulo={TITULO}
-      descripcion={TEXTO}
-      textoConfirmar={CONFIRMAR}
+      titulo={CERRAR_SESION_PREGUNTA}
+      descripcion={CERRAR_SESION_AVISO}
+      textoConfirmar={CERRAR_SESION_CONFIRMAR}
       alConfirmar={cerrarSesion}
       disparador={disparador}
     />
