@@ -8,6 +8,8 @@
 
 **Última revisión contra el repo:** commit `19764e1` (merge de `feature/login`, 28/10/2026).
 
+**(v4) Última revisión del front contra el repo:** commit `9fef453` (reordenamiento de `features/recordatorios`, 28/10/2026). Lo que quedó realmente en el front está en la sección 10.1.
+
 **Contratos relacionados:** `docs/contrato-login.md`. Todo lo que no se redefine acá (token, roles, formato de errores, convenciones) sigue como está ahí.
 
 ---
@@ -503,6 +505,84 @@ DialogoEliminarRecordatorio.tsx
 - Que se vea bien con letra "Muy grande" y con alto contraste.
 - Los errores se escriben en lenguaje simple, sin jerga ni códigos.
 
+### 10.1 (v4) Lo que realmente quedó en el front
+
+> **(v4) Nota:** todo lo de esta sección se decidió o se ajustó mientras se programaba el front. Lo de arriba (sección 10) se deja tal como se había planeado; **donde difiera, vale lo de esta sección**, que describe lo que hay en el código.
+
+**(v4) Estructura final de `features/recordatorios/`** (un solo nivel de subcarpetas)
+
+```
+index.ts                          lo único que usan otros módulos (ver abajo)
+api.ts                            agenda(), listar(), detalle(), crearMedicacion(), crearCita(),
+                                  editarMedicacion(), editarCita(), eliminar(), cambiarEstado()
+tipos.ts                          tipos según las respuestas de la sección 6
+schemas.ts                        esquemas zod de los dos formularios (mismos textos que 5.8)
+mensajes.ts                       textos del módulo (8.1), etiquetas, nombres para el lector de pantalla
+fechas.ts                         horaDeToma, horaDeFechaHora, fechaCompleta, textoPasoHace
+avisoDeHoy.ts                     elegirAviso() y el tipo AvisoDeHoy (regla 5.7): lo usa la tarjeta
+                                  "Para hoy", que también monta el Chat en su saludo
+useRecordatorios.ts               consultas y acciones con TanStack Query (useAgenda, useAgendaDeHoy,
+                                  useRecordatoriosLista, useDetalle, useGuardarMedicacion,
+                                  useGuardarCita, useEliminar, useCambiarEstado) y useCambioDeEstado
+pages/
+  RecordatoriosPage.tsx           pestañas Lista y Calendario
+  NuevoRecordatorioPage.tsx       alta, con las opciones Medicación / Cita médica
+  EditarRecordatorioPage.tsx      edición y, desde ahí, eliminar
+  DetalleCitaPage.tsx             detalle de la cita
+components/
+  ListaRecordatorios.tsx          Medicación de hoy, Citas médicas y Mis medicaciones
+  CalendarioRecordatorios.tsx     mes, tira de la semana y detalle del día
+  TiraSemana.tsx                  los siete días de la semana (celular)
+  LineaDeTiempoDelDia.tsx         detalle del día agrupado por horario
+  Tarjetas.tsx                    TarjetaAviso y TarjetaMedicacion (TarjetaBase es interna)
+  TarjetaParaHoy.tsx              tarjeta "Para hoy" (CU-09)
+  FormularioMedicacion.tsx
+  FormularioCita.tsx
+  CampoDuracion.tsx               duración con número editable y botones − y +
+  DialogoEliminarRecordatorio.tsx
+  EnlaceVolver.tsx
+```
+
+La estructura sugerida de arriba tenía `TarjetaRecordatorio.tsx`, `ListaRecordatorios.tsx` y los demás archivos sueltos en la raíz; `TarjetaRecordatorio.tsx` ya no existe (ver "Tarjeta compartida").
+
+**(v4) `index.ts`.** Exporta solo lo que usan otros módulos: `TarjetaParaHoy`, `useAgendaDeHoy`, `useCambioDeEstado` y las cuatro páginas. `App.tsx` e `InicioPage` importan desde `"@/features/recordatorios"`; dentro del módulo se usan imports relativos cortos. El módulo de Chat arma su tarjeta "Para hoy" con `TarjetaParaHoy` y `useAgendaDeHoy`.
+
+**(v4) Rutas.** Son las de la tabla de arriba, dentro del `ProtectedRoute` de `PERSONA_MAYOR` y del `LayoutPersona` (menú, aviso flotante y botón de accesibilidad): `/recordatorios`, `/recordatorios/nuevo`, `/recordatorios/:id/editar` y `/recordatorios/:id`. Una medicación no tiene detalle: `/recordatorios/:id` la lleva a su edición.
+
+**(v4) Lo que pasó a `lib/` y a componentes compartidos** (lo usan o lo pueden usar otros módulos)
+
+| Dónde | Qué |
+|---|---|
+| `lib/api.ts` | Acepta `DELETE` |
+| `lib/mensajes.ts` | Textos generales (sección 8) y los del calendario, la navegación y el aviso flotante |
+| `lib/errores.ts` | `mensajeDeError` y `aplicarErroresDeCampos` (sección 8) |
+| `lib/fechas.ts` | `fechaCorta`, `mayuscula`, `nombreDelDia`, `ahoraArgentina`, `hoyArgentina`, `sumarDias` y la zona horaria de Argentina |
+| `lib/useAhora.ts` | "Ahora" en hora de Argentina, que se actualiza cada minuto |
+| `lib/useIdDeRuta.ts` | El `:id` de la ruta como número |
+| `lib/query-client.ts` | El `QueryClient`, montado en `App.tsx` |
+| `components/ui/` | `calendar`, `tabs`, `textarea`, `dia-calendario` y `alert-variants` (el `select` de shadcn **no** se agregó: ver "Frecuencia") |
+| `components/alma/` | `chip`, `campo-area`, `mensaje-error-campo`, `dialogo-confirmacion`, `opcion-radio` y `aviso-flotante` |
+| `features/avisos/` | `AvisoProvider` y `useAviso()` (aviso flotante de éxito) |
+
+**(v4) Decisiones del front que cambiaron respecto de lo escrito**
+
+| Tema | Estaba escrito | Quedó |
+|---|---|---|
+| Calendario del mes | "armado con date-fns, sin librería nueva" | Se agregó **`react-day-picker` 9** (dependencia nueva en `package.json`) detrás de `components/ui/calendar.tsx`: da la grilla accesible (un solo tab stop, flechas, Inicio, Fin, RePág y AvPág, cambio de mes anunciado). El resto de las fechas sigue con `date-fns` |
+| Frecuencia de la medicación | "selector" | **Botones de opción** (`RadioGroup` con `OpcionRadio`): se ven las tres opciones a la vez, grandes y con tilde; "Todos los días" sigue preseleccionado. No se agregó `ui/select` |
+| Calendario en celular | Mes y, debajo, el detalle del día | Al tocar un día el mes se **pliega a una tira de la semana** (`TiraSemana`) con ese día resaltado, flechas "Semana anterior" y "Semana siguiente" y el botón "Ver el mes". El foco queda en el día elegido y el cambio se anuncia al lector de pantalla; la animación es corta y respeta `prefers-reduced-motion`. En escritorio el mes se queda a la vista (ancho máximo de unos 560 px, centrado) |
+| Detalle del día | Lista de avisos | **Línea de tiempo vertical** (`LineaDeTiempoDelDia`): un nodo por horario, ordenado por hora; lo que cae a la misma hora va junto (regla 5.7). La hora va arriba y grande, y debajo las tarjetas. Día sin avisos: "Sin avisos para este día." |
+| Tarjeta de cada aviso | `TarjetaRecordatorio.tsx` (una fila) | **Tarjeta compartida** (`components/Tarjetas.tsx`): `TarjetaAviso` y `TarjetaMedicacion` sobre una `TarjetaBase` interna. Ícono sobre fondo suave, acento lateral, etiqueta de tipo ("Medicación" / "Cita médica"), título, dato secundario y estado como texto con ícono. La usan la Lista, "Para hoy" y el calendario. La tarjeta de una **cita es un enlace entero** a su detalle (sin botones adentro, por eso "Para hoy" ya no tiene "Ver cita"). En la Lista, las secciones dejaron el contenedor blanco: cada tarjeta lleva su propio borde |
+| "Mis medicaciones" | No estaba | Tercera sección de la Lista, con `GET /api/recordatorios?tipo=MEDICACION` (6.8): cada medicación guardada es una tarjeta que lleva a su edición, aunque hoy no tenga avisos. Eliminar se hace desde la edición |
+| Aviso de éxito (creado, actualizado, eliminado) | `Alert` arriba de la Lista, con el texto pasado por la navegación | **Aviso flotante** (`features/avisos` y `components/alma/aviso-flotante.tsx`), montado en `LayoutPersona` para que sobreviva al cambio de pantalla. Fijo en pantalla, por encima de la barra inferior en celular (`--nav-inferior`) y abajo y centrado en escritorio; `role="status"`, ícono y texto, dura 8 segundos, se pausa con el mouse o el foco y tiene un botón "Cerrar" (al usarlo, el foco pasa al `<main>`). Los errores 400 de los formularios siguen arriba con el `Alert` |
+| "Ya la tomé" y "Deshacer" | En la Lista y en la tarjeta "Para hoy" | **Solo en el día de hoy**: la Lista, "Para hoy" y el día de hoy del calendario. En cualquier otro día, la tarjeta muestra solo el estado ("Pendiente", "Tomada a las 09:12", "Pasó hace 3 días"). La API permite marcar otros días (5.5); es una decisión de la pantalla |
+| X de "Para hoy" | Ver regla 5.7 (v3) | Oculta el aviso solo **en memoria** (`useState` de `TarjetaParaHoy`): no cambia ningún estado y no se guarda en el navegador. Mientras el Chat no exista, la tarjeta se monta de forma provisoria en `InicioPage` |
+| Confirmaciones de borrar y de cerrar sesión | Un diálogo para eliminar | `DialogoConfirmacion` genérico (`components/alma`) que usan `DialogoEliminarRecordatorio` y `DialogoCerrarSesion` |
+| Fecha y hora de los formularios | Sin definir | Campos nativos del navegador (`<input type="date">` y `<input type="time">`) con el estilo de `CampoTexto`; la fecha de la cita lleva `min` = hoy (ver sección 14) |
+| Alineación en escritorio | Sin definir | El contenido queda **alineado a la izquierda**, a 64 px del menú lateral (`lg:mx-0` en `LayoutPersona` y en las pantallas de alta, edición y detalle), a cualquier ancho de pantalla |
+
+**(v4) Datos del calendario.** Los puntos de cita salen de `agenda?tipo=CITA`: con el mes a la vista, el rango del mes; con la tira de la semana, el rango de esa semana (puede cruzar de mes). Al elegir un día, `agenda` de ese día. Al cambiar de semana el día elegido se mueve 7 días para que el detalle acompañe.
+
 ---
 
 ## 11. Datos de prueba
@@ -526,6 +606,14 @@ El Figma es una referencia: puede cambiar para mejor, pero donde difiere en func
 | El formulario no tiene fecha de inicio | DC: `fecha_inicio` | Opcional en la API; por defecto, hoy |
 | El calendario marca con un punto solo las citas | — | Igual: el punto marca un día con cita |
 | No hay formulario de cita en escritorio, ni detalle de la cita ni confirmación al eliminar | CU-08 y CU-09 lo indican como "sin crear todavía en el Figma" | Se arman con los mismos componentes y reglas |
+| **(v4)** El formulario de medicación sigue sin "frecuencia" | CU-07 y DC: la frecuencia es obligatoria | Ya no es un "selector" sino botones de opción, con "Todos los días" preseleccionado (ver 10.1) |
+| **(v4)** En celular, el botón "Nuevo recordatorio" está al final del contenido, debajo de las citas (ancho completo). En escritorio está a la derecha del título | — | En la app queda arriba, debajo del título en celular y a la derecha del título en escritorio, para verse sin hacer scroll |
+| **(v4)** La Lista tiene "Medicación de hoy" y "Citas médicas" como filas (hora al costado, dentro de un contenedor) y no tiene "Mis medicaciones" | Hace falta poder editar y eliminar una medicación aunque hoy no tenga avisos (6.8) | Se agrega la sección "Mis medicaciones" y los avisos pasan a tarjetas con ícono, acento lateral, etiqueta de tipo y estado como texto con ícono. Conviene actualizar el Figma |
+| **(v4)** El calendario del celular muestra siempre el mes completo y, debajo, el día elegido | — | Al tocar un día el mes se pliega a una tira de la semana, con "Semana anterior", "Semana siguiente" y "Ver el mes". Conviene actualizar el Figma |
+| **(v4)** El detalle del día es una lista de filas (hora al costado) | — | Línea de tiempo vertical: la hora grande arriba de cada grupo y las tarjetas debajo |
+| **(v4)** En escritorio el Figma pone el mes a la izquierda y el día elegido a la derecha, lado a lado | — | El mes queda centrado (ancho máximo de unos 560 px) y el detalle del día, debajo. Pendiente de confirmar con el diseño (sección 14) |
+| **(v4)** El contenido de escritorio empieza a 64 px del menú lateral y mide 1024 px (en 1440 px de pantalla), en Recordatorios, Chat y Perfil | — | Igual a 1440 px. En pantallas más anchas el contenido queda alineado a la izquierda, pegado al menú, en lugar de centrado (`lg:mx-0`) |
+| **(v4)** En los marcos de Recordatorios que se revisaron, el Figma no muestra un aviso flotante de éxito, ni "Ya la tomé" y "Deshacer" limitados al día de hoy, ni la tarjeta de cita entera como enlace | CU-07, CU-08 y CU-09 piden confirmar al usuario y llevar a la cita desde el aviso | Se arman con los componentes y los colores que ya existen (`Alert`, `Chip`, tokens del Figma) y las reglas de 10.1 |
 
 ---
 
@@ -570,6 +658,12 @@ El Figma es una referencia: puede cambiar para mejor, pero donde difiere en func
 2. **Textos de confirmación** de alta, edición y baja (8.1): propuestos, a revisar.
 3. **Formato de las citas en escritorio y detalle de la cita:** falta diseñarlos en el Figma.
 4. **Avisos de días anteriores sin tomar:** quedan fuera de esta etapa; si se quieren, se agrega un rango en la tarjeta o un aviso aparte.
+5. **(v4) Fecha y hora con campos nativos:** los formularios usan `<input type="date">` y `<input type="time">`. Funcionan con teclado y con el selector del celular, pero el aspecto y el formato (`dd/MM/yyyy`) dependen del navegador y no se pueden forzar. Falta decidir si se dejan así o se reemplazan por un selector propio (el `Calendar` de `ui` ya existe; faltarían un `Popover` y un campo de hora).
+6. **(v4) Calendario en escritorio:** el Figma lo muestra lado a lado con el día elegido; la app lo muestra apilado y centrado. Confirmar cuál queda.
+7. **(v4) Enlace "Ver los N" de "Para hoy":** es un enlace de texto sin alto mínimo de 44 px. Hay que darle zona táctil suficiente.
+8. **(v4) "Para hoy" provisoria:** hoy se monta en `InicioPage`. Cuando exista el Chat (CU-02), la tarjeta pasa a su saludo; el hook `useAgendaDeHoy` y `TarjetaParaHoy` ya se exportan desde `index.ts`.
+9. **(v4) Figma desactualizado:** faltan frecuencia, "Mis medicaciones", las tarjetas nuevas, la tira de la semana, la línea de tiempo, el aviso flotante, el formulario de cita en escritorio y el detalle de la cita (sección 12).
+10. **(v4) Pruebas del front:** no hay pruebas automáticas; las de la sección 13 son manuales. Falta la verificación con lector de pantalla y en un celular real.
 
 *(Resueltos: no hay scheduler ni push; `atrasada` se calcula; herencia `JOINED`; el alcance de la navegación es solo la persona mayor; el panel de operador lo arma la otra persona del equipo, en paralelo.)*
 
@@ -592,3 +686,4 @@ Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay
 - **v1 (28/10/2026):** primera propuesta, contra el commit `19764e1`.
 - **v2 (28/10/2026):** notas de implementación del back: `fechaInicio` se conserva si el `PUT` no la manda (5.8 y 6.5); la edición de una medicación conserva el id de las notificaciones que coinciden (5.3); el rango de la agenda cuenta los dos extremos (6.1).
 - **v3 (28/10/2026):** `GET /api/recordatorios` (6.8), sus pruebas (sección 13) y la X de la tarjeta "Para hoy", que se oculta solo en memoria (regla 5.7).
+- **v4 (28/10/2026, contra el commit `9fef453`):** se documenta el front tal como quedó (sección 10.1, todo lo nuevo marcado con "(v4)"): estructura final de `features/recordatorios` (raíz, `pages/` y `components/`), `index.ts`, lo que pasó a `lib/`, `react-day-picker`, frecuencia con botones de opción, calendario con tira de la semana y línea de tiempo, tarjeta compartida, "Mis medicaciones", aviso flotante de éxito, "Ya la tomé" y "Deshacer" solo en el día de hoy y alineación en escritorio. Se suman las diferencias con el Figma (sección 12) y los pendientes 5 a 10 (sección 14). No se borró nada de lo anterior.
