@@ -3,10 +3,11 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { Cancel01Icon } from "@hugeicons/core-free-icons"
 import { Link } from "react-router-dom"
 
-import { elegirAviso } from "./avisos"
-import { CERRAR_AVISO, PARA_HOY, verLos } from "./mensajes"
-import { TarjetaAviso } from "./TarjetaAviso"
-import type { EstadoNotificacion, ItemAgenda } from "./tipos"
+import { elegirAviso } from "../avisoDeHoy"
+import { CERRAR_AVISO, PARA_HOY, verLos } from "../mensajes"
+import type { EstadoNotificacion, ItemAgenda } from "../tipos"
+
+import { TarjetaAviso } from "./Tarjetas"
 
 type Props = {
   /** La agenda de hoy completa (useAgendaDeHoy): la tarjeta elige sola qué avisar. */

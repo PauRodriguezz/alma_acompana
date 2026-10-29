@@ -1,14 +1,14 @@
 import { useId } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { MinusSignIcon, PlusSignIcon } from "@hugeicons/core-free-icons"
+import { cn } from "cn"
 
 import { MensajeErrorCampo } from "@/components/alma/mensaje-error-campo"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { cn } from "cn"
 
-import { ETIQUETA_DURACION, MAS_DIAS, MENOS_DIAS, UNIDAD_DIAS } from "./mensajes"
+import { ETIQUETA_DURACION, MAS_DIAS, MENOS_DIAS, UNIDAD_DIAS } from "../mensajes"
 
 const MINIMO = 1
 const MAXIMO = 365

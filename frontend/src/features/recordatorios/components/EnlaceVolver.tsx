@@ -2,7 +2,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons"
 import { Link } from "react-router-dom"
 
-import { VOLVER_A_RECORDATORIOS } from "./mensajes"
+import { VOLVER_A_RECORDATORIOS } from "../mensajes"
 
 /** "‹ Recordatorios" arriba de los formularios y del detalle (Figma). Zona de al menos 44 px. */
 export function EnlaceVolver() {

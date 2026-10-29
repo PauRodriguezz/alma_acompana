@@ -1,8 +1,10 @@
 import { horaDeFechaHora } from "./fechas"
 import type { ItemAgenda } from "./tipos"
 
+// Lo usa la tarjeta "Para hoy", que también monta el Chat en su saludo (CU-02).
+
 /** Un aviso de la tarjeta "Para hoy": todos los recordatorios pendientes de la misma franja horaria. */
-export type Aviso = {
+export type AvisoDeHoy = {
   /** Identifica al aviso: cambia cuando cambia la franja o sus recordatorios. */
   clave: string
   /** "09:00" */
@@ -15,7 +17,7 @@ export type Aviso = {
  * hora (las atrasadas cuentan). Si hay varias a la misma hora y minuto, forman un solo aviso.
  * Sin pendientes no hay aviso.
  */
-export function elegirAviso(agendaDeHoy: ItemAgenda[]): Aviso | null {
+export function elegirAviso(agendaDeHoy: ItemAgenda[]): AvisoDeHoy | null {
   const pendientes = agendaDeHoy
     .filter((item) => item.estado === "PENDIENTE")
     .sort(

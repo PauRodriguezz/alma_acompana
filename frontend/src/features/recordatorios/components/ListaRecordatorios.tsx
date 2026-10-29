@@ -1,9 +1,10 @@
 import type { ReactNode } from "react"
 
+import { hoyArgentina, sumarDias } from "@/lib/fechas"
 import { Alert } from "@/components/ui/alert"
 import { mensajeDeError } from "@/lib/errores"
+import { useAhora } from "@/lib/useAhora"
 
-import { hoyArgentina, sumarDias } from "./fechas"
 import {
   CARGANDO,
   SIN_CITAS,
@@ -12,13 +13,16 @@ import {
   TITULO_CITAS,
   TITULO_MEDICACION_DE_HOY,
   TITULO_MIS_MEDICACIONES,
-} from "./mensajes"
-import { TarjetaAviso } from "./TarjetaAviso"
-import { TarjetaMedicacion } from "./TarjetaMedicacion"
-import type { Medicacion } from "./tipos"
-import { useAhora } from "./useAhora"
-import { useCambioDeEstado } from "./useCambioDeEstado"
-import { useAgenda, useAgendaDeHoy, useRecordatoriosLista } from "./useRecordatorios"
+} from "../mensajes"
+import type { Medicacion } from "../tipos"
+import {
+  useCambioDeEstado,
+  useAgenda,
+  useAgendaDeHoy,
+  useRecordatoriosLista,
+} from "../useRecordatorios"
+
+import { TarjetaAviso, TarjetaMedicacion } from "./Tarjetas"
 
 const DIAS_DE_CITAS_PROXIMAS = 30
 

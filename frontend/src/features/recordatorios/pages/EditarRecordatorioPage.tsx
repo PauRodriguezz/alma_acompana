@@ -6,19 +6,14 @@ import { Button } from "@/components/ui/button"
 import { useAviso } from "@/features/avisos/useAviso"
 import { ApiError } from "@/lib/api"
 import { mensajeDeError } from "@/lib/errores"
+import { useIdDeRuta } from "@/lib/useIdDeRuta"
 
-import { DialogoEliminarRecordatorio } from "./DialogoEliminarRecordatorio"
-import { EnlaceVolver } from "./EnlaceVolver"
-import { FormularioCita } from "./FormularioCita"
-import { FormularioMedicacion } from "./FormularioMedicacion"
-import {
-  AVISO_ELIMINADO,
-  BOTON_ELIMINAR_RECORDATORIO,
-  CARGANDO,
-  TITULO_EDITAR,
-} from "./mensajes"
-import { useIdDeRuta } from "./useIdDeRuta"
-import { useDetalle, useEliminar } from "./useRecordatorios"
+import { DialogoEliminarRecordatorio } from "../components/DialogoEliminarRecordatorio"
+import { EnlaceVolver } from "../components/EnlaceVolver"
+import { FormularioCita } from "../components/FormularioCita"
+import { FormularioMedicacion } from "../components/FormularioMedicacion"
+import { AVISO_ELIMINADO, BOTON_ELIMINAR_RECORDATORIO, CARGANDO, TITULO_EDITAR } from "../mensajes"
+import { useDetalle, useEliminar } from "../useRecordatorios"
 
 /** Edición (CU-07 y CU-08): el tipo sale del recordatorio cargado. Desde acá también se elimina. */
 export function EditarRecordatorioPage() {

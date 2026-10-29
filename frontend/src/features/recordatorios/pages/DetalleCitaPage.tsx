@@ -9,10 +9,11 @@ import { buttonVariants } from "@/components/ui/button-variants"
 import { useAviso } from "@/features/avisos/useAviso"
 import { ApiError } from "@/lib/api"
 import { mensajeDeError } from "@/lib/errores"
+import { useIdDeRuta } from "@/lib/useIdDeRuta"
 
-import { DialogoEliminarRecordatorio } from "./DialogoEliminarRecordatorio"
-import { EnlaceVolver } from "./EnlaceVolver"
-import { fechaCompleta, horaDeFechaHora } from "./fechas"
+import { DialogoEliminarRecordatorio } from "../components/DialogoEliminarRecordatorio"
+import { EnlaceVolver } from "../components/EnlaceVolver"
+import { fechaCompleta, horaDeFechaHora } from "../fechas"
 import {
   AVISO_ELIMINADO,
   BOTON_EDITAR,
@@ -25,9 +26,8 @@ import {
   ETIQUETA_INDICACIONES_DETALLE,
   ETIQUETA_LUGAR,
   ETIQUETA_MEDICO,
-} from "./mensajes"
-import { useIdDeRuta } from "./useIdDeRuta"
-import { useCambiarEstado, useDetalle, useEliminar } from "./useRecordatorios"
+} from "../mensajes"
+import { useCambiarEstado, useDetalle, useEliminar } from "../useRecordatorios"
 
 function Dato({ etiqueta, children }: { etiqueta: string; children: string }) {
   return (

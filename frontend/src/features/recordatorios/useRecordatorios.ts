@@ -1,7 +1,9 @@
+import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { format } from "date-fns"
 
 import { useAuth } from "@/features/auth/useAuth"
+import { useAhora } from "@/lib/useAhora"
 
 import {
   agenda,
@@ -14,8 +16,14 @@ import {
   eliminar,
   listar,
 } from "./api"
-import type { DatosCita, DatosMedicacion, EstadoNotificacion, TipoRecordatorio } from "./tipos"
-import { useAhora } from "./useAhora"
+import { anuncioDeshecha, anuncioTomada } from "./mensajes"
+import type {
+  DatosCita,
+  DatosMedicacion,
+  EstadoNotificacion,
+  ItemAgenda,
+  TipoRecordatorio,
+} from "./tipos"
 
 // Todas las consultas del módulo cuelgan de ["recordatorios", idDelUsuario, ...]: así no se
 // mezclan los datos de dos personas que usan el mismo navegador, y después de crear, editar,
@@ -120,4 +128,31 @@ export function useCambiarEstado() {
       cambiarEstado(datos.notificacionId, datos.estado),
     onSuccess: () => clienteConsultas.invalidateQueries({ queryKey: raiz(usuario?.id) }),
   })
+}
+
+/**
+ * Marcar una toma como tomada o deshacerla, desde la Lista o desde el detalle de un día del
+ * Calendario. Además del cambio, deja el aviso para el lector de pantalla (`anuncio`), el
+ * error si falló y el id del aviso que se está guardando (para deshabilitar su botón).
+ */
+export function useCambioDeEstado() {
+  const cambiarEstado = useCambiarEstado()
+  const [anuncio, setAnuncio] = useState("")
+  const [error, setError] = useState<unknown>(null)
+
+  function cambiar(item: ItemAgenda, estado: EstadoNotificacion) {
+    const nombre = item.recordatorio.tipo === "MEDICACION" ? item.recordatorio.nombreMedicamento : ""
+    setError(null)
+    cambiarEstado.mutate(
+      { notificacionId: item.notificacionId, estado },
+      {
+        onSuccess: () => setAnuncio(estado === "TOMADA" ? anuncioTomada(nombre) : anuncioDeshecha(nombre)),
+        onError: (falla) => setError(falla),
+      }
+    )
+  }
+
+  const ocupadoId = cambiarEstado.isPending ? cambiarEstado.variables?.notificacionId : undefined
+
+  return { cambiar, ocupadoId, anuncio, error }
 }

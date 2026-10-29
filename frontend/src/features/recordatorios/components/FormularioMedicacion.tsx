@@ -13,8 +13,7 @@ import { useAviso } from "@/features/avisos/useAviso"
 import { ApiError } from "@/lib/api"
 import { aplicarErroresDeCampos, mensajeDeError } from "@/lib/errores"
 
-import { CampoDuracion } from "./CampoDuracion"
-import { horaDeToma } from "./fechas"
+import { horaDeToma } from "../fechas"
 import {
   AVISO_ACTUALIZADO,
   AVISO_CREADO,
@@ -28,14 +27,12 @@ import {
   ETIQUETA_NOMBRE_MEDICAMENTO,
   GUARDANDO,
   GUARDAR,
-} from "./mensajes"
-import {
-  esquemaMedicacion,
-  FRECUENCIAS,
-  type DatosFormularioMedicacion,
-} from "./schemas"
-import type { Medicacion } from "./tipos"
-import { useGuardarMedicacion } from "./useRecordatorios"
+} from "../mensajes"
+import { esquemaMedicacion, FRECUENCIAS, type DatosFormularioMedicacion } from "../schemas"
+import type { Medicacion } from "../tipos"
+import { useGuardarMedicacion } from "../useRecordatorios"
+
+import { CampoDuracion } from "./CampoDuracion"
 
 // Todos los datos de la medicación que se muestran en el formulario. `fechaInicio` no se pide
 // (CU-07): al crear es hoy y al editar se conserva la que ya tenía.

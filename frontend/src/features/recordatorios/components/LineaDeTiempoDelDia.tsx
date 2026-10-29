@@ -1,6 +1,7 @@
-import type { EstadoNotificacion, ItemAgenda } from "./tipos"
-import { NOMBRE_LINEA_DE_TIEMPO } from "./mensajes"
-import { TarjetaAviso } from "./TarjetaAviso"
+import type { EstadoNotificacion, ItemAgenda } from "../tipos"
+import { NOMBRE_LINEA_DE_TIEMPO } from "../mensajes"
+
+import { TarjetaAviso } from "./Tarjetas"
 
 type Props = {
   /** Los avisos del día. */

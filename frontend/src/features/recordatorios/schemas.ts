@@ -1,7 +1,7 @@
 import { format } from "date-fns"
 import { z } from "zod"
 
-import { ahoraArgentina } from "./fechas"
+import { ahoraArgentina } from "@/lib/fechas"
 import * as M from "./mensajes"
 
 // Esquemas de los dos formularios, con las reglas y los textos de 5.8 del contrato. La API

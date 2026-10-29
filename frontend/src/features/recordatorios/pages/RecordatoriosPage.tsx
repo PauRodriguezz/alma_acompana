@@ -5,14 +5,9 @@ import { Link } from "react-router-dom"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs"
 
-import { CalendarioRecordatorios } from "./CalendarioRecordatorios"
-import { ListaRecordatorios } from "./ListaRecordatorios"
-import {
-  BOTON_NUEVO,
-  PESTANIA_CALENDARIO,
-  PESTANIA_LISTA,
-  TITULO_RECORDATORIOS,
-} from "./mensajes"
+import { CalendarioRecordatorios } from "../components/CalendarioRecordatorios"
+import { ListaRecordatorios } from "../components/ListaRecordatorios"
+import { BOTON_NUEVO, PESTANIA_CALENDARIO, PESTANIA_LISTA, TITULO_RECORDATORIOS } from "../mensajes"
 
 /** Recordatorios: pestañas Lista y Calendario (las pestañas no cambian la URL). */
 export function RecordatoriosPage() {

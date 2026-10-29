@@ -10,10 +10,12 @@ import { ProtectedRoute } from "@/features/auth/ProtectedRoute"
 import { SinPermisoPage } from "@/features/auth/SinPermisoPage"
 import { InicioPage } from "@/features/inicio/InicioPage"
 import { PerfilPage } from "@/features/perfil/PerfilPage"
-import { DetalleCitaPage } from "@/features/recordatorios/DetalleCitaPage"
-import { EditarRecordatorioPage } from "@/features/recordatorios/EditarRecordatorioPage"
-import { NuevoRecordatorioPage } from "@/features/recordatorios/NuevoRecordatorioPage"
-import { RecordatoriosPage } from "@/features/recordatorios/RecordatoriosPage"
+import {
+  DetalleCitaPage,
+  EditarRecordatorioPage,
+  NuevoRecordatorioPage,
+  RecordatoriosPage,
+} from "@/features/recordatorios"
 import { queryClient } from "@/lib/query-client"
 
 function App() {

@@ -1,10 +1,8 @@
 import { Alert } from "@/components/ui/alert"
 import { useAuth } from "@/features/auth/useAuth"
-import { TarjetaParaHoy } from "@/features/recordatorios/TarjetaParaHoy"
-import { useAhora } from "@/features/recordatorios/useAhora"
-import { useCambioDeEstado } from "@/features/recordatorios/useCambioDeEstado"
-import { useAgendaDeHoy } from "@/features/recordatorios/useRecordatorios"
+import { TarjetaParaHoy, useAgendaDeHoy, useCambioDeEstado } from "@/features/recordatorios"
 import { mensajeDeError } from "@/lib/errores"
+import { useAhora } from "@/lib/useAhora"
 
 // Pantalla provisoria: se reemplaza cuando exista el Inicio con el chat.
 // Va dentro de LayoutPersona, que pone el <main> y la navegación; cerrar sesión está en Perfil.

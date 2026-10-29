@@ -13,7 +13,7 @@ import {
   SEMANA_ANTERIOR,
   SEMANA_SIGUIENTE,
   VER_EL_MES,
-} from "./mensajes"
+} from "../mensajes"
 
 const FLECHA =
   "inline-flex size-(--altura-boton) shrink-0 items-center justify-center rounded-md text-heading hover:bg-secondary"

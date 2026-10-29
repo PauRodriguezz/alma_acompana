@@ -12,13 +12,13 @@ import {
 import { es } from "date-fns/locale"
 import { cn } from "cn"
 
+import { hoyArgentina, mayuscula, nombreDelDia } from "@/lib/fechas"
 import { Alert } from "@/components/ui/alert"
 import { Calendar } from "@/components/ui/calendar"
 import { mensajeDeError } from "@/lib/errores"
-import { mayuscula, nombreDelDia } from "@/lib/fechas"
+import { useAhora } from "@/lib/useAhora"
 
-import { fechaCompleta, hoyArgentina } from "./fechas"
-import { LineaDeTiempoDelDia } from "./LineaDeTiempoDelDia"
+import { fechaCompleta } from "../fechas"
 import {
   anuncioMes,
   anuncioSemana,
@@ -27,11 +27,11 @@ import {
   NOMBRE_DIA_CON_CITA,
   SIN_AVISOS_DEL_DIA,
   tituloDelDia,
-} from "./mensajes"
+} from "../mensajes"
+import { useCambioDeEstado, useAgenda } from "../useRecordatorios"
+
+import { LineaDeTiempoDelDia } from "./LineaDeTiempoDelDia"
 import { TiraSemana } from "./TiraSemana"
-import { useAhora } from "./useAhora"
-import { useCambioDeEstado } from "./useCambioDeEstado"
-import { useAgenda } from "./useRecordatorios"
 
 type Modo = "mes" | "semana"
 

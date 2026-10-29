@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { format, parseISO } from "date-fns"
 import { useNavigate } from "react-router-dom"
 
+import { hoyArgentina } from "@/lib/fechas"
 import { CampoArea } from "@/components/alma/campo-area"
 import { CampoTexto } from "@/components/alma/campo-texto"
 import { Alert } from "@/components/ui/alert"
@@ -12,7 +13,6 @@ import { useAviso } from "@/features/avisos/useAviso"
 import { ApiError } from "@/lib/api"
 import { aplicarErroresDeCampos, mensajeDeError } from "@/lib/errores"
 
-import { hoyArgentina } from "./fechas"
 import {
   AVISO_ACTUALIZADO,
   AVISO_CITA_INVALIDA,
@@ -30,10 +30,10 @@ import {
   ETIQUETA_TITULO,
   GUARDANDO,
   GUARDAR,
-} from "./mensajes"
-import { esquemaCita, type DatosFormularioCita } from "./schemas"
-import type { Cita } from "./tipos"
-import { useGuardarCita } from "./useRecordatorios"
+} from "../mensajes"
+import { esquemaCita, type DatosFormularioCita } from "../schemas"
+import type { Cita } from "../tipos"
+import { useGuardarCita } from "../useRecordatorios"
 
 const CAMPOS = ["titulo", "especialidad", "medico", "lugar", "fecha", "hora", "indicacionesPrevias"] as const
 // La API junta fecha y hora en un solo campo: su error se muestra en el campo "Fecha".

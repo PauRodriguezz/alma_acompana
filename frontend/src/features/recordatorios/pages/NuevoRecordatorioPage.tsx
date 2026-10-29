@@ -5,16 +5,11 @@ import { MedicineBottle01Icon, Stethoscope02Icon } from "@hugeicons/core-free-ic
 import { RadioGroup } from "@/components/ui/radio-group"
 import { OpcionRadio } from "@/components/alma/opcion-radio"
 
-import { EnlaceVolver } from "./EnlaceVolver"
-import { FormularioCita } from "./FormularioCita"
-import { FormularioMedicacion } from "./FormularioMedicacion"
-import {
-  BOTON_NUEVO,
-  OPCION_CITA,
-  OPCION_MEDICACION,
-  TIPO_DE_RECORDATORIO,
-} from "./mensajes"
-import type { TipoRecordatorio } from "./tipos"
+import { EnlaceVolver } from "../components/EnlaceVolver"
+import { FormularioCita } from "../components/FormularioCita"
+import { FormularioMedicacion } from "../components/FormularioMedicacion"
+import { BOTON_NUEVO, OPCION_CITA, OPCION_MEDICACION, TIPO_DE_RECORDATORIO } from "../mensajes"
+import type { TipoRecordatorio } from "../tipos"
 
 const PASTILLA =
   "min-h-(--altura-boton) flex-row items-center justify-center gap-2 rounded-full px-3 py-3 sm:px-5 font-heading text-button font-medium"

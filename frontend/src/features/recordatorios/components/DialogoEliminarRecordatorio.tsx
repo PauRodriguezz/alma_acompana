@@ -7,7 +7,7 @@ import {
   ELIMINAR_CANCELAR,
   ELIMINAR_CONFIRMAR,
   ELIMINAR_PREGUNTA,
-} from "./mensajes"
+} from "../mensajes"
 
 /**
  * Confirmación antes de eliminar un recordatorio (CU-07 y CU-08; contrato, 8.1). Recibe como
