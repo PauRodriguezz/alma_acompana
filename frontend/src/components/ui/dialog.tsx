@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 // Diálogo del Figma: radio 24 px y ancho --dialog-width (340 en celular, 560 en escritorio).
 // Base UI se ocupa de lo accesible: role="dialog" con el título como nombre, foco atrapado
@@ -78,7 +78,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("font-heading text-h1 font-medium text-heading", className)}
+      className={cn("font-heading font-medium text-heading", className)}
       {...props}
     />
   )

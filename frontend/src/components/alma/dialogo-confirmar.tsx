@@ -1,7 +1,6 @@
 import { useState } from "react"
 import type * as React from "react"
 
-import { tamanioTextoBoton } from "@/components/alma/estilos"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -74,12 +73,11 @@ export function DialogoConfirmar({
           ) : null}
         </DialogHeader>
         <DialogFooter className="border-t-0 pt-2 sm:flex-row sm:flex-wrap sm:justify-end">
-          <DialogClose render={<Button variant="outline" className={tamanioTextoBoton} />}>
+          <DialogClose render={<Button variant="outline" />}>
             Cancelar
           </DialogClose>
           <Button
             variant={variante}
-            className={tamanioTextoBoton}
             onClick={confirmar}
             disabled={procesando}
           >

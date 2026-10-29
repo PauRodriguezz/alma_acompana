@@ -7,7 +7,6 @@ import { Delete02Icon, PencilEdit02Icon } from "@hugeicons/core-free-icons"
 
 import { DialogoConfirmar } from "@/components/alma/dialogo-confirmar"
 import { Alert } from "@/components/ui/alert"
-import { tamanioTextoBoton } from "@/components/alma/estilos"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
@@ -20,11 +19,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { AvisoExito } from "@/features/admin/AvisoExito"
-import { useAvisoExito } from "@/features/admin/aviso"
+import { useAviso } from "@/features/avisos/useAviso"
 import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
-import { mensajeDeError } from "@/features/admin/errores"
-import { estiloBotonIcono } from "@/features/admin/estilos"
+import { mensajeDeError } from "@/lib/errores"
+import { estiloBotonIcono } from "@/components/alma/estilos"
 
 import {
   CLAVES_MICROCAPSULAS,
@@ -34,6 +32,29 @@ import {
 } from "./api"
 import { EtiquetaCategoriaMicrocapsula } from "./EtiquetaCategoriaMicrocapsula"
 import type { MicrocapsulaResumen } from "./tipos"
+import {
+  ACCION_EDITAR,
+  ACCION_PROBAR_DE_NUEVO,
+  COLUMNA_ACCIONES,
+  ESTADO_CARGANDO,
+  ETIQUETA_CATEGORIA,
+} from "@/lib/mensajes"
+import { ADMIN_MICROCAPSULAS, ADMIN_PANEL } from "@/features/admin/mensajes"
+import {
+  AVISO_DADA_DE_BAJA,
+  BAJA_CONFIRMAR,
+  BAJA_DESCRIPCION,
+  BAJA_TITULO,
+  COLUMNA_PUBLICADA,
+  COLUMNA_TITULO,
+  DAR_DE_BAJA,
+  NUEVA_MICROCAPSULA,
+  PUBLICADA,
+  TABLA_DESCRIPCION,
+  VACIO_SIN_MICROCAPSULAS,
+  ariaDarDeBaja,
+  ariaEditar,
+} from "./mensajes"
 
 const RUTA_LISTA = "/admin/microcapsulas"
 
@@ -52,9 +73,9 @@ type DialogoBajaProps = {
 function DialogoBaja({ microcapsula, alConfirmar, disparador }: DialogoBajaProps) {
   return (
     <DialogoConfirmar
-      titulo="¿Dar de baja esta microcápsula?"
-      descripcion="Los usuarios que la guardaron como favorita seguirán viéndola."
-      textoConfirmar="Sí, dar de baja"
+      titulo={BAJA_TITULO}
+      descripcion={BAJA_DESCRIPCION}
+      textoConfirmar={BAJA_CONFIRMAR}
       variante="destructive"
       alConfirmar={() => alConfirmar(microcapsula.id)}
       disparador={disparador}
@@ -69,7 +90,7 @@ function DialogoBaja({ microcapsula, alConfirmar, disparador }: DialogoBajaProps
 export function MicrocapsulasPage() {
   const clienteConsultas = useQueryClient()
   const lista = useQuery({ queryKey: CLAVES_MICROCAPSULAS.lista, queryFn: listarMicrocapsulas })
-  const [aviso, mostrarAviso] = useAvisoExito()
+  const { avisar } = useAviso()
   const [errorBaja, setErrorBaja] = useState<string | null>(null)
 
   const baja = useMutation({
@@ -77,7 +98,7 @@ export function MicrocapsulasPage() {
     onMutate: () => setErrorBaja(null),
     onSuccess: async () => {
       await refrescarMicrocapsulas(clienteConsultas)
-      mostrarAviso("La microcápsula fue dada de baja.")
+      avisar(AVISO_DADA_DE_BAJA)
     },
     onError: (e) => setErrorBaja(mensajeDeError(e)),
   })
@@ -87,49 +108,47 @@ export function MicrocapsulasPage() {
   return (
     <>
       <EncabezadoPagina
-        titulo="Microcápsulas"
-        migas={[{ texto: "Panel de operador", a: "/admin" }, { texto: "Microcápsulas" }]}
+        titulo={ADMIN_MICROCAPSULAS}
+        migas={[{ texto: ADMIN_PANEL, a: "/admin" }, { texto: ADMIN_MICROCAPSULAS }]}
         accion={
           <Link to={`${RUTA_LISTA}/nueva`} className={buttonVariants()}>
-            Nueva microcápsula
+            {NUEVA_MICROCAPSULA}
           </Link>
         }
       />
 
-      <AvisoExito aviso={aviso} />
       {errorBaja ? <Alert variant="error">{errorBaja}</Alert> : null}
 
       {lista.isPending ? (
-        <p role="status">Cargando…</p>
+        <p role="status">{ESTADO_CARGANDO}</p>
       ) : lista.isError ? (
         <Alert variant="error">
           <div className="flex flex-col items-start gap-3">
             <p>{mensajeDeError(lista.error)}</p>
             <Button
               variant="outline"
-              className={tamanioTextoBoton}
               onClick={() => lista.refetch()}
             >
-              Probar de nuevo
+              {ACCION_PROBAR_DE_NUEVO}
             </Button>
           </div>
         </Alert>
       ) : lista.data.length === 0 ? (
         <Card>
-          <p>Todavía no hay microcápsulas.</p>
+          <p>{VACIO_SIN_MICROCAPSULAS}</p>
         </Card>
       ) : (
         <>
           {/* Contenido ancho (desde 42rem, crece con la letra): tabla */}
           <Card className="hidden px-6 py-3 @2xl:flex">
             <Table>
-              <TableCaption className="sr-only">Microcápsulas publicadas</TableCaption>
+              <TableCaption className="sr-only">{TABLA_DESCRIPCION}</TableCaption>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Título</TableHead>
-                  <TableHead>Categoría</TableHead>
-                  <TableHead>Publicada</TableHead>
-                  <TableHead>Acciones</TableHead>
+                  <TableHead>{COLUMNA_TITULO}</TableHead>
+                  <TableHead>{ETIQUETA_CATEGORIA}</TableHead>
+                  <TableHead>{COLUMNA_PUBLICADA}</TableHead>
+                  <TableHead>{COLUMNA_ACCIONES}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -144,7 +163,7 @@ export function MicrocapsulasPage() {
                       <div className="flex gap-4">
                         <Link
                           to={`${RUTA_LISTA}/${m.id}/editar`}
-                          aria-label={`Editar microcápsula: ${m.titulo}`}
+                          aria-label={ariaEditar(m.titulo)}
                           className={`${estiloBotonIcono} text-heading`}
                         >
                           <HugeiconsIcon icon={PencilEdit02Icon} aria-hidden="true" />
@@ -155,7 +174,7 @@ export function MicrocapsulasPage() {
                           disparador={
                             <button
                               type="button"
-                              aria-label={`Dar de baja microcápsula: ${m.titulo}`}
+                              aria-label={ariaDarDeBaja(m.titulo)}
                               className={`${estiloBotonIcono} text-destructive`}
                             >
                               <HugeiconsIcon icon={Delete02Icon} aria-hidden="true" />
@@ -179,15 +198,15 @@ export function MicrocapsulasPage() {
                     {m.titulo}
                   </h2>
                   <EtiquetaCategoriaMicrocapsula categoria={m.categoria} />
-                  <p>Publicada: {fecha(m.fechaPublicacion)}</p>
+                  <p>{PUBLICADA} {fecha(m.fechaPublicacion)}</p>
                   <div className="flex flex-wrap gap-3">
                     <Link
                       to={`${RUTA_LISTA}/${m.id}/editar`}
-                      aria-label={`Editar microcápsula: ${m.titulo}`}
+                      aria-label={ariaEditar(m.titulo)}
                       className={buttonVariants({ variant: "outline" })}
                     >
                       <HugeiconsIcon icon={PencilEdit02Icon} className="size-6" aria-hidden="true" />
-                      Editar
+                      {ACCION_EDITAR}
                     </Link>
                     <DialogoBaja
                       microcapsula={m}
@@ -195,15 +214,14 @@ export function MicrocapsulasPage() {
                       disparador={
                         <Button
                           variant="outline"
-                          className={tamanioTextoBoton}
-                          aria-label={`Dar de baja microcápsula: ${m.titulo}`}
+                          aria-label={ariaDarDeBaja(m.titulo)}
                         >
                           <HugeiconsIcon
                             icon={Delete02Icon}
                             className="size-6 text-destructive"
                             aria-hidden="true"
                           />
-                          Dar de baja
+                          {DAR_DE_BAJA}
                         </Button>
                       }
                     />

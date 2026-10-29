@@ -4,18 +4,24 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { ImageUpload01Icon } from "@hugeicons/core-free-icons"
 
 import { MensajeError } from "@/components/alma/mensaje-error"
-import { tamanioTextoBoton } from "@/components/alma/estilos"
 import { Button } from "@/components/ui/button"
 import { ApiError, api } from "@/lib/api"
+import {
+  CAMPO_OPCIONAL,
+  IMAGEN_CAMBIAR,
+  IMAGEN_ELEGIR,
+  IMAGEN_MUY_PESADA,
+  IMAGEN_QUITAR,
+  IMAGEN_SUBIENDO,
+  IMAGEN_TIPO_INVALIDO,
+  MENSAJE_ALGO_SALIO_MAL,
+  MENSAJE_SIN_CONEXION,
+} from "@/lib/mensajes"
 
 // Reglas de la subida (contrato del panel, sección 3.4). El back las vuelve a controlar
 // mirando el contenido real del archivo; acá solo se avisa antes de subir.
 const TIPOS_PERMITIDOS = ["image/jpeg", "image/png", "image/webp"]
 const TAMANIO_MAXIMO = 2 * 1024 * 1024
-const TEXTO_TIPO = "La imagen tiene que ser JPG, PNG o WEBP."
-const TEXTO_TAMANIO = "La imagen no puede pesar más de 2 MB."
-const TEXTO_CONEXION = "No pudimos conectarnos. Probá de nuevo en un rato."
-const TEXTO_GENERICO = "Algo salió mal. Probá de nuevo en un rato."
 
 function subirImagen(archivo: File): Promise<{ ruta: string }> {
   const datos = new FormData()
@@ -47,7 +53,7 @@ type SubirImagenProps = {
  */
 export function SubirImagen({
   etiqueta,
-  textoBoton = "Elegir imagen",
+  textoBoton = IMAGEN_ELEGIR,
   valor,
   alCambiar,
   textoAlternativo,
@@ -64,9 +70,9 @@ export function SubirImagen({
     mutationFn: subirImagen,
     onSuccess: (respuesta) => alCambiar(respuesta.ruta),
     onError: (e) => {
-      if (e instanceof ApiError && e.status === 0) setErrorLocal(TEXTO_CONEXION)
-      else if (e instanceof ApiError) setErrorLocal(e.detalle ?? TEXTO_GENERICO)
-      else setErrorLocal(TEXTO_GENERICO)
+      if (e instanceof ApiError && e.status === 0) setErrorLocal(MENSAJE_SIN_CONEXION)
+      else if (e instanceof ApiError) setErrorLocal(e.detalle ?? MENSAJE_ALGO_SALIO_MAL)
+      else setErrorLocal(MENSAJE_ALGO_SALIO_MAL)
     },
   })
 
@@ -77,11 +83,11 @@ export function SubirImagen({
     if (!archivo) return
     setErrorLocal(null)
     if (!TIPOS_PERMITIDOS.includes(archivo.type)) {
-      setErrorLocal(TEXTO_TIPO)
+      setErrorLocal(IMAGEN_TIPO_INVALIDO)
       return
     }
     if (archivo.size > TAMANIO_MAXIMO) {
-      setErrorLocal(TEXTO_TAMANIO)
+      setErrorLocal(IMAGEN_MUY_PESADA)
       return
     }
     subida.mutate(archivo)
@@ -100,7 +106,7 @@ export function SubirImagen({
     <div role="group" aria-labelledby={idEtiqueta} className="flex flex-col gap-2">
       <span id={idEtiqueta} className="text-label font-semibold">
         {etiqueta}
-        <span className="font-normal text-muted-foreground"> (opcional)</span>
+        <span className="font-normal text-muted-foreground">{CAMPO_OPCIONAL}</span>
       </span>
 
       <input
@@ -131,11 +137,11 @@ export function SubirImagen({
           className="inline-flex min-h-(--altura-boton) cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-heading px-4 py-2 text-label font-semibold text-heading transition-colors hover:bg-outline-hover disabled:cursor-not-allowed disabled:border-input disabled:text-disabled-foreground"
         >
           <HugeiconsIcon icon={ImageUpload01Icon} className="size-6 shrink-0" aria-hidden="true" />
-          {subiendo ? "Subiendo imagen…" : valor ? "Cambiar imagen" : textoBoton}
+          {subiendo ? IMAGEN_SUBIENDO : valor ? IMAGEN_CAMBIAR : textoBoton}
         </button>
         {valor && !subiendo ? (
-          <Button variant="outline" className={tamanioTextoBoton} onClick={quitar}>
-            Quitar imagen
+          <Button variant="outline" onClick={quitar}>
+            {IMAGEN_QUITAR}
           </Button>
         ) : null}
       </div>
@@ -143,7 +149,7 @@ export function SubirImagen({
       {/* Siempre presente: anuncia el resultado de la subida (también los errores). */}
       <div aria-live="polite">
         {mensaje ? <MensajeError id={idError}>{mensaje}</MensajeError> : null}
-        {subiendo ? <p className="sr-only">Subiendo imagen…</p> : null}
+        {subiendo ? <p className="sr-only">{IMAGEN_SUBIENDO}</p> : null}
       </div>
     </div>
   )

@@ -9,15 +9,14 @@ import { CampoTexto } from "@/components/alma/campo-texto"
 import { SelectorChips } from "@/components/alma/selector-chips"
 import { SubirImagen } from "@/components/alma/subir-imagen"
 import { Alert } from "@/components/ui/alert"
-import { tamanioTextoBoton } from "@/components/alma/estilos"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
-import { conAviso } from "@/features/admin/aviso"
 import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
-import { mensajeDeError } from "@/features/admin/errores"
-import { hoyEnArgentina } from "@/features/admin/fechas"
+import { mensajeDeError } from "@/lib/errores"
+import { hoyArgentina } from "@/lib/fechas"
 import { CATEGORIAS_MICROCAPSULA, TEXTO_CATEGORIA_MICROCAPSULA } from "@/features/admin/etiquetas"
+import { useAviso } from "@/features/avisos/useAviso"
 import { ApiError } from "@/lib/api"
 
 import {
@@ -33,8 +32,34 @@ import {
   TEXTO_REVISAR,
   type DatosMicrocapsula,
   type EntradaMicrocapsula,
-} from "./esquema"
+} from "./schemas"
 import { VistaPreviaMicrocapsula } from "./VistaPreviaMicrocapsula"
+import {
+  ACCION_CANCELAR,
+  ACCION_GUARDANDO,
+  ESTADO_CARGANDO,
+  ETIQUETA_CATEGORIA,
+  MENSAJE_NO_ENCONTRADO,
+} from "@/lib/mensajes"
+import { ADMIN_MICROCAPSULAS, ADMIN_PANEL } from "@/features/admin/mensajes"
+import {
+  AVISO_ACTUALIZADA,
+  AVISO_PUBLICADA,
+  AVISO_SE_PUBLICA,
+  BOTON_GUARDAR,
+  EJEMPLO_TEXTO,
+  EJEMPLO_TITULO,
+  ETIQUETA_FECHA_PUBLICACION,
+  ETIQUETA_IMAGEN,
+  ETIQUETA_TEXTO,
+  ETIQUETA_TITULO,
+  IMAGEN_ALTERNATIVO,
+  MIGA_EDITAR,
+  MIGA_NUEVA,
+  NUEVA_MICROCAPSULA,
+  TITULO_EDITAR,
+  VOLVER_A_MICROCAPSULAS,
+} from "./mensajes"
 
 const RUTA_LISTA = "/admin/microcapsulas"
 const CAMPOS: (keyof EntradaMicrocapsula)[] = [
@@ -67,6 +92,7 @@ type FormularioMicrocapsulaProps = {
 function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
   const navigate = useNavigate()
   const clienteConsultas = useQueryClient()
+  const { avisar } = useAviso()
   const refFranja = useRef<HTMLDivElement>(null)
   const [franja, setFranja] = useState<Franja | null>(null)
 
@@ -102,12 +128,10 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
       id === undefined ? crearMicrocapsula(datos) : editarMicrocapsula(id, datos),
     onSuccess: async () => {
       await refrescarMicrocapsulas(clienteConsultas)
-      navigate(
-        RUTA_LISTA,
-        conAviso(
-          id === undefined ? "La microcápsula fue publicada." : "La microcápsula fue actualizada."
-        )
+      avisar(
+        id === undefined ? AVISO_PUBLICADA : AVISO_ACTUALIZADA
       )
+      navigate(RUTA_LISTA)
     },
     onError: (e) => {
       mostrarFranja(mensajeDeError(e))
@@ -143,14 +167,14 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
       <div className="grid items-start gap-6 @3xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Card className="@container gap-5">
           <CampoTexto
-            label="Título"
-            placeholder="Por ejemplo: Dormir mejor"
+            label={ETIQUETA_TITULO}
+            placeholder={EJEMPLO_TITULO}
             error={errors.titulo?.message}
             {...register("titulo")}
           />
           <CampoAreaTexto
-            label="Texto"
-            placeholder="Escribí la lectura completa"
+            label={ETIQUETA_TEXTO}
+            placeholder={EJEMPLO_TEXTO}
             rows={6}
             error={errors.texto?.message}
             {...register("texto")}
@@ -160,7 +184,7 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
             name="categoria"
             render={({ field }) => (
               <SelectorChips
-                etiqueta="Categoría"
+                etiqueta={ETIQUETA_CATEGORIA}
                 opciones={OPCIONES_CATEGORIA}
                 valor={field.value}
                 alCambiar={field.onChange}
@@ -174,24 +198,24 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
               name="imagen"
               render={({ field }) => (
                 <SubirImagen
-                  etiqueta="Imagen"
+                  etiqueta={ETIQUETA_IMAGEN}
                   valor={field.value}
                   alCambiar={field.onChange}
-                  textoAlternativo={titulo.trim() || "Imagen de la microcápsula"}
+                  textoAlternativo={titulo.trim() || IMAGEN_ALTERNATIVO}
                   error={errors.imagen?.message}
                 />
               )}
             />
             <CampoTexto
-              label="Fecha de publicación"
+              label={ETIQUETA_FECHA_PUBLICACION}
               type="date"
-              max={hoyEnArgentina()}
+              max={hoyArgentina()}
               error={errors.fechaPublicacion?.message}
               {...register("fechaPublicacion")}
             />
           </div>
           <Alert variant="info" role="note">
-            Se publica apenas la guardás. No queda como borrador.
+            {AVISO_SE_PUBLICA}
           </Alert>
         </Card>
 
@@ -200,10 +224,10 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
 
       <div className="flex flex-wrap justify-end gap-3">
         <Link to={RUTA_LISTA} className={buttonVariants({ variant: "outline" })}>
-          Cancelar
+          {ACCION_CANCELAR}
         </Link>
-        <Button type="submit" className={tamanioTextoBoton} disabled={guardar.isPending}>
-          {guardar.isPending ? "Guardando…" : "Guardar y publicar"}
+        <Button type="submit" disabled={guardar.isPending}>
+          {guardar.isPending ? ACCION_GUARDANDO : BOTON_GUARDAR}
         </Button>
       </div>
     </form>
@@ -223,14 +247,14 @@ export function MicrocapsulaFormPage() {
     enabled: editando && idValido,
   })
 
-  const titulo = editando ? "Editar microcápsula" : "Nueva microcápsula"
+  const titulo = editando ? TITULO_EDITAR : NUEVA_MICROCAPSULA
   const encabezado = (
     <EncabezadoPagina
       titulo={titulo}
       migas={[
-        { texto: "Panel de operador", a: "/admin" },
-        { texto: "Microcápsulas", a: RUTA_LISTA },
-        { texto: editando ? "Editar" : "Nueva" },
+        { texto: ADMIN_PANEL, a: "/admin" },
+        { texto: ADMIN_MICROCAPSULAS, a: RUTA_LISTA },
+        { texto: editando ? MIGA_EDITAR : MIGA_NUEVA },
       ]}
     />
   )
@@ -245,7 +269,7 @@ export function MicrocapsulaFormPage() {
             texto: "",
             categoria: undefined,
             imagen: null,
-            fechaPublicacion: hoyEnArgentina(),
+            fechaPublicacion: hoyArgentina(),
           }}
         />
       </>
@@ -258,9 +282,9 @@ export function MicrocapsulaFormPage() {
         {encabezado}
         <Alert variant="error">
           <div className="flex flex-col items-start gap-3">
-            <p>{idValido ? mensajeDeError(detalle.error) : "No encontramos lo que buscás."}</p>
+            <p>{idValido ? mensajeDeError(detalle.error) : MENSAJE_NO_ENCONTRADO}</p>
             <Link to={RUTA_LISTA} className={buttonVariants({ variant: "outline" })}>
-              Volver a microcápsulas
+              {VOLVER_A_MICROCAPSULAS}
             </Link>
           </div>
         </Alert>
@@ -272,7 +296,7 @@ export function MicrocapsulaFormPage() {
     return (
       <>
         {encabezado}
-        <p role="status">Cargando…</p>
+        <p role="status">{ESTADO_CARGANDO}</p>
       </>
     )
   }

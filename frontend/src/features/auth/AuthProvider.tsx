@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "react-router-dom"
 
 import {
@@ -16,6 +17,7 @@ import { AuthContext, type AuthContextValor } from "./auth-context"
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
+  const clienteConsultas = useQueryClient()
   // El token se lee una sola vez al montar: de esa lectura salen tanto `cargando` como la
   // decisión de consultar /api/auth/me, así que nunca pueden contradecirse.
   const [tokenInicial] = useState(() => leerToken())
@@ -53,20 +55,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [tokenInicial])
 
+  // Único lugar donde se cierra la sesión (persona o administrador, a pedido o por un 401).
+  const logout = useCallback(() => {
+    borrarToken()
+    setToken(null)
+    setUsuario(null)
+    // Las preferencias no vuelven a los valores por defecto: queda lo del dispositivo.
+    marcarTocadas(false)
+    // Se borran los datos guardados: la próxima cuenta que entre no ve datos de la anterior.
+    clienteConsultas.clear()
+  }, [clienteConsultas])
+
   // Un 401 con token guardado (api.ts ya lo borró): vuelve a /login con el aviso.
   useEffect(
     () =>
       registrarSesionVencida(() => {
-        setToken(null)
-        setUsuario(null)
-        // Las preferencias no vuelven a los valores por defecto: queda lo del dispositivo.
-        marcarTocadas(false)
+        logout()
         navigate("/login", {
           replace: true,
           state: { aviso: MENSAJE_SESION_VENCIDA },
         })
       }),
-    [navigate]
+    [logout, navigate]
   )
 
   const login = useCallback<AuthContextValor["login"]>(
@@ -92,14 +102,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     []
   )
-
-  const logout = useCallback(() => {
-    borrarToken()
-    setToken(null)
-    setUsuario(null)
-    // Las preferencias no vuelven a los valores por defecto: queda lo del dispositivo.
-    marcarTocadas(false)
-  }, [])
 
   const valor = useMemo<AuthContextValor>(
     () => ({ token, usuario, rol: usuario?.rol ?? null, cargando, login, logout }),

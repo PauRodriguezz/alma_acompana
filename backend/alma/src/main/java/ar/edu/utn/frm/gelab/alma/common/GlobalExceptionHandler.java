@@ -60,7 +60,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 MensajesError.NO_ENCONTRADO, request);
     }
 
-    /** 400 de reglas validadas en un servicio: detail propio del caso de uso y la lista "errores". */
+    /**
+     * 400 por una regla que Bean Validation no expresa, validada en un servicio: el detail es el mensaje
+     * de la excepción (el del caso de uso o el general) y lleva la lista "errores".
+     */
     @ExceptionHandler(DatosInvalidosException.class)
     public ProblemDetail datosInvalidos(DatosInvalidosException ex, HttpServletRequest request) {
         ProblemDetail problema = problema(HttpStatus.BAD_REQUEST, MensajesError.TITULO_DATOS_INVALIDOS,

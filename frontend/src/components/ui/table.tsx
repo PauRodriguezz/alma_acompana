@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 // Tabla del Figma (Operador · Ejercicios y Microcápsulas): encabezados en label semibold
 // muted-foreground, filas separadas por una línea border, 12 px arriba y abajo y 16 px

@@ -7,9 +7,17 @@ import {
   PuzzleIcon,
   UserIcon,
 } from "@hugeicons/core-free-icons"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
-import { DialogoCerrarSesion } from "./DialogoCerrarSesion"
+import { DialogoCerrarSesion } from "@/features/auth/DialogoCerrarSesion"
+import { CERRAR_SESION } from "@/lib/mensajes"
+import {
+  ADMIN_EJERCICIOS,
+  ADMIN_MENU_NAVEGACION,
+  ADMIN_MENU_PANEL,
+  ADMIN_MICROCAPSULAS,
+  ADMIN_PERFIL,
+} from "./mensajes"
 
 // Ítem del menú lateral del Figma (40:321): 56 px de alto, ícono de 28 px, label semibold.
 // Activo: fondo accent-soft y una barra accent de 5 px a la izquierda (no solo color).
@@ -22,10 +30,10 @@ const estiloItemActivo =
 // Íconos: el Figma usa el mismo para Ejercicios y Microcápsulas; acá cada sección tiene el
 // suyo para distinguirlas mejor. Perfil no está en el Figma (contrato, sección 1).
 const ITEMS = [
-  { a: "/admin", texto: "Panel", icono: Home01Icon, exacto: true },
-  { a: "/admin/ejercicios", texto: "Ejercicios", icono: PuzzleIcon, exacto: false },
-  { a: "/admin/microcapsulas", texto: "Microcápsulas", icono: BookOpen01Icon, exacto: false },
-  { a: "/admin/perfil", texto: "Perfil", icono: UserIcon, exacto: false },
+  { a: "/admin", texto: ADMIN_MENU_PANEL, icono: Home01Icon, exacto: true },
+  { a: "/admin/ejercicios", texto: ADMIN_EJERCICIOS, icono: PuzzleIcon, exacto: false },
+  { a: "/admin/microcapsulas", texto: ADMIN_MICROCAPSULAS, icono: BookOpen01Icon, exacto: false },
+  { a: "/admin/perfil", texto: ADMIN_PERFIL, icono: UserIcon, exacto: false },
 ]
 
 /**
@@ -36,7 +44,7 @@ const ITEMS = [
 export function MenuAdmin({ alNavegar }: { alNavegar?: () => void }) {
   return (
     <div className="flex flex-1 flex-col gap-6">
-      <nav aria-label="Menú del panel">
+      <nav aria-label={ADMIN_MENU_NAVEGACION}>
         <ul className="flex flex-col gap-2">
           {ITEMS.map((item) => (
             <li key={item.a}>
@@ -58,7 +66,7 @@ export function MenuAdmin({ alNavegar }: { alNavegar?: () => void }) {
           disparador={
             <button type="button" className={cn(estiloItemMenu, "cursor-pointer")}>
               <HugeiconsIcon icon={Logout03Icon} className="size-7 shrink-0" aria-hidden="true" />
-              <span>Cerrar sesión</span>
+              <span>{CERRAR_SESION}</span>
             </button>
           }
         />

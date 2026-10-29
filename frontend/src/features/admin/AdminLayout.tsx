@@ -1,19 +1,26 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Outlet } from "react-router-dom"
-import { useQueryClient } from "@tanstack/react-query"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Menu01Icon } from "@hugeicons/core-free-icons"
 
 import marcaAlma from "@/assets/alma-marca.svg"
 import { BotonAccesibilidad } from "@/components/alma/boton-accesibilidad"
-import { tamanioTextoBoton } from "@/components/alma/estilos"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { AvisoProvider } from "@/features/avisos/AvisoProvider"
 
 import { MenuAdmin } from "./MenuAdmin"
+import {
+  ADMIN_CERRAR_MENU,
+  ADMIN_MARCA,
+  ADMIN_MENU,
+  ADMIN_PANEL,
+  ADMIN_SALTAR_AL_CONTENIDO,
+  ADMIN_TITULO_APP,
+} from "./mensajes"
 
 // Título de la pestaña fuera del panel (el de index.html)
-const TITULO_APP = "Alma Acompaña"
+const TITULO_APP = ADMIN_TITULO_APP
 
 /**
  * Marca del Figma (40:316): avatar de Alma, "Alma" en h2-desktop y "Panel de operador".
@@ -29,8 +36,8 @@ function Marca({ compacta = false }: { compacta?: boolean }) {
         className={`size-12 shrink-0 ${compacta ? "hidden sm:block" : ""}`}
       />
       <div className="flex min-w-0 flex-col">
-        <span className="font-heading text-h2-desktop font-medium text-heading">Alma</span>
-        <span className="text-caption text-muted-foreground">Panel de operador</span>
+        <span className="font-heading text-h2-desktop font-medium text-heading">{ADMIN_MARCA}</span>
+        <span className="text-caption text-muted-foreground">{ADMIN_PANEL}</span>
       </div>
     </div>
   )
@@ -46,25 +53,25 @@ function Marca({ compacta = false }: { compacta?: boolean }) {
  */
 export function AdminLayout() {
   const [menuAbierto, setMenuAbierto] = useState(false)
-  const clienteConsultas = useQueryClient()
+  const contenidoRef = useRef<HTMLElement>(null)
 
-  // Al salir del panel (cerrar sesión o sesión vencida) se borran los datos guardados, así
-  // la próxima cuenta que entre no ve datos de la anterior, y la pestaña vuelve a su título.
+  // Al salir del panel la pestaña vuelve a su título. Los datos guardados se borran en el
+  // logout de AuthProvider.
   useEffect(
     () => () => {
-      clienteConsultas.clear()
       document.title = TITULO_APP
     },
-    [clienteConsultas]
+    []
   )
 
   return (
+    <AvisoProvider contenidoRef={contenidoRef} posicion="panel">
     <div className="min-h-dvh lg:flex">
       <a
         href="#contenido"
         className="sr-only z-50 rounded-md bg-card px-4 py-3 font-semibold text-heading focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
       >
-        Saltar al contenido
+        {ADMIN_SALTAR_AL_CONTENIDO}
       </a>
 
       <BotonAccesibilidad />
@@ -80,13 +87,13 @@ export function AdminLayout() {
       {/* Celular: barra superior. A la derecha queda lugar para el botón de accesibilidad. */}
       <header className="flex items-center gap-3 border-b-2 border-border bg-secondary py-3 pr-[calc(var(--page-x)+calc(56rem/17))] pl-(--page-x) lg:hidden">
         <Sheet open={menuAbierto} onOpenChange={setMenuAbierto}>
-          <SheetTrigger render={<Button variant="outline" className={`mb-0 ${tamanioTextoBoton}`} />}>
+          <SheetTrigger render={<Button variant="outline" className="mb-0" />}>
             <HugeiconsIcon icon={Menu01Icon} className="size-6" aria-hidden="true" />
-            Menú
+            {ADMIN_MENU}
           </SheetTrigger>
-          <SheetContent side="left" textoCerrar="Cerrar menú" className="px-4 pb-6">
+          <SheetContent side="left" textoCerrar={ADMIN_CERRAR_MENU} className="px-4 pb-6">
             <SheetHeader className="px-2">
-              <SheetTitle>Menú</SheetTitle>
+              <SheetTitle>{ADMIN_MENU}</SheetTitle>
             </SheetHeader>
             <MenuAdmin alNavegar={() => setMenuAbierto(false)} />
           </SheetContent>
@@ -95,6 +102,7 @@ export function AdminLayout() {
       </header>
 
       <main
+        ref={contenidoRef}
         id="contenido"
         tabIndex={-1}
         className="min-w-0 flex-1 px-(--page-x) pt-(--page-top) pb-24 outline-none"
@@ -106,5 +114,6 @@ export function AdminLayout() {
         </div>
       </main>
     </div>
+    </AvisoProvider>
   )
 }

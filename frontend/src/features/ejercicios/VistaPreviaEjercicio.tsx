@@ -6,7 +6,15 @@ import { Card } from "@/components/ui/card"
 import type { CategoriaEjercicio, FormatoEjercicio } from "@/features/admin/etiquetas"
 
 import { EtiquetaCategoriaEjercicio } from "./EtiquetaCategoriaEjercicio"
-import type { OpcionFormulario } from "./esquema"
+import type { OpcionFormulario } from "./schemas"
+import { ADMIN_VISTA_PREVIA } from "@/features/admin/mensajes"
+import {
+  PREVIA_CONSIGNA,
+  PREVIA_CORRECTA,
+  PREVIA_ORDENAR,
+  PREVIA_TEXTO_A_MEMORIZAR,
+  TEXTOS_ELEMENTO,
+} from "./mensajes"
 
 type VistaPreviaEjercicioProps = {
   categoria: CategoriaEjercicio | undefined
@@ -51,7 +59,7 @@ export function VistaPreviaEjercicio({
   return (
     <section aria-labelledby={id} className="flex flex-col gap-2">
       <h2 id={id} className="font-sans text-body font-bold text-foreground">
-        Así lo ve la persona
+        {ADMIN_VISTA_PREVIA}
       </h2>
       <Card className="items-stretch gap-3">
         {categoria ? (
@@ -60,14 +68,14 @@ export function VistaPreviaEjercicio({
           </div>
         ) : null}
         <h3 className="wrap-break-word">
-          {consigna.trim() || "Acá aparece la consigna que escribas."}
+          {consigna.trim() || PREVIA_CONSIGNA}
         </h3>
         {categoria === "MEMORIA" ? (
           <p className="rounded-md bg-secondary p-4 whitespace-pre-line wrap-break-word contraste-alto:border-2 contraste-alto:border-foreground">
-            {textoAMemorizar.trim() || "Acá aparece el texto a memorizar."}
+            {textoAMemorizar.trim() || PREVIA_TEXTO_A_MEMORIZAR}
           </p>
         ) : null}
-        {ordenar ? <p className="text-muted-foreground">Ordená los pasos.</p> : null}
+        {ordenar ? <p className="text-muted-foreground">{PREVIA_ORDENAR}</p> : null}
         <ul className="flex flex-col gap-3">
           {aMostrar.map((opcion, i) => {
             const correcta = !ordenar && opcion.esCorrecta
@@ -86,7 +94,7 @@ export function VistaPreviaEjercicio({
                   />
                 ) : null}
                 <span className="min-w-0 flex-1 wrap-break-word">
-                  {opcion.texto.trim() || (ordenar ? `Paso ${i + 1}` : `Opción ${i + 1}`)}
+                  {opcion.texto.trim() || `${(ordenar ? TEXTOS_ELEMENTO.paso : TEXTOS_ELEMENTO.opcion).mayuscula} ${i + 1}`}
                 </span>
                 {correcta ? (
                   <>
@@ -96,7 +104,7 @@ export function VistaPreviaEjercicio({
                       className="size-6 shrink-0 text-success"
                       aria-hidden="true"
                     />
-                    <span className="sr-only">(correcta)</span>
+                    <span className="sr-only">{PREVIA_CORRECTA}</span>
                   </>
                 ) : null}
               </li>

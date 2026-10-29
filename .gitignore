@@ -1,5 +1,6 @@
 .env
 .vscode
+.playwright-mcp
 
 # Imágenes subidas desde el panel de operador
 uploads/

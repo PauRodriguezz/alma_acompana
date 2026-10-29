@@ -10,6 +10,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 
+import { ADMIN_TITULO_PESTANIA } from "./mensajes"
+
 type Miga = { texto: string; a?: string }
 
 type EncabezadoPaginaProps = {
@@ -27,7 +29,7 @@ type EncabezadoPaginaProps = {
  */
 export function EncabezadoPagina({ titulo, migas, accion }: EncabezadoPaginaProps) {
   useEffect(() => {
-    document.title = `${titulo} · Alma`
+    document.title = ADMIN_TITULO_PESTANIA(titulo)
   }, [titulo])
 
   return (

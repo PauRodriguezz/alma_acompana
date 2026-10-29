@@ -1,9 +1,10 @@
 import * as React from "react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 import { MensajeError } from "@/components/alma/mensaje-error"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { CAMPO_OPCIONAL } from "@/lib/mensajes"
 
 type CampoAreaTextoProps = Omit<React.ComponentProps<typeof Textarea>, "id"> & {
   label: string
@@ -40,7 +41,7 @@ function CampoAreaTexto({
     <div className={cn("flex flex-col gap-2", className)}>
       <Label htmlFor={idCampo}>
         {label}
-        {opcional ? <span className="font-normal text-muted-foreground"> (opcional)</span> : null}
+        {opcional ? <span className="font-normal text-muted-foreground">{CAMPO_OPCIONAL}</span> : null}
       </Label>
       {ayuda ? (
         <p id={idAyuda} className="text-muted-foreground">

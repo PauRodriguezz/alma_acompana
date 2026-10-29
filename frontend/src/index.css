@@ -193,6 +193,8 @@
 
     /* ── Layout (variables del Figma, modo Mobile) ── */
     --sidebar: 0px;
+    /* Alto fijo de la barra inferior de celular (sin la zona segura): el aviso flotante se apoya encima */
+    --nav-inferior: calc(72rem / 17);
     --page-x: calc(24rem / 17);
     --page-top: calc(16rem / 17);
     --slot: 0px;
@@ -205,6 +207,7 @@
 @media (min-width: 64rem) {
     :root {
         --sidebar: min(calc(288rem / 17), 30vw);
+        --nav-inferior: 0px;
         --page-x: calc(64rem / 17);
         --page-top: calc(48rem / 17);
         --slot: calc(32rem / 17);

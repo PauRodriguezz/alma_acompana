@@ -1,18 +1,38 @@
-import { Button } from "@/components/ui/button"
+import { Alert } from "@/components/ui/alert"
 import { useAuth } from "@/features/auth/useAuth"
+import { TarjetaParaHoy, useAgendaDeHoy, useCambioDeEstado } from "@/features/recordatorios"
+import { mensajeDeError } from "@/lib/errores"
+import { useAhora } from "@/lib/useAhora"
 
 // Pantalla provisoria: se reemplaza cuando exista el Inicio con el chat.
+// Va dentro de LayoutPersona, que pone el <main> y la navegación; cerrar sesión está en Perfil.
 export function InicioPage() {
-  const { usuario, logout } = useAuth()
+  const { usuario } = useAuth()
+
+  // PROVISORIO (CU-09): acá se monta la tarjeta "Para hoy" para poder probar el aviso. El módulo
+  // de Chat la va a reemplazar: va dentro de su saludo (CU-02), con el mismo useAgendaDeHoy.
+  const ahora = useAhora()
+  const agendaDeHoy = useAgendaDeHoy()
+  const { cambiar, ocupadoId, anuncio, error } = useCambioDeEstado()
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-(--content-max) flex-col items-start gap-4 px-(--page-x) pt-(--page-top)">
+    <div className="flex flex-col items-start gap-4">
       <h1>Inicio</h1>
       <p>Usuario: {usuario?.nombreUsuario}</p>
-      {/* TEMPORAL: reemplazar por confirmación '¿Querés cerrar sesión?' cuando exista Perfil y el diálogo */}
-      <Button variant="outline" onClick={logout}>
-        Salir
-      </Button>
-    </main>
+
+      <div className="flex w-full flex-col gap-4 lg:max-w-(--narrow-max)">
+        <p role="status" className="sr-only">
+          {anuncio}
+        </p>
+        {agendaDeHoy.error ? <Alert variant="error">{mensajeDeError(agendaDeHoy.error)}</Alert> : null}
+        {error ? <Alert variant="error">{mensajeDeError(error)}</Alert> : null}
+        <TarjetaParaHoy
+          agendaDeHoy={agendaDeHoy.data ?? []}
+          ahora={ahora}
+          ocupadoId={ocupadoId}
+          onCambiarEstado={cambiar}
+        />
+      </div>
+    </div>
   )
 }
