@@ -5,7 +5,7 @@ import { format, parseISO } from "date-fns"
 import { useNavigate } from "react-router-dom"
 
 import { hoyArgentina } from "@/lib/fechas"
-import { CampoArea } from "@/components/alma/campo-area"
+import { CampoAreaTexto } from "@/components/alma/campo-area-texto"
 import { CampoTexto } from "@/components/alma/campo-texto"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -142,8 +142,9 @@ export function FormularioCita({ cita }: { cita?: Cita }) {
         error={errors.hora?.message}
         {...register("hora")}
       />
-      <CampoArea
+      <CampoAreaTexto
         label={ETIQUETA_INDICACIONES}
+        opcional
         error={errors.indicacionesPrevias?.message}
         {...register("indicacionesPrevias")}
       />

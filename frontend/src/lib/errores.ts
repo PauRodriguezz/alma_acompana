@@ -13,7 +13,7 @@ import {
 /**
  * Texto a mostrar para un error de la API (contrato de recordatorios, sección 8).
  * status 0 = sin conexión, 401 = sesión terminada, 403 = sin permiso, 404 = no encontrado,
- * 5xx = algo salió mal. Para el 400 usa el texto que le pase la pantalla en `porEstado`
+ * 5xx = algo salió mal. Cualquier otro 4xx usa el detalle de la API si lo trae. Para el 400 usa el texto que le pase la pantalla en `porEstado`
  * o, si no hay, el detalle de la API. `porEstado` también puede cambiar el de otro estado.
  */
 export function mensajeDeError(
@@ -28,6 +28,8 @@ export function mensajeDeError(
   if (error.status === 403) return MENSAJE_SIN_PERMISO
   if (error.status === 404) return MENSAJE_NO_ENCONTRADO
   if (error.status === 400) return error.detalle ?? MENSAJE_DATOS_INVALIDOS
+  // Otro error del pedido (por ejemplo el 413 de una imagen pesada): el back manda el texto simple.
+  if (error.status >= 400 && error.status < 500 && error.detalle) return error.detalle
   return MENSAJE_ALGO_SALIO_MAL
 }
 

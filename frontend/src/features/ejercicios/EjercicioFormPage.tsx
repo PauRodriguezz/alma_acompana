@@ -20,7 +20,7 @@ import { buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
 import { conAviso } from "@/features/admin/aviso"
 import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
-import { mensajeDeError } from "@/features/admin/errores"
+import { mensajeDeError } from "@/lib/errores"
 import {
   CATEGORIAS_EJERCICIO,
   FORMATOS_EJERCICIO,

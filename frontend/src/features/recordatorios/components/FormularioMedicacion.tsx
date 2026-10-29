@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useNavigate } from "react-router-dom"
 
 import { CampoTexto } from "@/components/alma/campo-texto"
-import { MensajeErrorCampo } from "@/components/alma/mensaje-error-campo"
+import { MensajeError } from "@/components/alma/mensaje-error"
 import { OpcionRadio, TildeOpcion } from "@/components/alma/opcion-radio"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -137,7 +137,7 @@ export function FormularioMedicacion({ medicacion }: { medicacion?: Medicacion }
           )}
         />
         {errors.frecuencia ? (
-          <MensajeErrorCampo id={`${idFrecuencia}-error`}>{errors.frecuencia.message}</MensajeErrorCampo>
+          <MensajeError id={`${idFrecuencia}-error`}>{errors.frecuencia.message}</MensajeError>
         ) : null}
       </div>
 

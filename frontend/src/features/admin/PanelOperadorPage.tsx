@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card"
 
 import { CLAVE_RESUMEN, obtenerResumen } from "./api"
 import { EncabezadoPagina } from "./EncabezadoPagina"
-import { mensajeDeError } from "./errores"
+import { mensajeDeError } from "@/lib/errores"
 
 type TarjetaConteoProps = {
   titulo: string

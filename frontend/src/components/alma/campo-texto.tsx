@@ -1,7 +1,7 @@
 import * as React from "react"
 import { cn } from "cn"
 
-import { MensajeErrorCampo } from "@/components/alma/mensaje-error-campo"
+import { MensajeError } from "@/components/alma/mensaje-error"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
@@ -43,7 +43,7 @@ function CampoTexto({
         {...props}
         aria-describedby={describedBy}
       />
-      {error ? <MensajeErrorCampo id={idError}>{error}</MensajeErrorCampo> : null}
+      {error ? <MensajeError id={idError}>{error}</MensajeError> : null}
     </div>
   )
 }

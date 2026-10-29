@@ -9,7 +9,7 @@ import {
 } from "@hugeicons/core-free-icons"
 import { cn } from "cn"
 
-import { DialogoCerrarSesion } from "./DialogoCerrarSesion"
+import { DialogoCerrarSesion } from "@/features/auth/DialogoCerrarSesion"
 
 // Ítem del menú lateral del Figma (40:321): 56 px de alto, ícono de 28 px, label semibold.
 // Activo: fondo accent-soft y una barra accent de 5 px a la izquierda (no solo color).

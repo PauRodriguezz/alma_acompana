@@ -1,6 +1,7 @@
 import type { ReactElement } from "react"
+import { useNavigate } from "react-router-dom"
 
-import { DialogoConfirmacion } from "@/components/alma/dialogo-confirmacion"
+import { DialogoConfirmar } from "@/components/alma/dialogo-confirmar"
 
 import { useAuth } from "./useAuth"
 
@@ -8,25 +9,28 @@ import { useAuth } from "./useAuth"
 const TITULO = "¿Querés cerrar sesión?"
 const TEXTO = "Para volver a entrar vas a necesitar tu usuario y tu contraseña."
 const CONFIRMAR = "Sí, cerrar sesión"
-const CANCELAR = "Cancelar"
 
 /**
- * Confirmación de cierre de sesión (CU-14). Recibe como hijo el botón que la abre: cualquier
- * pantalla la puede usar con su propio botón. Confirmar llama a logout(): sin usuario,
- * ProtectedRoute manda a /login.
+ * Confirmación de cierre de sesión (CU-14), la misma para la persona mayor y para el panel de
+ * operador (contrato de login, sección 9; contrato del panel, sección 6). Recibe el botón que
+ * la abre como `disparador`. Confirmar llama a logout() y manda a /login.
  */
-export function DialogoCerrarSesion({ children }: { children: ReactElement }) {
+export function DialogoCerrarSesion({ disparador }: { disparador: ReactElement }) {
   const { logout } = useAuth()
+  const navigate = useNavigate()
+
+  function cerrarSesion() {
+    logout()
+    navigate("/login", { replace: true })
+  }
 
   return (
-    <DialogoConfirmacion
+    <DialogoConfirmar
       titulo={TITULO}
-      texto={TEXTO}
-      confirmar={CONFIRMAR}
-      cancelar={CANCELAR}
-      onConfirmar={logout}
-    >
-      {children}
-    </DialogoConfirmacion>
+      descripcion={TEXTO}
+      textoConfirmar={CONFIRMAR}
+      alConfirmar={cerrarSesion}
+      disparador={disparador}
+    />
   )
 }

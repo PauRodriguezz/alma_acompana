@@ -1,13 +1,8 @@
 import type { ReactElement } from "react"
 
-import { DialogoConfirmacion } from "@/components/alma/dialogo-confirmacion"
+import { DialogoConfirmar } from "@/components/alma/dialogo-confirmar"
 
-import {
-  ELIMINAR_AVISO,
-  ELIMINAR_CANCELAR,
-  ELIMINAR_CONFIRMAR,
-  ELIMINAR_PREGUNTA,
-} from "../mensajes"
+import { ELIMINAR_AVISO, ELIMINAR_CONFIRMAR, ELIMINAR_PREGUNTA } from "../mensajes"
 
 /**
  * Confirmación antes de eliminar un recordatorio (CU-07 y CU-08; contrato, 8.1). Recibe como
@@ -22,15 +17,13 @@ export function DialogoEliminarRecordatorio({
   onConfirmar: () => void
 }) {
   return (
-    <DialogoConfirmacion
+    <DialogoConfirmar
       titulo={ELIMINAR_PREGUNTA}
-      texto={ELIMINAR_AVISO}
-      confirmar={ELIMINAR_CONFIRMAR}
-      cancelar={ELIMINAR_CANCELAR}
+      descripcion={ELIMINAR_AVISO}
+      textoConfirmar={ELIMINAR_CONFIRMAR}
       variante="destructive"
-      onConfirmar={onConfirmar}
-    >
-      {children}
-    </DialogoConfirmacion>
+      alConfirmar={onConfirmar}
+      disparador={children}
+    />
   )
 }

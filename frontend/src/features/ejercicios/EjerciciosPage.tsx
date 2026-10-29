@@ -23,7 +23,7 @@ import {
 import { AvisoExito } from "@/features/admin/AvisoExito"
 import { useAvisoExito } from "@/features/admin/aviso"
 import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
-import { mensajeDeError } from "@/features/admin/errores"
+import { mensajeDeError } from "@/lib/errores"
 import { estiloBotonIcono } from "@/features/admin/estilos"
 import {
   CATEGORIAS_EJERCICIO,

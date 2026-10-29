@@ -3,7 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { MinusSignIcon, PlusSignIcon } from "@hugeicons/core-free-icons"
 import { cn } from "cn"
 
-import { MensajeErrorCampo } from "@/components/alma/mensaje-error-campo"
+import { MensajeError } from "@/components/alma/mensaje-error"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -85,7 +85,7 @@ export function CampoDuracion({ valor, onChange, onBlur, error }: Props) {
           <HugeiconsIcon icon={PlusSignIcon} className="size-6" aria-hidden="true" />
         </button>
       </div>
-      {error ? <MensajeErrorCampo id={idError}>{error}</MensajeErrorCampo> : null}
+      {error ? <MensajeError id={idError}>{error}</MensajeError> : null}
     </div>
   )
 }

@@ -15,8 +15,8 @@ import { buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
 import { conAviso } from "@/features/admin/aviso"
 import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
-import { mensajeDeError } from "@/features/admin/errores"
-import { hoyEnArgentina } from "@/features/admin/fechas"
+import { mensajeDeError } from "@/lib/errores"
+import { hoyArgentina } from "@/lib/fechas"
 import { CATEGORIAS_MICROCAPSULA, TEXTO_CATEGORIA_MICROCAPSULA } from "@/features/admin/etiquetas"
 import { ApiError } from "@/lib/api"
 
@@ -185,7 +185,7 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
             <CampoTexto
               label="Fecha de publicación"
               type="date"
-              max={hoyEnArgentina()}
+              max={hoyArgentina()}
               error={errors.fechaPublicacion?.message}
               {...register("fechaPublicacion")}
             />
@@ -245,7 +245,7 @@ export function MicrocapsulaFormPage() {
             texto: "",
             categoria: undefined,
             imagen: null,
-            fechaPublicacion: hoyEnArgentina(),
+            fechaPublicacion: hoyArgentina(),
           }}
         />
       </>

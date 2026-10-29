@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 import { CATEGORIAS_MICROCAPSULA } from "@/features/admin/etiquetas"
-import { hoyEnArgentina } from "@/features/admin/fechas"
+import { hoyArgentina } from "@/lib/fechas"
 
 // Mismas reglas y textos que el back (MicrocapsulaService, contrato sección 3.3 y 4):
 // el front avisa antes de enviar; el back decide.
@@ -24,7 +24,7 @@ export const esquemaMicrocapsula = z.object({
   fechaPublicacion: z
     .string()
     .min(1, "Ingresá la fecha de publicación.")
-    .refine((fecha) => fecha <= hoyEnArgentina(), "La fecha de publicación no puede ser futura."),
+    .refine((fecha) => fecha <= hoyArgentina(), "La fecha de publicación no puede ser futura."),
 })
 
 export type EntradaMicrocapsula = z.input<typeof esquemaMicrocapsula>

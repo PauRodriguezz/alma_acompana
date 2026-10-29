@@ -1,22 +1,22 @@
 package ar.edu.utn.frm.gelab.alma.config;
 
 import java.time.Clock;
-import java.time.ZoneId;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import ar.edu.utn.frm.gelab.alma.common.Fechas;
+
 /**
- * Reloj de la aplicación, con la zona de Argentina. Se inyecta donde hace falta saber "ahora" para
- * poder reemplazarlo por uno fijo en las pruebas. No depende del TimeZone.setDefault de main().
+ * Reloj de la aplicación, con la zona de Argentina (la de {@link Fechas#ZONA_ARGENTINA}). Se inyecta
+ * donde hace falta saber "ahora" para poder reemplazarlo por uno fijo en las pruebas. No depende del
+ * TimeZone.setDefault de main().
  */
 @Configuration
 public class ClockConfig {
 
-    private static final ZoneId ZONA = ZoneId.of("America/Argentina/Buenos_Aires");
-
     @Bean
     public Clock clock() {
-        return Clock.system(ZONA);
+        return Clock.system(Fechas.ZONA_ARGENTINA);
     }
 }

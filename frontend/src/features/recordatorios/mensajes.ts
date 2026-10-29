@@ -114,7 +114,8 @@ export const ETIQUETA_ESPECIALIDAD = "Especialidad"
 export const ETIQUETA_MEDICO = "Médico"
 export const ETIQUETA_LUGAR = "Lugar"
 export const ETIQUETA_FECHA = "Fecha"
-export const ETIQUETA_INDICACIONES = "Indicaciones previas (opcional)"
+// El "(opcional)" lo agrega CampoAreaTexto con la propiedad `opcional`.
+export const ETIQUETA_INDICACIONES = "Indicaciones previas"
 
 export const EJEMPLO_NOMBRE_MEDICAMENTO = "Ej.: Enalapril"
 export const EJEMPLO_DOSIS = "Ej.: 1 pastilla"
@@ -138,7 +139,6 @@ export const BOTON_ELIMINAR_RECORDATORIO = "Eliminar recordatorio"
 export const ELIMINAR_PREGUNTA = "¿Querés eliminar este recordatorio?"
 export const ELIMINAR_AVISO = "También se van a borrar sus avisos."
 export const ELIMINAR_CONFIRMAR = "Sí, eliminar"
-export const ELIMINAR_CANCELAR = "Cancelar"
 
 // Detalle de la cita
 export const ETIQUETA_INDICACIONES_DETALLE = "Indicaciones previas"

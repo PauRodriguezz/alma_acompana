@@ -44,6 +44,9 @@ export function useAgenda(
     queryKey: [...raiz(usuario?.id), "agenda", desde, hasta, tipo ?? "TODOS"],
     queryFn: () => agenda(desde, hasta, tipo),
     enabled: usuario !== null,
+    // La agenda lleva estados que cambian con el paso del tiempo: al volver a la ventana se
+    // vuelve a pedir (el cliente de consultas, por defecto, no lo hace).
+    refetchOnWindowFocus: true,
     ...opciones,
   })
 }

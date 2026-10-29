@@ -54,22 +54,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 MensajesError.SIN_PERMISO, request);
     }
 
-    /** 400 por una regla que Bean Validation no expresa: mismo formato, con la lista "errores". */
-    @ExceptionHandler(DatosInvalidosException.class)
-    public ProblemDetail datosInvalidos(DatosInvalidosException ex, HttpServletRequest request) {
-        ProblemDetail problema = problema(HttpStatus.BAD_REQUEST, MensajesError.TITULO_DATOS_INVALIDOS,
-                MensajesError.DATOS_INVALIDOS, request);
-        problema.setProperty("errores", ex.getErrores());
-        return problema;
-    }
-
     @ExceptionHandler(RecursoNoEncontradoException.class)
     public ProblemDetail noEncontrado(RecursoNoEncontradoException ex, HttpServletRequest request) {
         return problema(HttpStatus.NOT_FOUND, MensajesError.TITULO_NO_ENCONTRADO,
                 MensajesError.NO_ENCONTRADO, request);
     }
 
-    /** 400 de reglas validadas en un servicio: detail propio del caso de uso y la lista "errores". */
+    /**
+     * 400 por una regla que Bean Validation no expresa, validada en un servicio: el detail es el mensaje
+     * de la excepción (el del caso de uso o el general) y lleva la lista "errores".
+     */
     @ExceptionHandler(DatosInvalidosException.class)
     public ProblemDetail datosInvalidos(DatosInvalidosException ex, HttpServletRequest request) {
         ProblemDetail problema = problema(HttpStatus.BAD_REQUEST, MensajesError.TITULO_DATOS_INVALIDOS,
