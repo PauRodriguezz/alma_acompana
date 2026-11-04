@@ -92,6 +92,8 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 - `docs/contrato-animo.md`: contrato del registro de ánimo (CU-01: niveles, "Cambiar cómo me siento", pregunta contextual y widget). Leelo antes de tocar `bienestar/` o `features/bienestar/`.
 - Casos de uso (CU-xx) y diagrama de clases (`DC_PPS`) del informe: son la fuente de verdad funcional.
 
+- `docs/contrato-juegos.md`: contrato del juego de estimulación (CU-05). Leelo antes de tocar el juego, el selector de ejercicios o el hub de Entretenimiento.
+
 ## Plan por etapas
 
 1. **Base común:** repo, Docker, login, layout y accesibilidad.

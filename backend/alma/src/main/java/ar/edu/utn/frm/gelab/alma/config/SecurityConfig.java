@@ -38,6 +38,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/accesibilidad/**").hasRole("PERSONA_MAYOR")
                 .requestMatchers("/api/perfil/**").hasRole("PERSONA_MAYOR")
                 .requestMatchers("/api/recordatorios/**").hasRole("PERSONA_MAYOR")
+                .requestMatchers("/api/juegos/**").hasRole("PERSONA_MAYOR")
                 .requestMatchers("/api/animo/**").hasRole("PERSONA_MAYOR")
                 .requestMatchers("/api/**").authenticated()
                 // Lo que no empieza con /api son archivos del front: público.
