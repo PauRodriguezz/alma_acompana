@@ -91,6 +91,8 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 - `docs/contrato-panel-operador.md`: contrato del panel de operador (resumen, ejercicios, microcápsulas, imágenes y perfil del administrador). Leelo antes de tocar `features/admin/`, `features/ejercicios/`, `features/microcapsulas/`, `common/imagenes/` o `/api/admin/**`.
 - Casos de uso (CU-xx) y diagrama de clases (`DC_PPS`) del informe: son la fuente de verdad funcional.
 
+- `docs/contrato-juegos.md`: contrato del juego de estimulación (CU-05). Leelo antes de tocar el juego, el selector de ejercicios o el hub de Entretenimiento.
+
 ## Plan por etapas
 
 1. **Base común:** repo, Docker, login, layout y accesibilidad.

@@ -7,7 +7,16 @@ import { AuthProvider } from "@/features/auth/AuthProvider"
 import { LoginPage } from "@/features/auth/LoginPage"
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute"
 import { SinPermisoPage } from "@/features/auth/SinPermisoPage"
+import { EntretenimientoPage } from "@/features/entretenimiento/EntretenimientoPage"
+import { TITULO_LECTURAS } from "@/features/entretenimiento/mensajes"
+import {
+  RUTA_ENTRETENIMIENTO,
+  RUTA_JUEGOS,
+  RUTA_JUGAR,
+  RUTA_LECTURAS,
+} from "@/features/entretenimiento/rutas"
 import { InicioPage } from "@/features/inicio/InicioPage"
+import { JuegoPage, JuegosInicioPage } from "@/features/juegos"
 import { PerfilPage } from "@/features/perfil/PerfilPage"
 import {
   DetalleCitaPage,
@@ -26,9 +35,12 @@ function App() {
             {/* Layout compartido: navegación, Alma y botón de accesibilidad (CU-13) */}
             <Route element={<LayoutPersona />}>
               <Route path="/" element={<InicioPage />} />
+              <Route path={RUTA_ENTRETENIMIENTO} element={<EntretenimientoPage />} />
+              <Route path={RUTA_JUEGOS} element={<JuegosInicioPage />} />
+              <Route path={RUTA_JUGAR} element={<JuegoPage />} />
               <Route
-                path="/entretenimiento"
-                element={<PaginaProvisoria titulo="Entretenimiento" />}
+                path={RUTA_LECTURAS}
+                element={<PaginaProvisoria titulo={TITULO_LECTURAS} />}
               />
               <Route
                 path="/historia-de-vida"
