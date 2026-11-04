@@ -1,5 +1,16 @@
+import { useState } from "react"
+
+import { MensajeAlma } from "@/components/alma/mensaje-alma"
 import { Alert } from "@/components/ui/alert"
 import { useAuth } from "@/features/auth/useAuth"
+import {
+  BurbujaAnimo,
+  EnlaceCambiarAnimo,
+  WidgetAnimo,
+  anuncioCorregido,
+  anuncioRegistrado,
+  type RegistroAnimo,
+} from "@/features/bienestar"
 import { TarjetaParaHoy, useAgendaDeHoy, useCambioDeEstado } from "@/features/recordatorios"
 import { mensajeDeError } from "@/lib/errores"
 import { useAhora } from "@/lib/useAhora"
@@ -14,6 +25,23 @@ export function InicioPage() {
   const ahora = useAhora()
   const agendaDeHoy = useAgendaDeHoy()
   const { cambiar, ocupadoId, anuncio, error } = useCambioDeEstado()
+
+  // PROVISORIO (CU-01): acá se monta el widget de ánimo para poder probarlo de punta a punta.
+  // feature/chat lo reemplaza: lo va a montar debajo del saludo (CU-02) y va a quitar el enlace
+  // "Cambiar cómo me siento" cuando la persona mande su primer mensaje (acá no hay dónde escribir).
+  // Todo vive en memoria: al recargar, el widget vuelve a aparecer y la próxima elección crea un registro nuevo.
+  const [animo, setAnimo] = useState<RegistroAnimo | null>(null)
+  const [cambiandoAnimo, setCambiandoAnimo] = useState(false)
+  const [anuncioAnimo, setAnuncioAnimo] = useState("")
+
+  function alRegistrarAnimo(registro: RegistroAnimo) {
+    // Si ya había un registro, la elección lo corrigió (PUT): no se agrega nada nuevo, se reemplaza.
+    setAnuncioAnimo(
+      animo ? anuncioCorregido(registro.nivelAnimo) : anuncioRegistrado(registro.nivelAnimo)
+    )
+    setAnimo(registro)
+    setCambiandoAnimo(false)
+  }
 
   return (
     <div className="flex flex-col items-start gap-4">
@@ -32,6 +60,22 @@ export function InicioPage() {
           ocupadoId={ocupadoId}
           onCambiarEstado={cambiar}
         />
+
+        <p role="status" className="sr-only">
+          {anuncioAnimo}
+        </p>
+        {animo ? (
+          <>
+            <BurbujaAnimo nivelAnimo={animo.nivelAnimo} />
+            <MensajeAlma role="status">
+              <p>{animo.preguntaContextual}</p>
+            </MensajeAlma>
+            {cambiandoAnimo ? null : <EnlaceCambiarAnimo onClick={() => setCambiandoAnimo(true)} />}
+          </>
+        ) : null}
+        {!animo || cambiandoAnimo ? (
+          <WidgetAnimo registroId={animo?.id} onRegistrado={alRegistrarAnimo} />
+        ) : null}
       </div>
     </div>
   )

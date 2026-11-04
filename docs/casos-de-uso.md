@@ -850,7 +850,7 @@ Se actualiza al terminar cada funcionalidad, del lado del back y del front.
 
 | CU | Back | Front |
 |---|---|---|
-| CU-01 | Pendiente | Pendiente |
+| CU-01 | Hecho: registro de ánimo con `POST /api/animo`, corrección del ánimo de hoy con `PUT /api/animo/{id}` (cambia nivel y fecha y hora, conserva el `id`) y consulta con `GET /api/animo/hoy` (204 si todavía no registró), solo `PERSONA_MAYOR`; cada respuesta lleva la pregunta contextual fija del nivel, y `RegistroAnimoService.animoDeHoy(...)` queda disponible para el módulo de Chat; con pruebas automáticas | Pendiente |
 | CU-02 | Pendiente | Pendiente |
 | CU-03 | Pendiente | Pendiente |
 | CU-04 | Pendiente | Pendiente |
