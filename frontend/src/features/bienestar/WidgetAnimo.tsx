@@ -29,7 +29,7 @@ function textoDeError(error: unknown): string {
  * Widget de ánimo (CU-01): la pregunta de Alma y cinco caritas. Tocar una carita registra de
  * inmediato, sin confirmación ni comentario. No es una tarjeta ni un modal: es un mensaje más de
  * Alma y no bloquea. No se oculta solo ni muestra la pregunta contextual: eso lo hace el padre
- * (hoy el Inicio provisorio, después el Chat).
+ * (el Chat).
  */
 export function WidgetAnimo({ registroId, onRegistrado }: Props) {
   const guardar = useGuardarAnimo({ registroId, onRegistrado })

@@ -3,7 +3,7 @@
 
 import type { NivelAnimo } from "./tipos"
 
-export const PREGUNTA_ANIMO = "¿Cómo te sentís hoy?"
+export const PREGUNTA_ANIMO = "¿Cómo te sentís hoy? Contame si querés, o escribime lo que quieras."
 export const NOMBRE_GRUPO_ANIMO = "Cómo te sentís"
 export const CAMBIAR_ANIMO = "Cambiar cómo me siento"
 export const ERROR_REGISTRAR_ANIMO = "No pudimos anotar cómo te sentís. Probá de nuevo."
