@@ -8,15 +8,16 @@ import { LoginPage } from "@/features/auth/LoginPage"
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute"
 import { SinPermisoPage } from "@/features/auth/SinPermisoPage"
 import { EntretenimientoPage } from "@/features/entretenimiento/EntretenimientoPage"
-import { TITULO_LECTURAS } from "@/features/entretenimiento/mensajes"
 import {
   RUTA_ENTRETENIMIENTO,
   RUTA_JUEGOS,
   RUTA_JUGAR,
+  RUTA_LECTURA,
   RUTA_LECTURAS,
 } from "@/features/entretenimiento/rutas"
 import { InicioPage } from "@/features/inicio/InicioPage"
 import { JuegoPage, JuegosInicioPage } from "@/features/juegos"
+import { LecturaDetallePage, LecturasPage } from "@/features/lecturas"
 import { PerfilPage } from "@/features/perfil/PerfilPage"
 import {
   DetalleCitaPage,
@@ -38,10 +39,8 @@ function App() {
               <Route path={RUTA_ENTRETENIMIENTO} element={<EntretenimientoPage />} />
               <Route path={RUTA_JUEGOS} element={<JuegosInicioPage />} />
               <Route path={RUTA_JUGAR} element={<JuegoPage />} />
-              <Route
-                path={RUTA_LECTURAS}
-                element={<PaginaProvisoria titulo={TITULO_LECTURAS} />}
-              />
+              <Route path={RUTA_LECTURAS} element={<LecturasPage />} />
+              <Route path={RUTA_LECTURA} element={<LecturaDetallePage />} />
               <Route
                 path="/historia-de-vida"
                 element={<PaginaProvisoria titulo="Historia de vida" />}

@@ -193,3 +193,4 @@ classDiagram
     ProgresoJuego "*" --> "0..1" Ejercicio
     Ejercicio "1" *-- "1..*" OpcionRespuesta
 ```
+Una nota: MicrocapsulaGuardada lleva una clave propia y una restricción única sobre (persona, microcápsula).

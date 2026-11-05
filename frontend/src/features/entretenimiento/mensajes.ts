@@ -7,6 +7,3 @@ export const TARJETA_JUGAR = "Jugar"
 export const TARJETA_JUGAR_DESCRIPCION = "Juegos cortos de memoria, sin apuros."
 export const TARJETA_LEER = "Leer"
 export const TARJETA_LEER_DESCRIPCION = "Lecturas cortas para cuidarte todos los días."
-
-// Pantalla provisoria de "Leer" hasta CU-06
-export const TITULO_LECTURAS = "Lecturas"

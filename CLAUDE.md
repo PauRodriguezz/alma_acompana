@@ -94,6 +94,8 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 
 - `docs/contrato-juegos.md`: contrato del juego de estimulación (CU-05). Leelo antes de tocar el juego, el selector de ejercicios o el hub de Entretenimiento.
 
+- `docs/contrato-microcapsulas.md`: contrato de la lectura de microcápsulas (CU-06). Leelo antes de tocar el listado, el detalle o las guardadas de la persona mayor.
+
 ## Plan por etapas
 
 1. **Base común:** repo, Docker, login, layout y accesibilidad.
