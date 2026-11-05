@@ -82,7 +82,7 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 - Neo4j se usa recién en la Etapa 2 (historia de vida). El modelo de IA se usa desde el chat, en la Etapa 1.
 - El contenedor de Ollama necesita `ollama signin` una vez (la sesión queda en el volumen).
 - El modelo devuelve un bloque de razonamiento antes de la respuesta: nunca se le muestra a la persona mayor.
-- La respuesta del chat se envía en streaming (SSE).
+- La respuesta del chat se envía completa, con el indicador "Alma está pensando…" mientras tanto (sin streaming ni SSE).
 
 ## Documentos
 
@@ -91,8 +91,8 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 - `docs/contrato-panel-operador.md`: contrato del panel de operador (resumen, ejercicios, microcápsulas, imágenes y perfil del administrador). Leelo antes de tocar `features/admin/`, `features/ejercicios/`, `features/microcapsulas/`, `common/imagenes/` o `/api/admin/**`.
 - `docs/contrato-animo.md`: contrato del registro de ánimo (CU-01: niveles, "Cambiar cómo me siento", pregunta contextual y widget). Leelo antes de tocar `bienestar/` o `features/bienestar/`.
 - Casos de uso (CU-xx) y diagrama de clases (`DC_PPS`) del informe: son la fuente de verdad funcional.
-
 - `docs/contrato-juegos.md`: contrato del juego de estimulación (CU-05). Leelo antes de tocar el juego, el selector de ejercicios o el hub de Entretenimiento.
+- `docs/contrato-chat.md`: contrato del chat con Alma (CU-02: saludo, guardrails, contexto del modelo y pantalla del chat). Leelo antes de tocar `chat/`, `ia/` o `features/chat/`.
 
 - `docs/contrato-microcapsulas.md`: contrato de la lectura de microcápsulas (CU-06). Leelo antes de tocar el listado, el detalle o las guardadas de la persona mayor.
 

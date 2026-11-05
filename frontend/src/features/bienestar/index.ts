@@ -1,4 +1,4 @@
-// Lo que otros módulos usan de Bienestar (hoy el Inicio provisorio, después el Chat).
+// Lo que otros módulos usan de Bienestar (el Chat).
 // Dentro del módulo se importa con rutas relativas.
 
 export { BurbujaAnimo } from "./BurbujaAnimo"
