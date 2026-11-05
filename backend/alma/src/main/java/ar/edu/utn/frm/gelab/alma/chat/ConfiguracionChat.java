@@ -20,6 +20,11 @@ public class ConfiguracionChat {
     private final Respuestas respuestas = new Respuestas();
     private final Limites limites = new Limites();
     private final Guardrails guardrails = new Guardrails();
+    private final Citas citas = new Citas();
+
+    public Citas getCitas() {
+        return citas;
+    }
 
     public Respuestas getRespuestas() {
         return respuestas;
@@ -52,6 +57,29 @@ public class ConfiguracionChat {
 
         public void setMalestarGrave(String malestarGrave) {
             this.malestarGrave = malestarGrave;
+        }
+    }
+
+    /** Citas médicas próximas que recibe el modelo (contrato, 5.4): hasta cuántos días y cuántas como máximo. */
+    public static class Citas {
+
+        private int ventanaDias = 14;
+        private int maximo = 10;
+
+        public int getVentanaDias() {
+            return ventanaDias;
+        }
+
+        public void setVentanaDias(int ventanaDias) {
+            this.ventanaDias = ventanaDias;
+        }
+
+        public int getMaximo() {
+            return maximo;
+        }
+
+        public void setMaximo(int maximo) {
+            this.maximo = maximo;
         }
     }
 

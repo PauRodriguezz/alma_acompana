@@ -7,8 +7,10 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,10 +22,10 @@ import ar.edu.utn.frm.gelab.alma.bienestar.domain.NivelAnimo;
 import ar.edu.utn.frm.gelab.alma.bienestar.service.RegistroAnimoService;
 import ar.edu.utn.frm.gelab.alma.chat.ConfiguracionChat;
 import ar.edu.utn.frm.gelab.alma.chat.MensajesChat;
-import ar.edu.utn.frm.gelab.alma.recordatorios.domain.EstadoNotificacion;
 import ar.edu.utn.frm.gelab.alma.recordatorios.dto.CitaResponse;
 import ar.edu.utn.frm.gelab.alma.recordatorios.dto.ItemAgendaResponse;
 import ar.edu.utn.frm.gelab.alma.recordatorios.dto.MedicacionResponse;
+import ar.edu.utn.frm.gelab.alma.recordatorios.dto.TipoRecordatorio;
 import ar.edu.utn.frm.gelab.alma.recordatorios.service.RecordatorioService;
 
 /**
@@ -34,8 +36,10 @@ import ar.edu.utn.frm.gelab.alma.recordatorios.service.RecordatorioService;
 public class ContextoDelChat {
 
     private static final Pattern MARCADOR = Pattern
-            .compile("\\{(respuesta_urgencia|respuesta_malestar_grave|animo|recordatorios|progreso|recuerdos)}");
+            .compile("\\{(respuesta_urgencia|respuesta_malestar_grave|animo|recordatorios|citas_proximas|progreso|recuerdos)}");
     private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter DIA_Y_MES = DateTimeFormatter.ofPattern("dd/MM");
+    private static final Locale ES = Locale.forLanguageTag("es-AR");
 
     private final String plantilla;
     private final ConfiguracionChat configuracion;
@@ -73,7 +77,7 @@ public class ContextoDelChat {
                 : MensajesChat.SALUDO_VARIOS_RECORDATORIOS;
     }
 
-    /** El system prompt con el ánimo y los recordatorios de hoy de esa cuenta. */
+    /** El system prompt con el ánimo, los recordatorios de hoy y las citas próximas de esa cuenta. */
     public String instrucciones(Long cuentaId) {
         LocalDate hoy = LocalDate.now(clock);
         Map<String, String> valores = Map.of(
@@ -81,10 +85,11 @@ public class ContextoDelChat {
                 "respuesta_malestar_grave", configuracion.getRespuestas().getMalestarGrave(),
                 "animo", animoDeHoy(cuentaId),
                 "recordatorios", recordatoriosDeHoy(cuentaId, hoy),
+                "citas_proximas", citasProximas(cuentaId, hoy),
                 "progreso", MensajesChat.SIN_INFORMACION,
                 "recuerdos", MensajesChat.SIN_INFORMACION);
         // Una sola pasada sobre la plantilla: lo que se inserta nunca se vuelve a examinar, así un título
-        // de recordatorio con algo como "{animo}" no se reemplaza.
+        // de recordatorio o de cita con algo como "{animo}" no se reemplaza.
         Matcher matcher = MARCADOR.matcher(plantilla);
         StringBuilder resultado = new StringBuilder();
         while (matcher.find()) {
@@ -122,16 +127,70 @@ public class ContextoDelChat {
                 .orElse(MensajesChat.SIN_RECORDATORIOS);
     }
 
-    /** Sin médico, lugar ni indicaciones previas (5.4). */
-    private static String linea(ItemAgendaResponse item) {
+    /**
+     * Las citas médicas desde mañana hasta dentro de N días (inclusive), de la más cercana a la más lejana y
+     * como máximo M (5.4). La ventana y el máximo salen de chat.properties. Las de hoy no se repiten: ya están
+     * en los recordatorios. No se filtran por estado: una cita futura ya vista sigue siendo un turno.
+     */
+    private String citasProximas(Long cuentaId, LocalDate hoy) {
+        ConfiguracionChat.Citas citas = configuracion.getCitas();
+        List<String> lineas = recordatorioService
+                .agenda(cuentaId, hoy.plusDays(1), hoy.plusDays(citas.getVentanaDias()), TipoRecordatorio.CITA)
+                .stream()
+                .sorted(Comparator.comparing(ItemAgendaResponse::fechaHoraProgramada))
+                .limit(citas.getMaximo())
+                .map(item -> lineaDeCitaProxima(item, hoy))
+                .toList();
+        return lineas.isEmpty() ? MensajesChat.SIN_CITAS_PROXIMAS : String.join("\n", lineas);
+    }
+
+    /** Siempre con día y sin estado: "- mañana (viernes 06/11) a las 16:30, cita médica: ..." (5.4). */
+    static String lineaDeCitaProxima(ItemAgendaResponse item, LocalDate hoy) {
+        LocalDate dia = item.fechaHoraProgramada().toLocalDate();
+        String nombreDia = dia.getDayOfWeek().getDisplayName(TextStyle.FULL, ES).toLowerCase(ES);
+        String fecha = nombreDia + " " + dia.format(DIA_Y_MES);
+        String cuando = dia.equals(hoy.plusDays(1)) ? "mañana (" + fecha + ")" : fecha;
+        String detalle = item.recordatorio() instanceof CitaResponse cita ? detalleDeCita(cita) : "";
+        return "- " + cuando + " a las " + item.fechaHoraProgramada().format(HORA) + ", cita médica: " + detalle;
+    }
+
+    /** Medicación y cita de hoy, con su estado. La cita lleva médico y lugar; nunca las indicaciones previas. */
+    static String linea(ItemAgendaResponse item) {
         String hora = item.fechaHoraProgramada().format(HORA);
         String estado = estado(item);
         return switch (item.recordatorio()) {
             case MedicacionResponse m -> "- " + hora + ", medicación: "
                     + unir(m.nombreMedicamento(), m.dosis()) + " (" + estado + ")";
-            case CitaResponse c -> "- " + hora + ", cita médica: "
-                    + unir(c.titulo(), c.especialidad()) + " (" + estado + ")";
+            case CitaResponse c -> "- " + hora + ", cita médica: " + detalleDeCita(c) + " (" + estado + ")";
         };
+    }
+
+    /** "título, especialidad, con el Dr. Pérez, en Clínica Sur"; si falta el médico o el lugar, se omite esa parte. */
+    private static String detalleDeCita(CitaResponse cita) {
+        StringBuilder detalle = new StringBuilder(unir(cita.titulo(), cita.especialidad()));
+        if (!estaVacio(cita.medico())) {
+            detalle.append(", con ").append(medicoConArticulo(cita.medico().strip()));
+        }
+        if (!estaVacio(cita.lugar())) {
+            detalle.append(", en ").append(cita.lugar().strip());
+        }
+        return detalle.toString();
+    }
+
+    /** "Dra. X" pasa a "la Dra. X", "Dr. X" a "el Dr. X"; cualquier otro texto va sin artículo. */
+    private static String medicoConArticulo(String medico) {
+        String minuscula = medico.toLowerCase(ES);
+        if (minuscula.startsWith("dra.")) {
+            return "la " + medico;
+        }
+        if (minuscula.startsWith("dr.")) {
+            return "el " + medico;
+        }
+        return medico;
+    }
+
+    private static boolean estaVacio(String texto) {
+        return texto == null || texto.isBlank();
     }
 
     private static String estado(ItemAgendaResponse item) {

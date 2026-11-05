@@ -26,6 +26,7 @@ public final class MensajesChat {
     // Contexto del modelo (5.4)
     public static final String ANIMO_SIN_REGISTRO = "No registró cómo se siente hoy.";
     public static final String SIN_RECORDATORIOS = "No tiene recordatorios para hoy.";
+    public static final String SIN_CITAS_PROXIMAS = "No tiene citas médicas en los próximos 14 días.";
     public static final String SIN_INFORMACION = "No hay información.";
 
     private MensajesChat() {

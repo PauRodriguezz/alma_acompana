@@ -367,6 +367,7 @@ class ChatIntegrationTests {
         String sin = modelo.ultimasInstrucciones();
         assertTrue(sin.contains("Ánimo de hoy: No registró cómo se siente hoy."));
         assertTrue(sin.contains("Recordatorios de hoy: No tiene recordatorios para hoy."));
+        assertTrue(sin.contains("Citas médicas próximas: No tiene citas médicas en los próximos 14 días."));
 
         String[][] niveles = { { "MUY_MAL", "Muy mal" }, { "MAL", "Mal" }, { "NEUTRO", "Más o menos" },
                 { "BIEN", "Bien" }, { "MUY_BIEN", "Muy bien" } };
@@ -378,7 +379,7 @@ class ChatIntegrationTests {
     }
 
     @Test
-    void losRecordatoriosDeHoyVanUnoPorLineaEnOrdenDeHoraSinMedicoNiLugar() throws Exception {
+    void losRecordatoriosDeHoyVanUnoPorLineaEnOrdenDeHoraConMedicoYLugarSinIndicaciones() throws Exception {
         crear(tokenA, "/medicacion", medicacion("Enalapril", "18:00"));
         crear(tokenA, "/citas", cita(HOY + "T16:30"));
 
@@ -386,12 +387,12 @@ class ChatIntegrationTests {
 
         String prompt = modelo.ultimasInstrucciones();
         assertTrue(prompt.contains("""
-                Recordatorios de hoy: - 16:30, cita médica: Control anual, Cardiología (pendiente)
+                Recordatorios de hoy: - 16:30, cita médica: Control anual, Cardiología, con la Dra. Pérez, en Consultorio Centro (pendiente)
                 - 18:00, medicación: Enalapril, 1 pastilla (pendiente)
-                Historia de vida:"""), prompt);
-        assertFalse(prompt.contains("Dra. Pérez"));
-        assertFalse(prompt.contains("Consultorio Centro"));
-        assertFalse(prompt.contains("Llevar los estudios"));
+                Citas médicas próximas:"""), prompt);
+        assertFalse(prompt.contains("Llevar los estudios"), "Las indicaciones previas no se mandan al modelo");
+        // La cita de hoy no se repite en las próximas: ya está en los recordatorios.
+        assertTrue(prompt.contains("Citas médicas próximas: No tiene citas médicas en los próximos 14 días."), prompt);
     }
 
     @Test
@@ -417,7 +418,8 @@ class ChatIntegrationTests {
         enviar("{\"mensaje\":\"Hola\"}", tokenA).andExpect(status().isOk());
         String prompt = modelo.ultimasInstrucciones();
         assertTrue(prompt.contains("medicación: Enalapril, 1 pastilla (ya tomada)"), prompt);
-        assertTrue(prompt.contains("cita médica: Control anual, Cardiología (ya vista)"), prompt);
+        assertTrue(prompt.contains(
+                "cita médica: Control anual, Cardiología, con la Dra. Pérez, en Consultorio Centro (ya vista)"), prompt);
     }
 
     @Test
@@ -427,7 +429,100 @@ class ChatIntegrationTests {
 
         enviar("{\"mensaje\":\"Hola\"}", tokenA).andExpect(status().isOk());
 
-        assertTrue(modelo.ultimasInstrucciones().contains("cita médica: Ver {animo} y {progreso}, Cardiología"));
+        assertTrue(modelo.ultimasInstrucciones()
+                .contains("cita médica: Ver {animo} y {progreso}, Cardiología, con la Dra. Pérez"));
+    }
+
+    @Test
+    void unTituloDeCitaProximaConMarcadoresNoSeReemplazaNiSiEsDeHoyNiDeLosProximosDias() throws Exception {
+        registrarAnimo(tokenA, "BIEN");
+        String titulo = "Ver {animo} y {citas_proximas} y {recordatorios}";
+        crear(tokenA, "/citas", cita(titulo, HOY + "T16:30"));
+        crear(tokenA, "/citas", cita(titulo, HOY.plusDays(2) + "T09:00"));
+
+        enviar("{\"mensaje\":\"Hola\"}", tokenA).andExpect(status().isOk());
+
+        String prompt = modelo.ultimasInstrucciones();
+        assertTrue(prompt.contains("- 16:30, cita médica: " + titulo + ", Cardiología"), prompt);
+        assertTrue(prompt.contains("- sábado 07/11 a las 09:00, cita médica: " + titulo + ", Cardiología"), prompt);
+        // Los marcadores del prompt sí se reemplazaron: el ánimo dice "Bien", no el texto del título.
+        assertTrue(prompt.contains("Ánimo de hoy: Bien\n"), prompt);
+    }
+
+    // ---------- Citas médicas próximas (v3) ----------
+
+    @Test
+    void lasCitasProximasEntranDeMananaADentroDeCatorceDiasYNoLasDeHoyNiLasDeQuinceDias() throws Exception {
+        // Hoy es jueves 05/11/2026.
+        crear(tokenA, "/citas", cita("Cita de hoy", HOY + "T16:30"));
+        crear(tokenA, "/citas", cita("Cita de manana", HOY.plusDays(1) + "T16:30"));
+        crear(tokenA, "/citas", cita("Cita del dia 14", HOY.plusDays(14) + "T20:00"));
+        crear(tokenA, "/citas", cita("Cita del dia 15", HOY.plusDays(15) + "T08:00"));
+
+        enviar("{\"mensaje\":\"Hola\"}", tokenA).andExpect(status().isOk());
+
+        String prompt = modelo.ultimasInstrucciones();
+        assertTrue(prompt.contains("- mañana (viernes 06/11) a las 16:30, cita médica: Cita de manana, Cardiología, "
+                + "con la Dra. Pérez, en Consultorio Centro\n"), prompt);
+        assertTrue(prompt.contains("- jueves 19/11 a las 20:00, cita médica: Cita del dia 14, Cardiología, "
+                + "con la Dra. Pérez, en Consultorio Centro\n"), prompt);
+        assertFalse(prompt.contains("Cita del dia 15"), "Una cita dentro de 15 días no entra");
+        // La de hoy está en los recordatorios y no se repite entre las próximas.
+        assertEquals(1, ocurrencias(prompt, "Cita de hoy"), prompt);
+        assertTrue(prompt.indexOf("Cita de hoy") < prompt.indexOf("Citas médicas próximas:"), prompt);
+        // Sin estado y sin indicaciones previas.
+        assertFalse(prompt.contains("Llevar los estudios"));
+    }
+
+    @Test
+    void conMasDeDiezCitasEntranSoloLasDiezMasCercanasEnOrden() throws Exception {
+        // Se cargan al revés para comprobar que el orden es por fecha y no por alta.
+        for (int dia = 12; dia >= 1; dia--) {
+            crear(tokenA, "/citas", cita(String.format("Cita %02d", dia), HOY.plusDays(dia) + "T10:00"));
+        }
+
+        enviar("{\"mensaje\":\"Hola\"}", tokenA).andExpect(status().isOk());
+
+        String prompt = modelo.ultimasInstrucciones();
+        int anterior = -1;
+        for (int dia = 1; dia <= 10; dia++) {
+            int posicion = prompt.indexOf(String.format("Cita %02d,", dia));
+            assertTrue(posicion > anterior, "Falta o está fuera de orden: Cita " + dia);
+            anterior = posicion;
+        }
+        assertFalse(prompt.contains("Cita 11"));
+        assertFalse(prompt.contains("Cita 12"));
+    }
+
+    @Test
+    void lasCitasDeOtraPersonaNoEntran() throws Exception {
+        crear(tokenB, "/citas", cita("Cita de Berta", HOY.plusDays(3) + "T10:00"));
+        crear(tokenA, "/citas", cita("Cita de Marisol", HOY.plusDays(4) + "T10:00"));
+
+        enviar("{\"mensaje\":\"Hola\"}", tokenA).andExpect(status().isOk());
+        String promptDeA = modelo.ultimasInstrucciones();
+        assertTrue(promptDeA.contains("Cita de Marisol"));
+        assertFalse(promptDeA.contains("Cita de Berta"));
+
+        enviar("{\"mensaje\":\"Hola\"}", tokenB).andExpect(status().isOk());
+        String promptDeB = modelo.ultimasInstrucciones();
+        assertTrue(promptDeB.contains("Cita de Berta"));
+        assertFalse(promptDeB.contains("Cita de Marisol"));
+    }
+
+    @Test
+    void unaCitaFuturaYaVistaSigueEntrandoEnLasProximas() throws Exception {
+        crear(tokenA, "/citas", cita("Cita ya vista", HOY.plusDays(2) + "T10:00"));
+        Long notificacion = notificacionDeCita(HOY.plusDays(2), tokenA);
+        mockMvc.perform(put("/api/recordatorios/notificaciones/" + notificacion + "/estado")
+                .header(HttpHeaders.AUTHORIZATION, bearer(tokenA)).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"estado\":\"VISTA\"}")).andExpect(status().isOk());
+
+        enviar("{\"mensaje\":\"Hola\"}", tokenA).andExpect(status().isOk());
+
+        String prompt = modelo.ultimasInstrucciones();
+        assertTrue(prompt.contains("- sábado 07/11 a las 10:00, cita médica: Cita ya vista, Cardiología"), prompt);
+        assertFalse(prompt.contains("ya vista)"), "La línea de una cita próxima no lleva estado");
     }
 
     @Test
@@ -441,6 +536,7 @@ class ChatIntegrationTests {
         assertFalse(prompt.contains("Losartan"));
         assertTrue(prompt.contains("Ánimo de hoy: No registró cómo se siente hoy."));
         assertTrue(prompt.contains("Recordatorios de hoy: No tiene recordatorios para hoy."));
+        assertTrue(prompt.contains("Citas médicas próximas: No tiene citas médicas en los próximos 14 días."));
     }
 
     // ---------- Mensaje: conversación ----------
@@ -621,10 +717,31 @@ class ChatIntegrationTests {
     }
 
     private static String cita(String fechaHora) {
+        return cita("Control anual", fechaHora);
+    }
+
+    private static String cita(String titulo, String fechaHora) {
         return """
-                {"titulo":"Control anual","especialidad":"Cardiología","medico":"Dra. Pérez",\
+                {"titulo":"%s","especialidad":"Cardiología","medico":"Dra. Pérez",\
                 "lugar":"Consultorio Centro","fechaHora":"%s","indicacionesPrevias":"Llevar los estudios."}"""
-                .formatted(fechaHora);
+                .formatted(titulo, fechaHora);
+    }
+
+    /** Id de la notificación de la cita de ese día, leída de la agenda. */
+    private Long notificacionDeCita(LocalDate dia, String token) throws Exception {
+        String agenda = mockMvc.perform(get("/api/recordatorios/agenda?desde=" + dia + "&hasta=" + dia)
+                .header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        List<Integer> ids = JsonPath.read(agenda, "$[?(@.recordatorio.tipo == 'CITA')].notificacionId");
+        return ids.get(0).longValue();
+    }
+
+    private static int ocurrencias(String texto, String buscado) {
+        int cantidad = 0;
+        for (int i = texto.indexOf(buscado); i >= 0; i = texto.indexOf(buscado, i + 1)) {
+            cantidad++;
+        }
+        return cantidad;
     }
 
     private Long cuentaDePrueba(String nombreUsuario, String nombre, String apellido) {
