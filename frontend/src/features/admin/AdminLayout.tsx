@@ -3,7 +3,7 @@ import { Outlet } from "react-router-dom"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Menu01Icon } from "@hugeicons/core-free-icons"
 
-import marcaAlma from "@/assets/alma-marca.svg"
+import alma from "@/assets/alma_acompana.webp"
 import { BotonAccesibilidad } from "@/components/alma/boton-accesibilidad"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
@@ -24,17 +24,20 @@ const TITULO_APP = ADMIN_TITULO_APP
 
 /**
  * Marca del Figma (40:316): avatar de Alma, "Alma" en h2-desktop y "Panel de operador".
+ * El avatar es el de LayoutPersona (alma_acompana.webp en un círculo accent-soft).
+ * PENDIENTE: alma-marca.svg quedó sin uso.
  * compacta: en la barra de celular el avatar se oculta en pantallas muy angostas, para que
  * con letra grande entren "Menú", la marca y el botón de accesibilidad.
  */
 function Marca({ compacta = false }: { compacta?: boolean }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
-      <img
-        src={marcaAlma}
-        alt=""
-        className={`size-12 shrink-0 ${compacta ? "hidden sm:block" : ""}`}
-      />
+      {/* Como en LayoutPersona: círculo accent-soft con Alma adentro y borde en alto contraste */}
+      <span
+        className={`size-12 shrink-0 items-center justify-center rounded-full bg-accent-soft contraste-alto:border-2 contraste-alto:border-foreground ${compacta ? "hidden sm:inline-flex" : "inline-flex"}`}
+      >
+        <img src={alma} alt="" className="size-10 object-contain" />
+      </span>
       <div className="flex min-w-0 flex-col">
         <span className="font-heading text-h2-desktop font-medium text-heading">{ADMIN_MARCA}</span>
         <span className="text-caption text-muted-foreground">{ADMIN_PANEL}</span>
