@@ -357,7 +357,7 @@ Pantallas en el Figma:
 
 - **Actor(es):** Persona mayor
 - **Módulo:** Microcápsulas de cuidado y prevención
-- **Descripción:** Permite a la persona mayor consultar el listado de microcápsulas de cuidado y prevención vigentes, publicadas por el administrador de contenidos, ver el detalle de cada una, y marcarlas como favoritas para poder releerlas más adelante. Una microcápsula nunca se elimina físicamente al perder vigencia (por ejemplo, al publicarse contenido nuevo la semana siguiente): deja de listarse como vigente, pero su registro persiste. La marca de favorita es una asociación independiente entre el usuario y la microcápsula, por lo que una microcápsula guardada sigue siendo accesible para ese usuario aunque ya no esté entre las vigentes.
+- **Descripción:** Permite a la persona mayor consultar el listado de microcápsulas de cuidado y prevención vigentes, publicadas por el administrador de contenidos, ver el detalle de cada una, y marcarlas como favoritas para poder releerlas más adelante. Una microcápsula nunca se elimina físicamente al perder vigencia (por ejemplo, al publicarse contenido nuevo la semana siguiente): deja de listarse como vigente, pero su registro persiste. La marca de favorita es una asociación independiente entre el usuario y la microcápsula, por lo que una microcápsula guardada sigue siendo accesible para ese usuario aunque ya no esté entre las vigentes. El listado se organiza en dos pestañas: Todas (las vigentes) y Guardadas (las que la persona marcó, estén o no vigentes).
 - **Precondición:**
   - El usuario se encuentra autenticado en la aplicación.
   - El usuario accede a la sección Entretenimiento > Leer.
@@ -367,30 +367,39 @@ Pantallas en el Figma:
 
 1. **Actor:** Accede a la sección Entretenimiento > Leer.
 2. **Sistema:** Buscar las microcápsulas publicadas. (C.A. Nº1)
-3. **Sistema:** Mostrar el listado de microcápsulas en formato de tarjetas, sin opciones de filtro.
+3. **Sistema:** Mostrar el listado de microcápsulas en formato de tarjetas, sin opciones de filtro, con las pestañas "Todas" y "Guardadas".
 4. **Actor:** Selecciona una tarjeta.
 5. **Sistema:** Mostrar el detalle ampliado de la microcápsula seleccionada.
-6. **Actor:** Marca la microcápsula como favorita (opcional). (C.A. Nº2)
+6. **Actor:** Marca la microcápsula como favorita con el botón "Guardar" (opcional). (C.A. Nº2)
 7. **Sistema:** Guardar la marca de favorita asociada al usuario.
 8. Fin CU.
 
 ### Camino alterno Nº1: No hay microcápsulas publicadas
 
 2. **Sistema:** No encontrar microcápsulas publicadas.
-3. **Sistema:** Mostrar mensaje informando que no hay contenido disponible por el momento.
+3. **Sistema:** Mostrar el mensaje "Por ahora no hay lecturas disponibles.".
 4. Fin CU.
 
 ### Camino alterno Nº2: El usuario quita una marca de favorita existente
 
-6. **Actor:** Selecciona quitar la marca de favorita de una microcápsula ya marcada.
+6. **Actor:** Selecciona "Quitar de guardadas" en una microcápsula ya marcada.
 7. **Sistema:** Eliminar la marca de favorita asociada al usuario para esa microcápsula.
 8. **Sistema:** Retornar al camino básico, paso 8.
+
+### Camino alterno Nº3: No hay microcápsulas guardadas
+
+2. **Actor:** Accede a la pestaña "Guardadas".
+3. **Sistema:** No encontrar microcápsulas marcadas por el usuario.
+4. **Sistema:** Mostrar el mensaje "Todavía no guardaste ninguna lectura.".
+5. Fin CU.
 
 ### Reglas de negocio
 
 - El listado principal muestra únicamente microcápsulas vigentes; no cuenta con filtros ni ordenamiento configurable por el usuario en esta etapa.
 - Una microcápsula que deja de ser vigente no se elimina del sistema: solo deja de listarse en la consulta general.
 - La marca de favorita es una relación independiente entre usuario y microcápsula; una microcápsula guardada permanece accesible para el usuario que la guardó, aunque haya perdido vigencia.
+- Una microcápsula guardada dada de baja se muestra en "Guardadas" igual que las demás.
+- El detalle de una microcápsula dada de baja solo es accesible para quien la guardó.
 
 ### Pantallas relacionadas
 
@@ -398,7 +407,7 @@ Pantallas en el Figma:
 - Entretenimiento (móvil y escritorio)
 - Leer (móvil y escritorio)
 
-Sin crear todavía en el Figma: el detalle de una microcápsula y la sección de guardadas (con la marca de favorita).
+Armadas sin diseño en el Figma, con los componentes existentes: el detalle de una microcápsula y la pestaña Guardadas (con el botón Guardar).
 
 ---
 
@@ -858,7 +867,7 @@ Se actualiza al terminar cada funcionalidad, del lado del back y del front.
 | CU-03 | Pendiente | Pendiente |
 | CU-04 | Pendiente | Pendiente |
 | CU-05 | Hecho: `GET /api/juegos/siguiente` y `POST /api/juegos/respuesta`, solo `PERSONA_MAYOR`. El sistema elige la categoría (rotación REFRAN, SERIE, ASOCIACION, MEMORIA) y el ejercicio (no repite el último; entre los del nivel, el jugado hace más tiempo), valida la respuesta, registra el intento, ajusta el nivel (3 aciertos seguidos suben, 2 errores seguidos bajan) y calcula la ronda de 10. Entidades `ProgresoJuego` e `IntentoEjercicio`; datos de ejemplo ampliados a 30 ejercicios (`DatosDeCatalogoJuegos`); con pruebas automáticas | Hecho: Entretenimiento (Jugar y Leer; Leer lleva a una pantalla provisoria hasta CU-06), inicio de Juegos ("Empecemos"), ejercicios de opción múltiple (tocar la opción responde), de memoria ("Ya lo recordé") y de ordenar (tocar los pasos en orden, "Empezar de nuevo" y "Listo"), panel "¡Muy bien!" / "¡Casi!" con la respuesta correcta y la explicación, y pantalla final "Jugaste N juegos hoy" con "Seguir jugando" y "Salir". Escritorio adaptado desde las pantallas de celular. **Diferencias con el Figma:** contrato de juegos, sección 12. No hay pruebas automáticas del front |
-| CU-06 | Pendiente | Pendiente |
+| CU-06 | Hecho: `GET /api/microcapsulas` (las vigentes, con el campo `guardada`), `GET /api/microcapsulas/guardadas` (incluye las dadas de baja), `GET /api/microcapsulas/{id}` y `PUT` y `DELETE /api/microcapsulas/{id}/guardada` (idempotentes), solo `PERSONA_MAYOR`. Una microcápsula dada de baja sigue accesible para quien la guardó. Entidad `MicrocapsulaGuardada`; datos de ejemplo ampliados a 10 microcápsulas (`DatosDeCatalogoMicrocapsulas`); con pruebas automáticas | Hecho: Leer (`/entretenimiento/lecturas`) con las pestañas "Todas" y "Guardadas" (la pestaña viaja en la URL), tarjetas con etiqueta de categoría, título, "Leer" y la marca "Guardada"; detalle (`/entretenimiento/lecturas/:id`) con el texto en párrafos, "Guardar" y "Quitar de guardadas", y avisos flotantes de éxito. **Diferencias con el Figma:** el detalle y las pestañas no estaban diseñados (contrato de microcápsulas, sección 12). No hay pruebas automáticas del front |
 | CU-07 | Hecho: alta, edición, baja y consulta de medicaciones con sus notificaciones (`/api/recordatorios/medicacion`, `GET` y `DELETE /api/recordatorios/{id}`), solo `PERSONA_MAYOR`; las pruebas de integración están escritas pero todavía no se corrieron contra la base | Hecho: alta y edición de medicaciones (`/recordatorios/nuevo` y `/recordatorios/:id/editar`) con nombre, dosis, hora, frecuencia (botones de opción, "Todos los días" preseleccionado) y duración de 1 a 365 días con − y +; errores junto a cada campo y aviso arriba si la API responde 400; eliminación con confirmación ("¿Querés eliminar este recordatorio?") desde la pantalla de edición; aviso flotante de éxito ("Tu recordatorio quedó creado", "actualizado" o "eliminado"). Se ven en la pestaña Lista ("Medicación de hoy" y "Mis medicaciones") y en el Calendario, con "Ya la tomé" y "Deshacer" solo en el día de hoy. **Diferencias con el Figma:** frecuencia, "Mis medicaciones" y tarjetas nuevas (contrato de recordatorios, secciones 10.1 y 12). La hora usa el campo nativo del navegador. No hay pruebas automáticas del front |
 | CU-08 | Hecho: alta, edición, baja y consulta de citas con su notificación (`/api/recordatorios/citas`); las pruebas de integración están escritas pero todavía no se corrieron contra la base | Hecho: alta y edición de citas con título, especialidad, médico, lugar, fecha, hora e indicaciones previas (opcional), con errores junto a cada campo y aviso arriba si la API responde 400; detalle de la cita (`/recordatorios/:id`) con "Editar" y "Eliminar" (con confirmación); las citas se ven en "Citas médicas" de la Lista y en el Calendario (punto en el día). La fecha y la hora usan campos nativos del navegador (formato y aspecto según el navegador). **Diferencia con el Figma:** el formulario y el detalle de la cita no estaban diseñados; se armaron con los mismos componentes que los de medicación. No hay pruebas automáticas del front |
 | CU-09 | Parcial: `GET /api/recordatorios/agenda`, `PUT /api/recordatorios/notificaciones/{id}/estado` (tomada, vista, deshacer) y `RecordatorioService.agenda(...)` para el módulo de Chat; el saludo de Alma ya existe (`GET /api/chat/saludo`, CU-02), que menciona los recordatorios de hoy | Parcial: tarjeta "Para hoy" (`TarjetaParaHoy`) que avisa de la primera notificación pendiente del día y agrupa las de la misma hora; "Ya la tomé" para una medicación y, para una cita, la tarjeta entera lleva a su detalle, que la marca como vista; la X la oculta solo en memoria. La agenda de hoy se vuelve a pedir cada 60 segundos y al volver a la ventana. La Lista y el Calendario muestran los estados "Pendiente", "Tomada a las…", "Pasó hace…" y "Vista" con texto e ícono. Falta ubicar la tarjeta en el saludo de Alma (módulo de Chat, CU-02): hoy se monta de forma provisoria en el Inicio |
@@ -868,4 +877,4 @@ Se actualiza al terminar cada funcionalidad, del lado del back y del front.
 | CU-13 | Hecho: `GET` y `PUT /api/accesibilidad` solo para `PERSONA_MAYOR`, y las preferencias viajan en el login y en `/api/auth/me`; faltan pruebas automáticas de esos dos endpoints | Hecho: panel (tamaño de letra, alto contraste, "Volver a lo original") montado una sola vez en el layout de la persona mayor y abierto desde el botón de accesibilidad (flotante arriba a la derecha en celular; botón "Accesibilidad" al pie del menú lateral en escritorio) y desde la fila "Tamaño de letra y contraste" de Perfil; se guardan en el dispositivo y con `PUT`. **Diferencia con el CU-13:** en celular, la pantalla Perfil NO muestra el botón flotante, porque ya tiene la fila "Tamaño de letra y contraste" que abre el mismo panel (en escritorio el botón del menú está siempre). En el Login el botón sigue flotante (abajo a la derecha en escritorio), distinto del menú lateral de las demás pantallas en escritorio. En el panel de operador el botón flotante abre el mismo panel, pero solo con preferencias del dispositivo, porque el administrador no tiene preferencias en la cuenta |
 | CU-14 | Hecho: `POST /api/auth/login`, `GET /api/auth/me` y `GET /api/perfil` (datos de la pantalla Perfil); no hay endpoint para cerrar sesión (el contrato lo resuelve en el front) | Hecho: login con "Mostrar contraseña" y "Mantener sesión iniciada", recuperación de la sesión con `/api/auth/me`, redirección por rol, pantalla Perfil de la persona mayor y confirmación "¿Querés cerrar sesión?" (`DialogoCerrarSesion`, un solo diálogo para la persona mayor y el panel de operador). El panel de operador tiene su propio Perfil con los datos de la persona administradora (propuesta, sin pantalla en el Figma) |
 
-Clases del diagrama ya creadas en el back: `Cuenta`, `PersonaMayor`, `Administrador`, `PreferenciaAccesibilidad`, `Recordatorio`, `RecordatorioMedicacion`, `RecordatorioCita`, `NotificacionRecordatorio`, `RegistroAnimo`, `Ejercicio`, `OpcionRespuesta`, `ProgresoJuego`, `IntentoEjercicio`, `Microcapsula` y los enums `Rol`, `TamanioLetra`, `FrecuenciaToma`, `EstadoNotificacion`, `NivelAnimo`, `CategoriaEjercicio`, `FormatoEjercicio`, `NivelDificultad` y `CategoriaMicrocapsula`.
+Clases del diagrama ya creadas en el back: `Cuenta`, `PersonaMayor`, `Administrador`, `PreferenciaAccesibilidad`, `Recordatorio`, `RecordatorioMedicacion`, `RecordatorioCita`, `NotificacionRecordatorio`, `RegistroAnimo`, `Ejercicio`, `OpcionRespuesta`, `ProgresoJuego`, `IntentoEjercicio`, `Microcapsula`, `MicrocapsulaGuardada` y los enums `Rol`, `TamanioLetra`, `FrecuenciaToma`, `EstadoNotificacion`, `NivelAnimo`, `CategoriaEjercicio`, `FormatoEjercicio`, `NivelDificultad` y `CategoriaMicrocapsula`.
