@@ -101,7 +101,7 @@ No hay restricción de unicidad: se pueden registrar varios ánimos con el mismo
 
 ### 5.4 Si la persona no elige (CU-01 camino alterno 1)
 
-El widget se queda visible mientras no se elija nada, y el chat libre sigue habilitado sin pregunta contextual. No se guarda nada.
+El widget se queda visible mientras no se elija nada y la persona no mande su primer mensaje, y el chat libre sigue habilitado sin pregunta contextual. Si la persona escribe sin haber elegido, el widget desaparece y ese ingreso queda sin ánimo registrado (decisión de `feature/chat`, `contrato-chat.md`, sección 2). No se guarda nada.
 
 ### 5.5 Sin alertas ni monitoreo
 
@@ -221,7 +221,7 @@ Formato Problem Details y textos generales: los de `common/MensajesError` (contr
 
 | Dónde | Texto |
 |---|---|
-| Pregunta del widget (mensaje de Alma) | "¿Cómo te sentís hoy?" |
+| | Pregunta del widget (mensaje de Alma) | "¿Cómo te sentís hoy? Contame si querés, o escribime lo que quieras." |
 | Nombre accesible del grupo de caritas | "Cómo te sentís" |
 | Etiqueta de `MUY_MAL` | "Muy mal" |
 | Etiqueta de `MAL` | "Mal" |
@@ -348,6 +348,7 @@ El Chat todavía no existe. Para poder probar CU-01 de punta a punta, `InicioPag
 5. En el Inicio todavía no hay campo para escribir, así que el enlace no desaparece con el primer mensaje: esa parte (5.6, "Hasta cuándo") la implementa `feature/chat`.
 
 `InicioPage` es un archivo compartido con Recordatorios: el cambio se limita a ese bloque y se avisa antes.
+**Actualización (v7):** `feature/chat` borra `InicioPage` y monta el widget en la pantalla del chat (`contrato-chat.md`, sección 11.2). Este montaje provisorio deja de existir.
 
 ### 11.5 Accesibilidad (público: personas mayores)
 
@@ -416,3 +417,4 @@ El Chat todavía no existe. Para poder probar CU-01 de punta a punta, `InicioPag
 - **v4 (04/11/2026):** al elegir, el widget se reemplaza por una burbuja de la persona con la carita elegida y debajo la pregunta de Alma (11.2, `BurbujaAnimo`). "Cambiar cómo me siento" está disponible hasta el primer mensaje de la persona, y al usarlo reemplaza la burbuja y la pregunta en el mismo lugar (5.6). Se actualizan decisiones, montaje provisorio, accesibilidad, diferencias con el Figma y pruebas.
 - **v5 (04/11/2026):** el "ánimo de hoy" se calcula solo con el `Clock` inyectado (5.2) y se define el anuncio al corregir (9.1, 11.5). En 5.7 se aclara que el 400 por cuerpo ilegible ya lo resuelve `GlobalExceptionHandler`.
 - **v6 (04/11/2026):** las caritas del widget van de izquierda a derecha de "Muy bien" a "Muy mal", como en el Figma (11.1). Antes decía de `MUY_MAL` a `MUY_BIEN`. Solo cambia el orden en pantalla.
+- **v7 (05/11/2026):** con `feature/chat`, la pregunta del widget pasa a "¿Cómo te sentís hoy? Contame si querés, o escribime lo que quieras." (9.1); si la persona escribe sin elegir un ánimo, el widget desaparece (5.4); el montaje provisorio en el Inicio lo reemplaza el chat (11.4).

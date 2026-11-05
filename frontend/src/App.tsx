@@ -7,6 +7,7 @@ import { AuthProvider } from "@/features/auth/AuthProvider"
 import { LoginPage } from "@/features/auth/LoginPage"
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute"
 import { SinPermisoPage } from "@/features/auth/SinPermisoPage"
+import { ChatPage, ChatProvider } from "@/features/chat"
 import { EntretenimientoPage } from "@/features/entretenimiento/EntretenimientoPage"
 import { TITULO_LECTURAS } from "@/features/entretenimiento/mensajes"
 import {
@@ -15,7 +16,6 @@ import {
   RUTA_JUGAR,
   RUTA_LECTURAS,
 } from "@/features/entretenimiento/rutas"
-import { InicioPage } from "@/features/inicio/InicioPage"
 import { JuegoPage, JuegosInicioPage } from "@/features/juegos"
 import { PerfilPage } from "@/features/perfil/PerfilPage"
 import {
@@ -32,9 +32,16 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route element={<ProtectedRoute roles={["PERSONA_MAYOR"]} />}>
-            {/* Layout compartido: navegación, Alma y botón de accesibilidad (CU-13) */}
-            <Route element={<LayoutPersona />}>
-              <Route path="/" element={<InicioPage />} />
+            {/* Layout compartido: navegación, Alma y botón de accesibilidad (CU-13). El ChatProvider lo envuelve
+                para que la conversación sobreviva al cambiar de pantalla (CU-02). */}
+            <Route
+              element={
+                <ChatProvider>
+                  <LayoutPersona />
+                </ChatProvider>
+              }
+            >
+              <Route path="/" element={<ChatPage />} />
               <Route path={RUTA_ENTRETENIMIENTO} element={<EntretenimientoPage />} />
               <Route path={RUTA_JUEGOS} element={<JuegosInicioPage />} />
               <Route path={RUTA_JUGAR} element={<JuegoPage />} />

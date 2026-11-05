@@ -56,11 +56,13 @@ type Opciones = {
   method?: "GET" | "POST" | "PUT" | "DELETE"
   /** Se manda como JSON. Si es un FormData (subida de archivos) se manda tal cual. */
   cuerpo?: unknown
+  /** Tiempo máximo de esta llamada en ms. Por defecto 10 000: solo lo cambia quien espera al modelo (chat). */
+  tiempoMaximoMs?: number
 }
 
 export async function api<T>(
   ruta: string,
-  { method = "GET", cuerpo }: Opciones = {}
+  { method = "GET", cuerpo, tiempoMaximoMs = TIEMPO_MAXIMO_MS }: Opciones = {}
 ): Promise<T> {
   // El login es público: no se le manda un token viejo (el back lo rechazaría con 401).
   const token = ruta === RUTA_LOGIN ? null : leerToken()
@@ -83,7 +85,7 @@ export async function api<T>(
           : esFormulario
             ? cuerpo
             : JSON.stringify(cuerpo),
-      signal: AbortSignal.timeout(TIEMPO_MAXIMO_MS),
+      signal: AbortSignal.timeout(tiempoMaximoMs),
     })
   } catch {
     throw new ApiError(0)
