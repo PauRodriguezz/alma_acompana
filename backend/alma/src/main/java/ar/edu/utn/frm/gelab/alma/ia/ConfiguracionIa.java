@@ -7,9 +7,11 @@ import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -24,14 +26,36 @@ import org.springframework.web.client.RestClient;
 @Configuration
 public class ConfiguracionIa {
 
+    static final String API_EXTRACCION = "ollamaApiExtraccion";
+    static final String CHAT_MODEL_EXTRACCION = "ollamaChatModelExtraccion";
+
     @Bean
+    @Primary
     public OllamaApi ollamaApi(@Value("${spring.ai.ollama.base-url}") String urlBase,
             @Value("${alma.ia.timeout-llamada-ms}") long timeoutLlamadaMs) {
         return crearOllamaApi(urlBase, Duration.ofMillis(timeoutLlamadaMs));
     }
 
     @Bean
+    @Primary
     public OllamaChatModel ollamaChatModel(OllamaApi ollamaApi,
+            @Value("${spring.ai.ollama.chat.options.model}") String modelo) {
+        return crearChatModel(ollamaApi, modelo);
+    }
+
+    /**
+     * Segundo cliente, para la extracción de recuerdos (contrato del grafo, 5.4): mismo servidor y mismo modelo,
+     * con su propio tope de 25 s por llamada. Los dos primeros son {@code @Primary}: el chat y Spring AI siguen
+     * recibiendo los de siempre.
+     */
+    @Bean(API_EXTRACCION)
+    public OllamaApi ollamaApiExtraccion(@Value("${spring.ai.ollama.base-url}") String urlBase,
+            @Value("${alma.ia.timeout-extraccion-ms:25000}") long timeoutMs) {
+        return crearOllamaApi(urlBase, Duration.ofMillis(timeoutMs));
+    }
+
+    @Bean(CHAT_MODEL_EXTRACCION)
+    public OllamaChatModel ollamaChatModelExtraccion(@Qualifier(API_EXTRACCION) OllamaApi ollamaApi,
             @Value("${spring.ai.ollama.chat.options.model}") String modelo) {
         return crearChatModel(ollamaApi, modelo);
     }

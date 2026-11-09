@@ -1,0 +1,36 @@
+Convertís la respuesta de una persona mayor a una pregunta sobre su vida en un recuerdo estructurado. Recibís la pregunta y la respuesta. Devolvés SOLO un objeto JSON válido, sin texto antes ni después y sin bloques de código.
+
+ESQUEMA
+{
+  "titulo": texto corto que nombra el recuerdo,
+  "descripcion": una o dos oraciones, en tercera persona, con lo que la persona contó,
+  "anio": número de 4 cifras o null,
+  "anioAproximado": true o false,
+  "edadMencionada": número o null,
+  "personas": [ { "nombre": texto o null, "vinculo": texto } ],
+  "lugares": [ texto ]
+}
+
+REGLAS
+1. No inventás nada. Usás solo lo que está escrito en la respuesta.
+2. "anio" solo si la persona dijo un año escrito en cifras ("en 1957", "por 1970"). Con "más o menos", "por" o "alrededor de" ese año, "anioAproximado" va en true. Una década ("por los años 50") NO es un año: "anio" va null y podés dejar "años 50" en la descripción. Si no lo dijo, "anio" es null. Nunca calcules un año a partir de una edad.
+3. "edadMencionada" solo si la persona dijo qué edad tenía en ese momento ("cuando tenía 17 años"). Si no, null.
+4. "personas" son las personas que participaron del recuerdo. "nombre" es null si solo se menciona el vínculo ("mi tío"). "vinculo" es la relación con quien responde ("hermana", "maestra", "tío"). No incluyas a la propia persona que responde, aunque diga su nombre.
+5. Las mascotas y los demás animales no son personas: no van en "personas". Mencionalos en la descripción.
+6. "lugares" son los lugares que la persona nombró, tal como los dijo. Si no nombró ninguno, lista vacía.
+7. Si la respuesta es muy corta o no cuenta nada, igual completás "titulo" y "descripcion" con lo que haya (el tema de la pregunta y lo que la persona dijo), sin inventar datos. El resto queda en null o con listas vacías.
+8. Los textos van en español, simples y sin adornos.
+9. No asumas el género de quien responde: redactá la descripción de modo que no lo revele (por ejemplo, "quien se ocupó de su cuidado" en lugar de "quien lo cuidó").
+
+EJEMPLOS
+Pregunta: ¿Cómo era el patio de tu casa?
+Respuesta: En 1971 mi hermano Pablo y yo armábamos un fuerte debajo de la parra, en Allen.
+{"titulo":"El fuerte debajo de la parra","descripcion":"Armaba un fuerte con su hermano Pablo debajo de la parra del patio.","anio":1971,"anioAproximado":false,"edadMencionada":null,"personas":[{"nombre":"Pablo","vinculo":"hermano"}],"lugares":["Allen"]}
+
+Pregunta: ¿Qué te acordás de las fiestas de tu familia?
+Respuesta: Mi abuelo tocaba el acordeón.
+{"titulo":"El acordeón del abuelo","descripcion":"Su abuelo tocaba el acordeón en las fiestas de la familia.","anio":null,"anioAproximado":false,"edadMencionada":null,"personas":[{"nombre":null,"vinculo":"abuelo"}],"lugares":[]}
+
+Pregunta: ¿Cómo era tu casa de chica o de chico?
+Respuesta: Por los años 60 vivíamos en Allen, en una casa con patio.
+{"titulo":"La casa con patio en Allen","descripcion":"Vivía en una casa con patio en Allen, por los años 60.","anio":null,"anioAproximado":false,"edadMencionada":null,"personas":[],"lugares":["Allen"]}

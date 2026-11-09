@@ -10,6 +10,7 @@ public final class MensajesError {
     public static final String TITULO_SIN_PERMISO = "Sin permiso";
     public static final String TITULO_NO_ENCONTRADO = "No encontrado";
     public static final String TITULO_ERROR_INTERNO = "Error interno";
+    public static final String TITULO_CONFLICTO = "Conflicto";
 
     public static final String DATOS_INVALIDOS = "Revisá los datos ingresados.";
     public static final String CREDENCIALES_INVALIDAS = "Usuario o contraseña incorrectos. Intentá nuevamente.";

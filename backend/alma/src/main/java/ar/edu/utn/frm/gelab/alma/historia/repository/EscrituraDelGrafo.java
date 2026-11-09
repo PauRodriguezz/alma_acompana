@@ -17,8 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import ar.edu.utn.frm.gelab.alma.historia.domain.EtapaDeVida;
 import ar.edu.utn.frm.gelab.alma.historia.domain.NombreNormalizado;
+import ar.edu.utn.frm.gelab.alma.historia.domain.NuevoRecuerdo;
 import ar.edu.utn.frm.gelab.alma.historia.domain.PrecisionAnio;
 import ar.edu.utn.frm.gelab.alma.historia.domain.PreguntaDelGuion;
+import ar.edu.utn.frm.gelab.alma.historia.domain.TipoProgreso;
 
 /**
  * Escrituras al grafo con Cypher explícito por {@link Neo4jClient}, siempre ancladas en el nodo
@@ -74,6 +76,64 @@ public class EscrituraDelGrafo {
                 """)
                 .bindAll(parametros("preguntas", filas))
                 .run().counters().nodesCreated();
+    }
+
+    /** Resultado de {@link #registrarProgreso}. */
+    public enum ResultadoRegistro {
+        REGISTRADO,
+        PREGUNTA_INEXISTENTE,
+        /** La persona ya había respondido o salteado esa pregunta (regla de integridad 3). */
+        YA_REGISTRADA
+    }
+
+    /** {@code MERGE} del nodo de la persona: se crea la primera vez que usa el módulo y no guarda otros datos. */
+    @Transactional(MANEJADOR_NEO4J)
+    public void asegurarPersona(Long personaId) {
+        ejecutar("MERGE (:PersonaMayor {idPersonaMayor: $persona})", parametros("persona", personaId));
+    }
+
+    /**
+     * Registra {@code RESPONDIO} o {@code SALTEO} con la fecha de ahora, en una sola transacción:
+     * <ol>
+     *   <li>{@code MERGE} del nodo de la persona;</li>
+     *   <li><b>bloqueo</b> de ese nodo ({@link #bloquearPersona}), que se mantiene hasta el final de la
+     *       transacción: dos pedidos de la misma persona se atienden uno detrás del otro y no pueden pasar a
+     *       la vez el chequeo del paso 4 (contrato, sección 2, "Concurrencia en responder y saltear");</li>
+     *   <li>la pregunta existe;</li>
+     *   <li>una sola consulta que crea la relación solo si la persona no tiene {@code RESPONDIO} ni
+     *       {@code SALTEO} hacia esa pregunta.</li>
+     * </ol>
+     */
+    @Transactional(MANEJADOR_NEO4J)
+    public ResultadoRegistro registrarProgreso(Long personaId, int preguntaId, TipoProgreso tipo) {
+        asegurarPersona(personaId);
+        bloquearPersona(personaId);
+        long preguntas = neo4jClient.query("MATCH (q:PreguntaGuion {idPreguntaGuion: $pregunta}) RETURN count(q) AS c")
+                .bindAll(parametros("pregunta", preguntaId)).fetch().one()
+                .map(fila -> ((Number) fila.get("c")).longValue()).orElse(0L);
+        if (preguntas == 0) {
+            return ResultadoRegistro.PREGUNTA_INEXISTENTE;
+        }
+        int creadas = ejecutar("""
+                MATCH (p:PersonaMayor {idPersonaMayor: $persona})
+                MATCH (q:PreguntaGuion {idPreguntaGuion: $pregunta})
+                WHERE NOT EXISTS { (p)-[:RESPONDIO|SALTEO]->(q) }
+                CREATE (p)-[:%s {fecha: $fecha}]->(q)
+                """.formatted(tipo.name()),
+                parametros("persona", personaId, "pregunta", preguntaId, "fecha", ZonedDateTime.now(clock)))
+                .counters().relationshipsCreated();
+        return creadas == 1 ? ResultadoRegistro.REGISTRADO : ResultadoRegistro.YA_REGISTRADA;
+    }
+
+    /**
+     * Toma el bloqueo de escritura del nodo de la persona con una escritura que no cambia nada
+     * ({@code SET p.idPersonaMayor = p.idPersonaMayor}), así el nodo no suma propiedades. El bloqueo dura
+     * hasta que termina la transacción. Es {@code protected} para que la prueba de concurrencia pueda
+     * correr el mismo trabajo sin bloqueo (control).
+     */
+    protected void bloquearPersona(Long personaId) {
+        ejecutar("MATCH (p:PersonaMayor {idPersonaMayor: $persona}) SET p.idPersonaMayor = p.idPersonaMayor",
+                parametros("persona", personaId));
     }
 
     /** ¿La persona ya tiene algún recuerdo o alguna pregunta respondida o salteada? */
@@ -161,6 +221,77 @@ public class EscrituraDelGrafo {
     }
 
     // ---------- Historia de ejemplo: piezas ----------
+
+    /**
+     * Escribe un recuerdo nuevo con sus personas y lugares (contrato, 5.6), todo en <b>una sola transacción</b>
+     * y anclado en el nodo de la persona. Primero bloquea ese nodo, como responder y saltear: dos escrituras de
+     * la misma persona se atienden una detrás de la otra, así que "buscar y si no existe crear" no puede
+     * duplicar personas ni lugares (regla de integridad 5). Si la persona ya no tiene nodo (por ejemplo, se
+     * dio de baja mientras tanto) o falta la pregunta, lanza y no queda nada escrito.
+     *
+     * @return el id del recuerdo
+     */
+    @Transactional(MANEJADOR_NEO4J)
+    public String registrarRecuerdo(Long personaId, NuevoRecuerdo nuevo) {
+        bloquearPersona(personaId);
+        String recuerdoId = crearRecuerdo(personaId, nuevo.preguntaId(), ZonedDateTime.now(clock), nuevo.titulo(),
+                nuevo.descripcion(), nuevo.anio(), nuevo.precision(), nuevo.etapa(), 0);
+        for (NuevoRecuerdo.PersonaNueva persona : nuevo.personas()) {
+            enlazarOCrearPersona(personaId, recuerdoId, persona);
+        }
+        for (String lugar : nuevo.lugares()) {
+            String existente = buscarLugar(personaId, NombreNormalizado.de(lugar));
+            enlazarLugar(recuerdoId, existente != null ? existente : crearLugar(lugar));
+        }
+        return recuerdoId;
+    }
+
+    /**
+     * Con nombre: se reutiliza la persona con ese {@code nombreNormalizado} (P6) sin cambiarle el vínculo.
+     * Sin nombre: se reutiliza si hay exactamente una persona con ese vínculo (P7). Si no, se crea.
+     */
+    private void enlazarOCrearPersona(Long personaId, String recuerdoId, NuevoRecuerdo.PersonaNueva persona) {
+        String normalizado = NombreNormalizado.de(persona.nombre());
+        String existente = null;
+        if (normalizado != null) {
+            existente = unico(neo4jClient.query("""
+                    MATCH (:PersonaMayor {idPersonaMayor: $persona})-[:CONOCE]->(pe:Persona {nombreNormalizado: $nombre})
+                    RETURN pe.idPersona AS id
+                    """).bindAll(parametros("persona", personaId, "nombre", normalizado)));
+        } else if (persona.vinculo() != null) {
+            List<String> conVinculo = ids(neo4jClient.query("""
+                    MATCH (:PersonaMayor {idPersonaMayor: $persona})-[:CONOCE {vinculo: $vinculo}]->(pe:Persona)
+                    RETURN pe.idPersona AS id
+                    """).bindAll(parametros("persona", personaId, "vinculo", persona.vinculo())));
+            existente = conVinculo.size() == 1 ? conVinculo.get(0) : null;
+        }
+        if (existente == null) {
+            crearPersona(personaId, recuerdoId, persona.nombre(), persona.vinculo());
+        } else {
+            ejecutar("""
+                    MATCH (pe:Persona {idPersona: $persona}), (r:Recuerdo {idRecuerdo: $recuerdo})
+                    MERGE (pe)-[:PARTICIPA_EN]->(r)
+                    """, parametros("persona", existente, "recuerdo", recuerdoId));
+        }
+    }
+
+    /** P8: el lugar con ese {@code nombreNormalizado} entre los recuerdos de la persona, o {@code null}. */
+    private String buscarLugar(Long personaId, String normalizado) {
+        return unico(neo4jClient.query("""
+                MATCH (:PersonaMayor {idPersonaMayor: $persona})-[:TIENE_RECUERDO]->(:Recuerdo)
+                      -[:OCURRIO_EN]->(l:Lugar {nombreNormalizado: $nombre})
+                RETURN DISTINCT l.idLugar AS id
+                """).bindAll(parametros("persona", personaId, "nombre", normalizado)));
+    }
+
+    private static List<String> ids(Neo4jClient.RunnableSpec consulta) {
+        return consulta.fetch().all().stream().map(fila -> (String) fila.get("id")).distinct().toList();
+    }
+
+    private static String unico(Neo4jClient.RunnableSpec consulta) {
+        List<String> ids = ids(consulta);
+        return ids.isEmpty() ? null : ids.get(0);
+    }
 
     private static Map<String, Object> progreso(int pregunta, ZonedDateTime fecha) {
         return parametros("pregunta", pregunta, "fecha", fecha);

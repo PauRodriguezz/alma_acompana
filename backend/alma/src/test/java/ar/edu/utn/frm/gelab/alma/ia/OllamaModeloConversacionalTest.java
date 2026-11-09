@@ -89,6 +89,17 @@ class OllamaModeloConversacionalTest {
                 400);
     }
 
+    /** Chat con su tope y extracción con otro: dos clientes contra el mismo servidor falso. */
+    private OllamaModeloConversacional modeloConDosClientes(Duration timeoutChat, Duration timeoutExtraccion) {
+        String url = "http://127.0.0.1:" + servidor.getAddress().getPort();
+        OllamaChatModel chat = ConfiguracionIa.crearChatModel(ConfiguracionIa.crearOllamaApi(url, timeoutChat),
+                "gemma4:cloud");
+        OllamaChatModel extraccion = ConfiguracionIa
+                .crearChatModel(ConfiguracionIa.crearOllamaApi(url, timeoutExtraccion), "gemma4:cloud");
+        return new OllamaModeloConversacional(chat, extraccion, new LimitadorDePedidos(Duration.ofSeconds(2)),
+                "gemma4:cloud", 0.6, 400);
+    }
+
     private OllamaModeloConversacional modelo() {
         return modelo(Duration.ofSeconds(5), Duration.ofSeconds(2));
     }
@@ -227,5 +238,70 @@ class OllamaModeloConversacionalTest {
 
         assertFalse(salida.getAll().contains("MENSAJE_SECRETO"), salida.getAll());
         assertFalse(salida.getAll().contains("INSTRUCCIONES_SECRETAS"), salida.getAll());
+    }
+
+    @Test
+    void conOpcionesElPedidoLlevaLosParametrosDeEsaLlamadaYElChatConservaLosSuyos() {
+        OllamaModeloConversacional modelo = modelo();
+
+        String respuesta = modelo.responder("I", TURNOS, new ModeloConversacional.OpcionesDeLlamada(0.1, 600));
+        String delChat = modelo.responder("I", TURNOS);
+
+        assertEquals("Hola, soy Alma.", respuesta);
+        assertEquals("Hola, soy Alma.", delChat);
+        String extraccion = cuerpos.get(0);
+        assertTrue(extraccion.contains("\"temperature\":0.1"), extraccion);
+        assertTrue(extraccion.contains("\"num_predict\":600"), extraccion);
+        assertTrue(extraccion.contains("\"think\":false"), extraccion);
+        String chat = cuerpos.get(1);
+        assertTrue(chat.contains("\"temperature\":0.6"), chat);
+        assertTrue(chat.contains("\"num_predict\":400"), chat);
+    }
+
+    @Test
+    void conOpcionesUsaElClienteDeExtraccionConSuPropioTope() {
+        demoraMs = 1500;
+        // El chat aguanta 5 s; la extracción corta a los 500 ms.
+        OllamaModeloConversacional modelo = modeloConDosClientes(Duration.ofSeconds(5), Duration.ofMillis(500));
+
+        assertThrows(ModeloNoDisponibleException.class,
+                () -> modelo.responder("I", TURNOS, new ModeloConversacional.OpcionesDeLlamada(0.1, 600)));
+        assertEquals("Hola, soy Alma.", modelo.responder("I", TURNOS), "El chat conserva su tope");
+        assertEquals(2, pedidos.get(), "Sin reintentos");
+    }
+
+    @Test
+    void elTopeDelChatNoCortaLaExtraccionMasLarga() {
+        demoraMs = 1000;
+        OllamaModeloConversacional modelo = modeloConDosClientes(Duration.ofMillis(400), Duration.ofSeconds(5));
+
+        assertThrows(ModeloNoDisponibleException.class, () -> modelo.responder("I", TURNOS));
+        assertEquals("Hola, soy Alma.",
+                modelo.responder("I", TURNOS, new ModeloConversacional.OpcionesDeLlamada(0.1, 600)));
+    }
+
+    @Test
+    void conOpcionesElLogNoEscribeElTexto(CapturedOutput salida) {
+        estado = 500;
+        cuerpoDeRespuesta = "{\"error\":\"eco MENSAJE_SECRETO\"}";
+
+        assertThrows(ModeloNoDisponibleException.class, () -> modelo().responder("INSTRUCCIONES_SECRETAS",
+                List.of(new TurnoConversacion(TurnoConversacion.Rol.PERSONA, "MENSAJE_SECRETO")),
+                new ModeloConversacional.OpcionesDeLlamada(0.1, 600)));
+
+        assertFalse(salida.getAll().contains("MENSAJE_SECRETO"), salida.getAll());
+        assertFalse(salida.getAll().contains("INSTRUCCIONES_SECRETAS"), salida.getAll());
+    }
+
+    @Test
+    void sinSerSobrescritoElMetodoConOpcionesDelegaEnElDeSiempre() {
+        List<String> vistos = new java.util.ArrayList<>();
+        ModeloConversacional minimo = (instrucciones, turnos) -> {
+            vistos.add(instrucciones);
+            return "ok";
+        };
+
+        assertEquals("ok", minimo.responder("X", TURNOS, new ModeloConversacional.OpcionesDeLlamada(0.1, 600)));
+        assertEquals(List.of("X"), vistos);
     }
 }
