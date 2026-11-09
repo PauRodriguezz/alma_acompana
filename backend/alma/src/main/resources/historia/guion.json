@@ -1,0 +1,23 @@
+[
+  { "id": 1,  "orden": 1,  "texto": "¿Dónde naciste?", "edadDesde": 0, "edadHasta": 0, "repreguntas": [] },
+  { "id": 2,  "orden": 2,  "texto": "¿Cómo era la casa donde pasaste tu infancia?", "edadDesde": 0, "edadHasta": 11, "repreguntas": ["LUGARES", "PERSONAS"] },
+  { "id": 3,  "orden": 3,  "texto": "¿Con quiénes vivías en tu infancia?", "edadDesde": 0, "edadHasta": 11, "repreguntas": ["PERSONAS"] },
+  { "id": 4,  "orden": 4,  "texto": "¿Cómo era el barrio donde creciste?", "edadDesde": 0, "edadHasta": 17, "repreguntas": ["LUGARES", "PERSONAS"] },
+  { "id": 5,  "orden": 5,  "texto": "¿A qué te gustaba jugar en tu infancia?", "edadDesde": 4, "edadHasta": 11, "repreguntas": ["PERSONAS"] },
+  { "id": 6,  "orden": 6,  "texto": "¿Qué comida de tu infancia te acordás con cariño?", "edadDesde": 0, "edadHasta": 11, "repreguntas": ["PERSONAS"] },
+  { "id": 7,  "orden": 7,  "texto": "¿Qué te acordás de tu escuela primaria?", "edadDesde": 6, "edadHasta": 12, "repreguntas": ["ANIO", "LUGARES", "PERSONAS"] },
+  { "id": 8,  "orden": 8,  "texto": "¿Te acordás de algún maestro o maestra que te haya marcado?", "edadDesde": 6, "edadHasta": 17, "repreguntas": ["ANIO", "LUGARES"] },
+  { "id": 9,  "orden": 9,  "texto": "¿Quién fue una persona muy importante para vos en tu infancia?", "edadDesde": 0, "edadHasta": 11, "repreguntas": ["PERSONAS"] },
+  { "id": 10, "orden": 10, "texto": "¿Con quiénes pasabas el tiempo en tu adolescencia?", "edadDesde": 12, "edadHasta": 17, "repreguntas": ["LUGARES"] },
+  { "id": 11, "orden": 11, "texto": "¿Qué música o qué bailes te gustaban de joven?", "edadDesde": 12, "edadHasta": 25, "repreguntas": ["LUGARES"] },
+  { "id": 12, "orden": 12, "texto": "¿Cuál fue tu primer trabajo?", "edadDesde": 14, "edadHasta": 25, "repreguntas": ["ANIO", "LUGARES", "PERSONAS"] },
+  { "id": 13, "orden": 13, "texto": "¿Cómo fue la primera casa donde viviste por tu cuenta?", "edadDesde": 18, "edadHasta": 35, "repreguntas": ["ANIO", "LUGARES", "PERSONAS"] },
+  { "id": 14, "orden": 14, "texto": "¿Cómo conociste a tu pareja?", "edadDesde": 18, "edadHasta": 35, "repreguntas": ["ANIO", "LUGARES"] },
+  { "id": 15, "orden": 15, "texto": "Si tuviste hijos o hijas, ¿cómo fue el día en que nació el primero?", "edadDesde": null, "edadHasta": null, "repreguntas": ["ANIO", "LUGARES", "PERSONAS"] },
+  { "id": 16, "orden": 16, "texto": "¿Cuál fue uno de los días más felices de tu vida?", "edadDesde": null, "edadHasta": null, "repreguntas": ["ANIO", "LUGARES", "PERSONAS"] },
+  { "id": 17, "orden": 17, "texto": "¿Hubo algún viaje que te haya marcado?", "edadDesde": null, "edadHasta": null, "repreguntas": ["ANIO", "LUGARES", "PERSONAS"] },
+  { "id": 18, "orden": 18, "texto": "¿Hubo alguna mudanza que te haya cambiado la vida?", "edadDesde": null, "edadHasta": null, "repreguntas": ["ANIO", "LUGARES"] },
+  { "id": 19, "orden": 19, "texto": "¿Qué logro de tu vida te hace sentir más orgullo?", "edadDesde": null, "edadHasta": null, "repreguntas": ["ANIO", "PERSONAS"] },
+  { "id": 20, "orden": 20, "texto": "¿Cómo era un domingo típico con tu familia?", "edadDesde": null, "edadHasta": null, "repreguntas": ["LUGARES", "PERSONAS"] },
+  { "id": 21, "orden": 21, "texto": "¿Qué tradición o comida de tu familia te gustaría que no se olvide?", "edadDesde": null, "edadHasta": null, "repreguntas": ["PERSONAS"] }
+]
