@@ -6,7 +6,7 @@
 
 **Dónde va:** `docs/contrato-grafo.md`. El `CLAUDE.md` debe enlazarlo en la sección "Documentos".
 
-**Última revisión contra el repo:** commit `41e53e8` (rama `grafo` con la carpeta `docs/Modelo_de_grafo/`), sobre el commit `d35f1a9` de `main`.
+**Última revisión contra el repo:** commit `4afe5d9` (rama `feature/grafo`, con `docs/Modelo_de_grafo/`, la fecha de nacimiento obligatoria y el `.gitattributes` ya commiteados), sobre el commit `d35f1a9` de `main`.
 
 **Contratos relacionados:** `docs/contrato-login.md` (token, roles, errores, convenciones), `docs/contrato-chat.md` (el modelo de IA y su límite de un pedido a la vez) y `docs/contrato-fecha-nacimiento.md` (precondición, ver sección 2). Todo lo que no se redefine acá sigue como está en esos documentos.
 
@@ -18,7 +18,7 @@
 
 **Incluye:**
 - El grafo en Neo4j con sus cinco nodos y siete relaciones (`docs/Modelo_de_grafo/modelo-de-grafo.md`), sus restricciones de unicidad y la conexión transaccional.
-- El guion de 22 preguntas de historia de vida y su carga automática al arrancar.
+- El guion de 21 preguntas de historia de vida y su carga automática al arrancar.
 - El progreso de cada persona: próxima pregunta, responder, saltear y estado del guion (consultas P1 a P5).
 - El extractor: convierte la respuesta de la persona en un recuerdo con personas y lugares, en segundo plano, con validación, un reintento y un respaldo.
 - La cola de extracciones y la prioridad del chat sobre ellas.
@@ -33,6 +33,7 @@
 - Editar o borrar recuerdos desde la aplicación.
 - Crear, editar o borrar preguntas del guion desde el panel de operador (ver "Límites conocidos", sección 12, para saber cómo se haría).
 - Que lo que la persona cuente de más, en la charla libre, se sume al recuerdo (mejora futura).
+- Guardar las mascotas como parte del grafo: el modelo no tiene un tipo de nodo para ellas (mejora futura, sección 12).
 
 ---
 
@@ -40,17 +41,18 @@
 
 | Tema | Decisión | Motivo |
 |---|---|---|
-| Precondición | La fecha de nacimiento de `PersonaMayor` es **obligatoria** (`docs/contrato-fecha-nacimiento.md`). Ese cambio se mezcla a `main` **antes** de empezar esta rama. Este contrato no trata el caso de una persona sin fecha | El año por edad, el año estimado y la etapa de vida dependen de ella |
+| Precondición | La fecha de nacimiento de `PersonaMayor` es **obligatoria** (`docs/contrato-fecha-nacimiento.md`). Ese cambio se hace en esta misma rama, en un commit propio, antes de empezar con el resto. Este contrato no trata el caso de una persona sin fecha | El año por edad, el año estimado y la etapa de vida dependen de ella |
 | Estilo de acceso | **Imperativo** (`Neo4jRepository`, `Neo4jClient`, `List` y `Optional`). Nada reactivo (`Mono`, `Flux`, WebFlux). No se mezclan los dos estilos | El back usa `spring-boot-starter-webmvc`. Buena parte de la documentación de Spring Data Neo4j usa ejemplos reactivos: se ignoran |
 | Cómo se lee | Cada consulta de `docs/Modelo_de_grafo/consultas.cypher` que haga falta va como método de repositorio con `@Query` que devuelve un DTO o una proyección. **No** se confía en que Spring cargue el grafo de una persona a través de las entidades | El mapeo ingenuo de relaciones carga mucho más del grafo de lo previsto. Con Cypher explícito el ancla en `PersonaMayor` (aislamiento entre personas) se ve en el código |
 | Cómo se escribe | Con Cypher explícito (`MERGE` y `CREATE`) por `Neo4jClient` o `@Query`, **siempre anclado en el nodo `PersonaMayor`**. Cada operación es una sola transacción | Evita duplicados (regla de integridad 5), se puede repetir sin romper nada y respeta la regla de anclaje |
 | Entidades | `@Node` finas, una por tipo de nodo, **sin listas de relaciones** salvo las que haga falta para escribir. `@RelationshipProperties` solo si hace falta para `RESPONDIO`/`SALTEO` (`fecha`) y `CONOCE` (`vinculo`) | Mismo motivo que arriba |
 | Identificadores | `PersonaMayor.idPersonaMayor`: **`Long`, el mismo id que `PersonaMayor.id` en PostgreSQL**. `PreguntaGuion.idPreguntaGuion`: `Integer` fijo en el archivo del guion. `Recuerdo`, `Persona` y `Lugar`: **`String` con un UUID generado por la aplicación** | PostgreSQL genera sus ids solos, pero Neo4j no tiene un contador seguro (su número interno se puede reutilizar tras un borrado, y la baja de una persona borra su subgrafo). Un UUID se genera con una línea y no necesita coordinación; un número propio exigiría un contador dentro de Neo4j. Es la única excepción a "ids `Long`" del resto del proyecto |
 | Restricciones | Las seis de `docs/Modelo_de_grafo/restricciones.cypher`, creadas al arrancar (ya llevan `IF NOT EXISTS`). Spring Data no las crea | Reglas de unicidad del modelo |
-| Transacciones | El proyecto tiene JPA y Neo4j a la vez. El módulo de historia usa un manejador de transacciones **propio de Neo4j**, con su nombre (`@Transactional("neo4jTransactionManager")`), y el resto del proyecto sigue con el de JPA sin cambios. **Se comprueba primero con una prueba (checklist, punto 1)** que una escritura al grafo se deshace si falla a la mitad, y el resultado se anota en el historial de este contrato | Con los dos starters, Spring Boot puede no crear solo el manejador de Neo4j. Si no se prueba, un `@Transactional` sin calificar podría no cubrir las escrituras al grafo |
+| Transacciones | El proyecto tiene JPA y Neo4j a la vez. `ConfiguracionNeo4j` declara **los dos manejadores de forma explícita**: el de JPA con el nombre `transactionManager` y `@Primary` (el resto del proyecto sigue usándolo sin cambios, con `@Transactional` sin calificar), y el de Neo4j con el nombre `neo4jTransactionManager`. El módulo de historia usa solo el segundo (`@Transactional("neo4jTransactionManager")`). `@EnableNeo4jRepositories` fija el manejador (`transactionManagerRef = "neo4jTransactionManager"`) y el paquete de los repositorios de Neo4j (`historia.repository`); al declararlo, Spring Boot deja de configurar esos repositorios por su cuenta. **Se comprueba primero con una prueba (checklist, punto 1)**, antes de agregar la configuración: qué manejador existe hoy y que los servicios con `@Transactional` sin calificar usan el de JPA; y después, con la configuración, que eso no cambia y que una escritura al grafo se deshace si falla a la mitad. Los resultados se anotan en el historial de este contrato | Spring Boot define un solo bean `transactionManager` con `@ConditionalOnMissingBean`, tanto para JPA como para Neo4j, y ninguna configuración automática va antes que la otra. Si solo se agregara el manejador de Neo4j, el de JPA dejaría de crearse y todos los `@Transactional` sin calificar pasarían al de Neo4j sin avisar |
+| Concurrencia en responder y saltear | Al empezar la transacción de responder o saltear (5.1 y 5.3), se **bloquea el nodo `PersonaMayor`** de la persona (por ejemplo, con un `SET` sobre una propiedad de ese nodo). Así, dos pedidos de la misma persona se atienden uno detrás del otro y no pueden pasar a la vez el chequeo de "sin `RESPONDIO` ni `SALTEO`". Se prueba con un test concurrente | Los `MERGE` de relaciones de tipos distintos (`RESPONDIO` y `SALTEO`) no se bloquean entre sí: sin el bloqueo, una respuesta y un salteo simultáneos podrían quedar los dos registrados (regla 3) |
 | Dos bases, sin transacción común | No hay transacción que abarque PostgreSQL y Neo4j. La baja de una persona borra primero en PostgreSQL y después el subgrafo, y el borrado del subgrafo se puede repetir sin error | El único dato compartido entre las bases es el id de la persona |
 | Nodo de la persona | Se crea con `MERGE` la **primera vez** que la persona usa el módulo (cualquier endpoint de la sección 7). No guarda otros datos | El modelo no duplica datos de perfil |
-| Guion | 22 preguntas en `src/main/resources/historia/guion.json` (Anexo A). **La carga solo crea las preguntas que no existen** (por `idPreguntaGuion`); no modifica las que ya están. Cambiar el texto de una pregunta existente, durante el desarrollo, se hace a mano en el Neo4j Browser o recreando el volumen. Las preguntas nuevas se agregan al final con `orden` mayor y no se reordena | La fuente de verdad pasa a ser el grafo y no el archivo: así, si más adelante un operador edita el guion, un reinicio no le pisa los cambios |
+| Guion | 21 preguntas en `src/main/resources/historia/guion.json` (Anexo A). **La carga solo crea las preguntas que no existen** (por `idPreguntaGuion`); no modifica las que ya están. Cambiar el texto de una pregunta existente, durante el desarrollo, se hace a mano en el Neo4j Browser o recreando el volumen. Las preguntas nuevas se agregan al final con `orden` mayor y no se reordena | La fuente de verdad pasa a ser el grafo y no el archivo: así, si más adelante un operador edita el guion, un reinicio no le pisa los cambios |
 | Repreguntas aplicables | Cada `PreguntaGuion` lleva una propiedad `repreguntas`: la lista ordenada de datos por los que tiene sentido repreguntar (`ANIO`, `LUGARES`, `PERSONAS`). Va en el nodo y no solo en el archivo (Anexo A) | "¿Dónde pasó esto?" no tiene sentido después de "¿Qué comida de tu infancia te acordás?". Guardarla en el nodo la hace editable más adelante |
 | Presentación de la pregunta | El back arma, con textos fijos y sin consultar al modelo, una **introducción** que acompaña a la pregunta (sección 5.2). Las preguntas del guion no llevan la introducción adentro | Es predecible, no gasta el único turno del modelo y no cambia el sentido de la pregunta |
 | Progreso | Se deduce de las relaciones `RESPONDIO` y `SALTEO`. No hay un puntero aparte (regla 4) | Modelo de grafo |
@@ -62,7 +64,7 @@
 | Repreguntas: cuántas veces | **Cada dato de cada recuerdo se pregunta como máximo 2 veces en total, una por charla.** No hay tope de repreguntas seguidas: dentro de una misma charla se puede preguntar cada dato faltante una vez (hasta 3 seguidas). Cuenta como intento tanto responder (aunque no aporte el dato) como saltear. El back cuenta los intentos con tres propiedades numéricas del recuerdo (4.1); "una por charla" lo resuelve el front (5.6) | El servidor no guarda sesiones, así que no sabe qué es "una charla"; los contadores son de tamaño fijo y no crecen con el grafo |
 | Estado de la extracción | Mientras una extracción está en cola o en curso, el back lo informa en `GET /api/historia/repreguntas/siguiente` (7.5). No hay notificaciones ni sockets | CU-03: el procesamiento es transparente, sin feedback técnico |
 | Baja de la persona | Hoy el panel de operador **no** da de baja personas (solo ejercicios y microcápsulas). Se implementa `HistoriaDeVidaService.eliminarHistoria(personaId)` y se prueba, pero **no se engancha a ningún endpoint**. Cuando exista la baja de personas, tiene que llamarla | Regla de integridad 8 |
-| Datos de ejemplo | Una historia ya cargada para `ana` (Anexo B), en la misma carga inicial que el guion, solo si `alma.seed.enabled=true` y solo si `ana` aún no tiene recuerdos | La segunda rama puede empezar sin esperar al extractor |
+| Datos de ejemplo | Una historia ya cargada para `ana` (Anexo B), en la misma carga inicial que el guion, solo si `alma.seed.enabled=true` y solo si `ana` **no tiene recuerdos ni progreso** (ninguna relación `RESPONDIO` ni `SALTEO`): si ya respondió o salteó algo, por ejemplo desde Swagger, no se le agrega nada, para no chocar con lo que contestó (regla 3). La carga se hace con un `ApplicationListener<ApplicationReadyEvent>`, que corre después de los `ApplicationRunner` de datos de prueba y por eso encuentra a `ana` ya creada en PostgreSQL (`DatosDePrueba` no tiene `@Order` y no se toca). Las restricciones y el guion se cargan siempre, con o sin `alma.seed.enabled` | La segunda rama puede empezar sin esperar al extractor |
 | Fuera del chat | Esta rama **no toca** `chat/`. El chat sigue como en `docs/contrato-chat.md` | Se cambia en la segunda rama |
 
 ---
@@ -110,10 +112,11 @@ No hay tablas ni cambios en entidades JPA.
 
 ### 5.1 Responder una pregunta
 
-1. Se busca la `PersonaMayor`; si no existe, `404`. Se hace `MERGE` del nodo de la persona en el grafo.
-2. Se valida el cuerpo (5.8). Se busca la pregunta; si no existe, `404`.
-3. Se registra `RESPONDIO` con la `fecha` en **una sola consulta** que solo crea la relación si la persona aún no tiene `RESPONDIO` ni `SALTEO` hacia esa pregunta. Si ya la tenía, `409` y no se encola nada (regla 3, también con dos pedidos a la vez).
-4. Se encola la extracción (5.3) y se responde `202`.
+1. Se busca la `PersonaMayor`; si no existe, `404`.
+2. Se valida el cuerpo (5.8), **antes de tocar el grafo**: un pedido inválido no crea nada en Neo4j.
+3. Se hace `MERGE` del nodo de la persona en el grafo y, ya dentro de la transacción de Neo4j, se **bloquea ese nodo** (sección 2, "Concurrencia en responder y saltear"). Se busca la pregunta; si no existe, `404`.
+4. Se registra `RESPONDIO` con la `fecha` en **una sola consulta** que solo crea la relación si la persona aún no tiene `RESPONDIO` ni `SALTEO` hacia esa pregunta. Si ya la tenía, `409` y no se encola nada (regla 3, también con dos pedidos a la vez).
+5. Se encola la extracción (5.4) y se responde `202`.
 
 ### 5.2 Próxima pregunta y su introducción
 
@@ -140,7 +143,7 @@ El trabajo de extracción lleva: el id de la persona, el id de la pregunta, el t
 2. **Limpieza:** se extrae solo el bloque JSON (sin texto antes o después ni delimitadores ```` ```json ````).
 3. **Conversión:** se pasa a la clase Java del esquema normalizando tipos (`"1957"` pasa a número) y nulos (`"null"` pasa a nulo); un campo que falta se completa con nulo o lista vacía.
 4. **Validación de estructura:** `titulo` y `descripcion` no vacíos; `anio` entre 1900 y el año actual; `edadMencionada` entre 0 y 110; `personas` y `lugares` son listas.
-5. **Validación de contenido** ("no inventar datos"): `anio` y `edadMencionada` solo se aceptan si ese número **aparece escrito en cifras** en el texto de la respuesta (los números escritos con letras no se detectan: límite conocido); si no, se descartan y el recuerdo se crea sin ese dato. Se descarta toda persona cuyo nombre normalizado coincida con el de la propia persona mayor.
+5. **Validación de contenido** ("no inventar datos"): `anio` y `edadMencionada` solo se aceptan si ese número **aparece escrito en cifras** en el texto de la respuesta (los números escritos con letras no se detectan: límite conocido; una década escrita como "los años 50" tampoco se convierte en año, porque "1950" no aparece en el texto: ver sección 12); si no, se descartan y el recuerdo se crea sin ese dato. Se descarta toda persona cuyo nombre normalizado coincida con el de la propia persona mayor.
 6. **Reintento:** si falla un paso entre 2 y 4, se repite el pedido **una sola vez**, indicando el error al modelo. El paso 5 no provoca reintento: descarta.
 7. **Respaldo:** si el segundo intento falla, o el modelo no está disponible, o se acaba el tiempo, se crea igual un `Recuerdo` con título igual al texto de la pregunta, descripción igual a la respuesta textual, sin personas ni lugares y con año estimado (5.6) si la pregunta tiene franja de edad. La pregunta ya estaba registrada como respondida. (En una repregunta no hay respaldo: el recuerdo ya existe y simplemente no cambia.)
 
@@ -148,7 +151,7 @@ En todos los casos, el trabajo termina sin lanzar errores hacia afuera: un fallo
 
 ### 5.5 Esquema del JSON de la extracción
 
-Los campos sin datos van como `null` o lista vacía. El modelo no inventa datos: `anio` solo si la persona lo dijo, `edadMencionada` solo si dijo una edad, `nombre` es `null` si solo se menciona el vínculo ("mi tío"), la propia persona no se incluye, y **las mascotas no son personas**: se mencionan en la descripción del recuerdo y no van en `personas`.
+Los campos sin datos van como `null` o lista vacía. El modelo no inventa datos: `anio` solo si la persona lo dijo, `edadMencionada` solo si dijo una edad, `nombre` es `null` si solo se menciona el vínculo ("mi tío"), la propia persona no se incluye, y **las mascotas no son personas** (el modelo de grafo no tiene un nodo para ellas): se mencionan en la descripción del recuerdo y no van en `personas`.
 
 ```json
 {
@@ -371,7 +374,7 @@ Paquete base: `ar.edu.utn.frm.gelab.alma`. Un paquete nuevo, `historia/`, y camb
 - `extraccion/`: `ExtractorDeRecuerdos` (pedido, limpieza, conversión, validación, reintento y respaldo, 5.4), `RespuestaExtraida` (el esquema de 5.5) y `ColaDeExtracciones` (un hilo, en memoria, con el estado "procesando" por persona).
 - `config/`: `ConfiguracionNeo4j` (el manejador de transacciones propio, sección 2), `CargaInicialDelGrafo` (restricciones, guion que solo crea y datos de ejemplo) y `ConfiguracionHistoria` (`@ConfigurationProperties` con `@PropertySource` en UTF-8, igual que `ConfiguracionChat`).
 - `MensajesHistoria`: sección 6.
-- Recursos: `src/main/resources/historia/guion.json` (Anexo A, con `repreguntas` de cada pregunta), `historia.properties` (límite de 1000 caracteres, máximo de 2 intentos por dato, parámetros del modelo para extracción) y el prompt del extractor en `historia/prompt-extractor.txt`.
+- Recursos: `src/main/resources/historia/guion.json` (Anexo A, con `repreguntas` de cada pregunta), `historia/restricciones.cypher` (copia de `docs/Modelo_de_grafo/restricciones.cypher`: hay que mantenerlas sincronizadas; una prueba comprueba que existen las seis restricciones), `historia.properties` (límite de 1000 caracteres, máximo de 2 intentos por dato, parámetros del modelo para extracción) y el prompt del extractor en `historia/prompt-extractor.txt`.
 
 **`ia/`** (compartido con el chat: avisar antes de tocarlo)
 - `ModeloConversacional` / `OllamaModeloConversacional`: poder pedir temperatura, tope de tokens y tiempo máximo **por llamada** (hoy son fijos). El chat conserva sus valores.
@@ -385,19 +388,22 @@ Los módulos se comunican solo por sus servicios: `historia/` usa `PersonaMayorR
 |---|---|
 | `config/SecurityConfig.java` | Una línea: `.requestMatchers("/api/historia/**").hasRole("PERSONA_MAYOR")`, **antes** de `.requestMatchers("/api/**").authenticated()` |
 | `ia/` | Ver arriba |
+| `common/exception/ConflictoException.java` (nueva) | Igual que `RecursoNoEncontradoException`: lleva el texto que ve la persona. Se lanza en los `409` de la sección 6 |
+| `common/GlobalExceptionHandler.java` | Un `@ExceptionHandler(ConflictoException.class)` que responde `409` en Problem Details, con título en español y el texto de la excepción como detalle, y un `case 409` en `traducir` para los `409` que genere Spring |
+| `common/MensajesError.java` | La constante del título del `409` (`TITULO_CONFLICTO`) |
 
-**No se tocan:** `pom.xml` (los starters de Neo4j y de pruebas de Neo4j ya están), `application.properties` (la conexión a Neo4j ya está), `AlmaApplication.java`, `GlobalExceptionHandler`, `DatosDePrueba`, el front, `chat/` y los demás módulos.
+**No se tocan:** `pom.xml` (los starters de Neo4j y de pruebas de Neo4j ya están), `application.properties` (la conexión a Neo4j ya está), `AlmaApplication.java`, `DatosDePrueba`, el front, `chat/` y los demás módulos.
 
 **Checklist (en este orden)**
 
-0. **Precondición:** `docs/contrato-fecha-nacimiento.md` hecho y mezclado a `main`; `feature/grafo` parte de ese `main`.
-1. **Prueba de transacciones:** con JPA y Neo4j juntos, una escritura al grafo dentro del manejador propio se deshace si falla a la mitad, y las consultas de PostgreSQL siguen funcionando igual. Verificar que el arranque no tenga avisos de repositorios ambiguos. Anotar el resultado en el historial.
+0. **Precondición:** `docs/contrato-fecha-nacimiento.md` hecho en esta rama, en un commit propio.
+1. **Prueba de transacciones:** primero, sobre el estado actual, qué manejador existe y que los `@Transactional` sin calificar usan el de JPA. Después, con `ConfiguracionNeo4j`: con JPA y Neo4j juntos, una escritura al grafo dentro del manejador propio se deshace si falla a la mitad, y las consultas de PostgreSQL siguen funcionando igual. Verificar que el arranque no tenga avisos de repositorios ambiguos y anotar qué cambia `@EnableNeo4jRepositories` en la configuración de Boot. Anotar el resultado en el historial.
 2. **Prueba del modelo (Anexo C):** probar el prompt del extractor contra `gemma4:cloud` con las respuestas sintéticas. Si el modelo no sirve, se avisa antes de seguir.
-3. **Paso 1 (grafo, guion y progreso):** nodos, restricciones, carga del guion y de los datos de ejemplo, nodo de la persona, endpoints 7.1 a 7.4. Sin IA. Se puede mezclar a `main` apenas esté lista, para que la segunda rama empiece.
+3. **Paso 1 (grafo, guion y progreso):** nodos, restricciones, carga del guion y de los datos de ejemplo, nodo de la persona, `eliminarHistoria` (con su prueba: las pruebas de este paso la usan para limpiar), endpoints 7.1 a 7.4. Sin IA. Se puede mezclar a `main` apenas esté lista, para que la segunda rama empiece.
 4. **Paso 2 (extractor):** extractor, escritura del recuerdo y respaldo (5.4 a 5.6). Modelo de prueba en las pruebas.
 5. **Paso 3 (cola):** cola y prioridad del chat.
 6. **Paso 4 (repreguntas):** repreguntas y endpoints 7.5 a 7.7. Es lo primero que se recorta si el tiempo aprieta: lo anterior ya deja una historia de vida funcional.
-7. **Paso 5 (cierre):** `eliminarHistoria`, documentación del modelo, `CLAUDE.md` y `casos-de-uso.md`.
+7. **Paso 5 (cierre):** documentación del modelo, `CLAUDE.md` (enlazar este contrato y corregir el nombre del paquete, `historia` y no `historiavida`, y la etapa en que entra Neo4j) y `casos-de-uso.md`.
 
 ---
 
@@ -408,7 +414,7 @@ Los módulos se comunican solo por sus servicios: `historia/` usa `PersonaMayorR
 **Automáticas** (mismo patrón de `ChatIntegrationTests` y `SesionDePrueba`, contra el Neo4j de `docker compose up -d`; cuentas con prefijo `test_historia_`; cada prueba **borra al terminar** el subgrafo de sus personas con `eliminarHistoria`)
 
 *Grafo y guion:*
-- Al arrancar, hay 22 preguntas, cada una con su lista `repreguntas`; arrancar dos veces no duplica nada.
+- Al arrancar, hay 21 preguntas, cada una con su lista `repreguntas`; arrancar dos veces no duplica nada.
 - **La carga no pisa cambios:** si se modifica el texto de una pregunta en la base y se vuelve a ejecutar la carga, el texto queda como estaba; una pregunta que no existe sí se crea.
 - `GET /guion/proxima` devuelve la de menor `orden` sin `RESPONDIO` ni `SALTEO`; con todas respondidas o salteadas devuelve `pregunta: null` y el mensaje final.
 - Introducción: "Primera vez" cuando no hay nada registrado; "Después de un salteo" cuando la última fue un salteo; "Normal" en el resto, con las tres frases según el `orden`.
@@ -463,17 +469,21 @@ Los módulos se comunican solo por sus servicios: `historia/` usa `PersonaMayorR
 - La cola de extracciones está en memoria: un reinicio pierde las que esperaban.
 - Una extracción en curso no se corta: en un caso raro el chat recibe el error de siempre.
 - Los años escritos con letras ("quince años") no se detectan.
+- Una década escrita como "los años 50" no se convierte en año: el modelo la interpreta como 1950 aproximado, pero la validación de contenido (5.4, paso 5) lo descarta porque "1950" no aparece en cifras en la respuesta. El recuerdo se crea sin año de la respuesta y queda estimado por la franja de edad de la pregunta (`ESTIMADA`); la descripción puede conservar "años 50". Mejora posible a futuro: con `anioAproximado` verdadero, aceptar el año si aparece la década en cifras.
 - Los apodos y los pronombres no se reconocen como personas.
 - Los recuerdos de las preguntas sin dato de año (por ejemplo, domingo en familia o tradición) pueden quedar "sin fecha" en la línea de tiempo, a propósito: el año no es relevante.
 - Lo que la persona cuenta de más en la charla libre no se guarda en el grafo.
 - **Un operador que edite el guion (futuro).** El diseño actual lo permite sin cambios grandes: el progreso se deduce de las relaciones, los ids de pregunta son fijos y la carga no pisa lo que ya existe. Lo que faltaría: endpoints y pantallas del panel (como los de ejercicios), **baja lógica** de preguntas (una propiedad `fechaBaja` en `PreguntaGuion`, donde "sin valor" significa activa, y un filtro en las consultas de progreso, porque borrar una pregunta rompería el `SURGIO_DE` de sus recuerdos y el historial de quienes la respondieron), un `orden` que se pueda renumerar sin romper la restricción de unicidad (por ejemplo, ordenar de 10 en 10 al crear), y actualizar el modelo de grafo, que hoy dice que el guion lo mantiene el equipo de desarrollo, y los casos de uso. Cambiar el texto de una pregunta ya respondida no modifica los recuerdos que ya surgieron de ella.
+- **Neo4j caído al arrancar.** La carga inicial (restricciones, guion y datos de ejemplo) registra un ERROR en el log y deja arrancar el resto de la aplicación, para que el chat y los demás módulos no dependan de Neo4j. Si Neo4j no está, las restricciones y el guion no se cargan hasta el próximo arranque, y mientras tanto los endpoints de `/api/historia` fallan.
+- **Mascotas (futuro).** No hay una pregunta del guion sobre mascotas porque el modelo no tiene un nodo para ellas. Para sumarlas hace falta un nodo nuevo (por ejemplo `Mascota`), con su relación con el recuerdo y su restricción de unicidad, actualizar el modelo y el extractor, y agregar la pregunta al final del guion con el id 22 y orden 22. Mientras tanto, si la persona menciona una mascota en otra respuesta, queda nombrada en la descripción del recuerdo y no se crea como persona.
+- **Segundo escaneo de repositorios de Neo4j (mejora opcional).** Spring Boot escanea los repositorios de Neo4j dos veces: el imperativo (el de `ConfiguracionNeo4j`, que solo mira `historia.repository`) y el reactivo, que se activa porque `reactor` está en el classpath (viene de Spring AI) y recorre todo el proyecto sin encontrar nada. Eso deja 12 avisos INFO "Could not safely identify store assignment" en el arranque, que no asignan nada mal. Agregar `spring.data.neo4j.repositories.type=imperative` en `application.properties` elimina el segundo escaneo y baja los avisos de 12 a 1 (el de JPA viendo el repositorio de Neo4j), según el experimento de la v5. No se aplica por ahora: no hace falta para nada de lo que sigue y `application.properties` es un archivo compartido.
 
 ---
 
 ## 13. Documentos a actualizar
 
 - `docs/casos-de-uso.md`, CU-03: estado de implementación del Back; reflejar las repreguntas (regla de integridad 7) y la introducción de cada pregunta. La descripción general no se modifica.
-- `docs/Modelo_de_grafo/modelo-de-grafo.md`: tipos de id (sección 2), las propiedades nuevas `PreguntaGuion.repreguntas` y `Recuerdo.intentosAnio/intentosLugares/intentosPersonas` (4.1) y una nota de que el guion se carga solo si no existe.
+- `docs/Modelo_de_grafo/modelo-de-grafo.md`: tipos de id (sección 2), las propiedades nuevas `PreguntaGuion.repreguntas` y `Recuerdo.intentosAnio/intentosLugares/intentosPersonas` (4.1) y una nota de que el guion se carga solo si no existe. Además: (a) el ejemplo de `APROXIMADA` ("por los años 70") ya no lo produce el extractor, porque una década escrita no se convierte en año (sección 12): cambiarlo por uno con el año en cifras, por ejemplo "por 1970"; (b) anotar que `src/main/resources/historia/restricciones.cypher` es una copia de `restricciones.cypher` de esa carpeta y que hay que mantenerlas sincronizadas.
 - `CLAUDE.md`: enlazar este contrato en "Documentos".
 
 ---
@@ -482,6 +492,12 @@ Los módulos se comunican solo por sus servicios: `historia/` usa `PersonaMayorR
 
 - **v1 (07/11/2026):** primera propuesta, contra el commit `d35f1a9`.
 - **v2 (08/11/2026):** contrato autocontenido (sin referencias a documentos que no están en el repo); guion de 22 preguntas con repreguntas aplicables por pregunta y carga que no pisa cambios; introducción fija de cada pregunta; fecha de nacimiento obligatoria como precondición; repreguntas sin tope por respuesta, máximo 2 intentos por dato con tres contadores numéricos (se descarta la lista `datosPreguntados`) y "una por charla" resuelta en el front con `excluir`; `siguiente` con `preguntaId` para retomar recuerdos viejos; las mascotas no se guardan como personas; "modelo falso" pasa a llamarse "modelo de prueba" y se explica; nota de cómo se haría la edición del guion por un operador.
+- **v3 (08/11/2026):** se saca la pregunta de la mascota porque el modelo no tiene un nodo para ellas; el guion queda en 21 preguntas (la de domingo pasa a ser la 20 y la de tradición la 21), y las mascotas pasan a "No incluye" y a "Límites conocidos" como mejora futura; en el Anexo C, E9 pasa a la pregunta 21 y E11 a la pregunta 5, con una respuesta sobre un perro en el juego.
+- **v4 (08/11/2026, contra el commit `4afe5d9`):** transacciones: `ConfiguracionNeo4j` declara los dos manejadores explícitos (`transactionManager` de JPA con `@Primary` y `neo4jTransactionManager`) y `@EnableNeo4jRepositories` fija el manejador y el paquete de los repositorios de Neo4j, porque con un solo manejador agregado el de JPA dejaría de crearse; la prueba de transacciones empieza por comprobar el estado actual; responder y saltear bloquean el nodo `PersonaMayor` para evitar que una respuesta y un salteo simultáneos queden los dos registrados; la carga de ejemplo usa `ApplicationReadyEvent`; se agrega `ConflictoException` y un `case 409` en `GlobalExceptionHandler` (que pasa a "se toca"); `eliminarHistoria` se implementa en el primer paso del grafo, porque las pruebas lo usan para limpiar; el cierre corrige en `CLAUDE.md` el nombre del paquete y la etapa de Neo4j.
+- **v5 (08/11/2026, contra el commit `4afe5d9` más los cambios del paso 1):** resultado de la prueba de transacciones (checklist, punto 1), con Spring Boot 4.1.1, Spring Data Neo4j 8.1.1, driver 6.1.0 y Neo4j 5.26.29. **Antes de la configuración:** existía un solo manejador, `transactionManager` (`JpaTransactionManager`); no había ninguno de Neo4j; los 14 servicios con `@Transactional` sin calificar usaban el de JPA; una escritura de JPA que falla a la mitad se deshacía. **Con `ConfiguracionNeo4j`** (`TransaccionesNeo4jTest`, prueba permanente, 12 casos): hay exactamente dos manejadores, el de JPA con `@Primary` y `neo4jTransactionManager`; los mismos 14 servicios siguen usando el de JPA; una escritura al grafo con `@Transactional("neo4jTransactionManager")` que falla a la mitad se deshace (0 nodos), y sin fallar se confirma (2); sin ninguna transacción el primer nodo queda confirmado (control: la prueba detecta el problema); con una escritura en las dos bases que falla, Neo4j se deshace y PostgreSQL queda (no hay transacción común); un repositorio de Neo4j usa `neo4jTransactionManager` y se une a su transacción. **Hallazgo:** Spring Data Neo4j se engancha (`Neo4jSessionSynchronization`) a la transacción de otro manejador que esté activa, de modo que un `@Transactional` de JPA que falla también deshace las escrituras hechas con `Neo4jClient`; no es una transacción común (el commit de Neo4j ocurre después del de JPA), y el motivo de tener el manejador propio sigue siendo el de la sección 2 (que JPA siga creándose y que los repositorios de Neo4j usen el suyo). **Qué cambia `@EnableNeo4jRepositories`:** el escaneo de repositorios de Neo4j deja de abarcar todo el proyecto (antes registraba un aviso por cada repositorio de JPA) y busca solo en `historia.repository`; los 11 repositorios de JPA siguen igual. **Avisos de repositorios ambiguos:** no desaparecen del todo, son de nivel INFO ("Could not safely identify store assignment") y no asignan nada mal: uno por cada repositorio de Neo4j que ve el escaneo de JPA, y los del segundo escaneo de Neo4j, el reactivo, que Spring Boot activa porque `reactor` está en el classpath (viene de Spring AI) y que sigue recorriendo todo el proyecto y no encuentra nada. Con `spring.data.neo4j.repositories.type=imperative` (experimento, no aplicado) queda solo el primero; hacerlo permanente toca `application.properties`. `./mvnw test` completo: 301 pruebas, 0 fallas (las 289 anteriores y las 12 nuevas).
+- **v6 (09/11/2026):** en "Límites conocidos" (sección 12) se anota, como mejora opcional, agregar `spring.data.neo4j.repositories.type=imperative` en `application.properties`: elimina el segundo escaneo (reactivo) de repositorios de Neo4j y baja los avisos INFO del arranque de 12 a 1. No se aplica por ahora: no hace falta para el resto del trabajo y `application.properties` es un archivo compartido.
+- **v7 (09/11/2026):** resultado de la prueba del modelo (Anexo C, 2 corridas con `gemma4:cloud`: JSON válido en 13 de 13). E3 ("Por los años 50"): se mantiene la regla 5.4.5 tal cual, de modo que una década escrita como "los años 50" no se convierte en año y el recuerdo queda estimado por la franja de la pregunta; el Anexo C pasa a pedir "sin `anio`" para E3, y se anota en la sección 5.4 (paso 5) y en "Límites conocidos" (sección 12), con la mejora posible a futuro.
+- **v8 (09/11/2026):** antes del paso 3 del checklist: la carga de los datos de ejemplo de `ana` es solo si no tiene recuerdos **ni progreso** (sección 2 y Anexo B); en 5.1 el cuerpo se valida antes del `MERGE` del nodo de la persona (y se corrige la referencia de la extracción, que es 5.4 y no 5.3); la sección 10 lista el recurso `historia/restricciones.cypher` y la sección 13 anota que es una copia a mantener sincronizada con la del modelo, y que el ejemplo "por los años 70" de `APROXIMADA` ya no lo produce el extractor; "Límites conocidos" suma que, con Neo4j caído al arrancar, la carga inicial registra un ERROR y el resto de la aplicación sigue, sin cargar las restricciones ni el guion hasta el próximo arranque.
 
 ---
 
@@ -510,9 +526,8 @@ Contenido de `src/main/resources/historia/guion.json`. Los ids son fijos y no se
 | 17 | 17 | ¿Hubo algún viaje que te haya marcado? | sin franja | ANIO, LUGARES, PERSONAS |
 | 18 | 18 | ¿Hubo alguna mudanza que te haya cambiado la vida? | sin franja | ANIO, LUGARES |
 | 19 | 19 | ¿Qué logro de tu vida te hace sentir más orgullo? | sin franja | ANIO, PERSONAS |
-| 20 | 20 | ¿Tuviste alguna mascota que hayas querido mucho? | sin franja | ANIO |
-| 21 | 21 | ¿Cómo era un domingo típico con tu familia? | sin franja | LUGARES, PERSONAS |
-| 22 | 22 | ¿Qué tradición o comida de tu familia te gustaría que no se olvide? | sin franja | PERSONAS |
+| 20 | 20 | ¿Cómo era un domingo típico con tu familia? | sin franja | LUGARES, PERSONAS |
+| 21 | 21 | ¿Qué tradición o comida de tu familia te gustaría que no se olvide? | sin franja | PERSONAS |
 
 ## Anexo B. Datos de ejemplo para `ana`
 
@@ -523,7 +538,7 @@ Contenido de `src/main/resources/historia/guion.json`. Los ids son fijos y no se
 - "Mi maestra Elena": 1957, `EXACTA`, `INFANCIA`, con Elena (maestra), en la Escuela N° 12 (pregunta 7).
 - "Un viaje a la costa": **sin año**, con una persona sin nombre (marido), lugar "la costa", con `intentosAnio` en 1 (pregunta 17).
 
-Cubre un recuerdo sin año, una persona sin nombre y una repregunta con un intento ya usado. Se carga solo si `alma.seed.enabled=true` y `ana` no tiene recuerdos. `carlos` queda sin historia. (Los archivos `datos-de-ejemplo.cypher` del modelo son otra cosa: se cargan a mano en un Neo4j de pruebas y no sirven para la aplicación.)
+Cubre un recuerdo sin año, una persona sin nombre y una repregunta con un intento ya usado. Se carga solo si `alma.seed.enabled=true` y `ana` no tiene recuerdos ni progreso (ninguna relación `RESPONDIO` ni `SALTEO`). `carlos` queda sin historia. (Los archivos `datos-de-ejemplo.cypher` del modelo son otra cosa: se cargan a mano en un Neo4j de pruebas y no sirven para la aplicación.)
 
 ## Anexo C. Prueba del modelo (respuestas sintéticas)
 
@@ -533,15 +548,15 @@ Antes de construir el extractor, se manda cada respuesta, con el texto de su pre
 |---|---|---|---|
 | E1 | 7 (escuela) | "En 1957 empecé primer grado en la Escuela 12. Mi maestra Elena me enseñó a leer." | `anio` 1957; persona Elena (maestra); lugar Escuela 12 |
 | E2 | 12 (primer trabajo) | "Trabajé en una panadería cuando tenía 17 años, con mi tío." | `edadMencionada` 17; persona sin nombre con vínculo "tío"; sin `anio` |
-| E3 | 2 (casa) | "Por los años 50, en Cipolletti, en una casa con patio." | `anio` 1950 y `anioAproximado` verdadero; lugar Cipolletti |
+| E3 | 2 (casa) | "Por los años 50, en Cipolletti, en una casa con patio." | Sin `anio` (una década escrita como "años 50" no se convierte en año, sección 12: el recuerdo se estima con la franja de edad de la pregunta, y la descripción puede conservar "años 50"); lugar Cipolletti |
 | E4 | 17 (viaje) | "Un viaje a la costa con mi marido, me acuerdo del mar." | Sin `anio` ni edad; persona con vínculo "marido" y sin nombre; lugar la costa |
 | E5 | 16 (día feliz) | "Cuando nació mi nieta." | Respuesta corta: título y descripción no vacíos; sin `anio`; sin personas con nombre inventado |
 | E6 | 14 (pareja) | "Lo conocí en un baile, se llamaba Roberto." | Persona Roberto; **sin** `anio` |
 | E7 | 10 (adolescencia) | "Me llamo Ana y salía con mis amigas Marta y Rosa." (la persona es Ana) | Marta y Rosa; **Ana no entra** como persona |
 | E8 | 9 (persona importante) | "Mi abuela, que me crió." | Persona sin nombre con vínculo "abuela" |
-| E9 | 22 (tradición) | "Los ñoquis del 29, con toda la familia en la casa de mi hermana en Neuquén." | Lugar Neuquén; persona con vínculo "hermana"; sin `anio` |
+| E9 | 21 (tradición) | "Los ñoquis del 29, con toda la familia en la casa de mi hermana en Neuquén." | Lugar Neuquén; persona con vínculo "hermana"; sin `anio` |
 | E10 | 5 (juegos) | "No me acuerdo de nada." | No inventa nada; título y descripción no vacíos; sin personas ni lugares |
-| E11 | 20 (mascota) | "Tuve un perro, el Pepe, cuando vivíamos en la chacra." | **Pepe no entra** como persona; aparece en la descripción; lugar la chacra; sin `anio` |
+| E11 | 5 (juegos) | "Jugaba con mi perro, el Pepe, en el patio de casa." | **Pepe no entra** como persona; aparece en la descripción; lugar el patio; sin `anio` |
 | E12 | 15 (hijos) | "Mi hijo Martín nació en 1978, en el Hospital Regional." | `anio` 1978; persona Martín (hijo); lugar Hospital Regional |
 | E13 | 17 (viaje), como repregunta de `ANIO` | "Y fue cuando yo tenía 30 años." | `edadMencionada` 30; sin personas ni lugares nuevos |
 
