@@ -12,6 +12,7 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,6 +39,7 @@ import ar.edu.utn.frm.gelab.alma.persona.repository.PersonaMayorRepository;
 @SpringBootTest(properties = "alma.seed.enabled=false")
 @Import(ModeloDePruebaConfig.class)
 @ExtendWith(OutputCaptureExtension.class)
+@Timeout(value = 120, unit = java.util.concurrent.TimeUnit.SECONDS)
 class ExtraccionIntegrationTests {
 
     private static final String USUARIO = "test_historia_ext_a";
@@ -363,6 +365,19 @@ class ExtraccionIntegrationTests {
                 .as("ningún recuerdo huérfano").isZero();
         assertThat(contar(neo4j, "MATCH (p:PersonaMayor {idPersonaMayor: $p}) RETURN count(p) AS c", "p", persona.personaId()))
                 .isZero();
+    }
+
+    @Test
+    void laPersonaFiguraComoProcesandoMientrasSuExtraccionEstaEnCursoYDespuesDejaDeFigurar() {
+        modelo.respondeConDemora(VALIDO, 500);
+
+        historia.responder(persona.cuentaId(), ESCUELA, "Una respuesta.");
+
+        assertThat(cola.estaProcesando(persona.personaId())).isTrue();
+        assertThat(cola.estaProcesando(persona.personaId() + 1_000_000)).isFalse();
+        esperarCola();
+        assertThat(cola.estaProcesando(persona.personaId())).isFalse();
+        assertThat(recuerdos(persona)).hasSize(1);
     }
 
     // ---------- Lo que NO encola ----------

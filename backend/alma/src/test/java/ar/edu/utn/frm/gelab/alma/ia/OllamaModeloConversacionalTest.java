@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.boot.test.system.CapturedOutput;
@@ -33,6 +34,7 @@ import com.sun.net.httpserver.HttpServer;
  * reintentos. No necesita Ollama ni internet.
  */
 @ExtendWith(OutputCaptureExtension.class)
+@Timeout(value = 30, unit = TimeUnit.SECONDS)
 class OllamaModeloConversacionalTest {
 
     private static final String RESPUESTA_OK = """
@@ -98,6 +100,14 @@ class OllamaModeloConversacionalTest {
                 .crearChatModel(ConfiguracionIa.crearOllamaApi(url, timeoutExtraccion), "gemma4:cloud");
         return new OllamaModeloConversacional(chat, extraccion, new LimitadorDePedidos(Duration.ofSeconds(2)),
                 "gemma4:cloud", 0.6, 400);
+    }
+
+    /** Un modelo con el limitador que se le pasa (para mirar cuántos esperan). */
+    private OllamaModeloConversacional modeloConLimitador(LimitadorDePedidos limitador) {
+        String url = "http://127.0.0.1:" + servidor.getAddress().getPort();
+        OllamaChatModel chat = ConfiguracionIa.crearChatModel(
+                ConfiguracionIa.crearOllamaApi(url, Duration.ofSeconds(10)), "gemma4:cloud");
+        return new OllamaModeloConversacional(chat, chat, limitador, "gemma4:cloud", 0.6, 400);
     }
 
     private OllamaModeloConversacional modelo() {
@@ -303,5 +313,76 @@ class OllamaModeloConversacionalTest {
 
         assertEquals("ok", minimo.responder("X", TURNOS, new ModeloConversacional.OpcionesDeLlamada(0.1, 600)));
         assertEquals(List.of("X"), vistos);
+    }
+
+    // ---------- Prioridad del chat sobre la extracción ----------
+
+    private static final ModeloConversacional.OpcionesDeLlamada EXTRACCION =
+            new ModeloConversacional.OpcionesDeLlamada(0.1, 600);
+
+    @Test
+    void conUnChatEsperandoLaExtraccionNoTomaElTurnoYSinChatSi() throws Exception {
+        // En rondas: sin la prioridad, el orden correcto depende de una carrera de microsegundos (ver
+        // LimitadorDePedidosTest), así que una sola ronda no alcanza para detectar una prioridad rota.
+        for (int ronda = 1; ronda <= 40; ronda++) {
+            chatExtraccionYOtroChat(ronda);
+        }
+
+        // Sin ningún chat esperando, la extracción pasa enseguida.
+        int antes = pedidos.get();
+        assertEquals("Hola, soy Alma.", modeloConLimitador(new LimitadorDePedidos(Duration.ofSeconds(5)))
+                .responder("I", TURNOS, EXTRACCION));
+        assertEquals(antes + 1, pedidos.get());
+    }
+
+    /** La extracción ya está registrada como esperando antes del chat 2, y el chat 2 antes de soltar el 1. */
+    private void chatExtraccionYOtroChat(int ronda) throws Exception {
+        cuerpos.clear();
+        int antes = pedidos.get();
+        LimitadorDePedidos limitador = new LimitadorDePedidos(Duration.ofSeconds(5));
+        OllamaModeloConversacional modelo = modeloConLimitador(limitador);
+        // Con el servidor demorando, el chat 1 tiene el turno el tiempo suficiente para armar la fila.
+        demoraMs = 100;
+        ExecutorService hilos = Executors.newCachedThreadPool();
+        try {
+            Future<String> chat1 = hilos.submit(() -> modelo.responder("I", TURNOS));
+            LimitadorDePedidosTest.esperarHasta(() -> pedidos.get() == antes + 1);
+            Future<String> extraccion = hilos.submit(() -> modelo.responder("I", TURNOS, EXTRACCION));
+            LimitadorDePedidosTest.esperarHasta(() -> limitador.extraccionesEsperando() == 1);
+            Future<String> chat2 = hilos.submit(() -> modelo.responder("I", TURNOS));
+            LimitadorDePedidosTest.esperarHasta(() -> limitador.chatsEsperando() == 1);
+            demoraMs = 5;
+
+            assertEquals("Hola, soy Alma.", chat1.get(10, TimeUnit.SECONDS));
+            assertEquals("Hola, soy Alma.", chat2.get(10, TimeUnit.SECONDS));
+            assertEquals("Hola, soy Alma.", extraccion.get(10, TimeUnit.SECONDS));
+
+            // Orden de llegada al servidor: chat 1, chat 2 y, al final, la extracción (que llegó antes que el chat 2).
+            assertEquals(3, cuerpos.size(), "ronda " + ronda);
+            assertTrue(cuerpos.get(0).contains("\"temperature\":0.6"), "ronda " + ronda);
+            assertTrue(cuerpos.get(1).contains("\"temperature\":0.6"), "ronda " + ronda + ": " + cuerpos.get(1));
+            assertTrue(cuerpos.get(2).contains("\"temperature\":0.1"), "ronda " + ronda + ": " + cuerpos.get(2));
+        } finally {
+            hilos.shutdownNow();
+        }
+    }
+
+    @Test
+    void laExtraccionEsperaSuTurnoMasQueLaEsperaDelChatSinFallar() throws Exception {
+        demoraMs = 1000;
+        // Los chats esperan hasta 300 ms; la extracción espera lo que haga falta.
+        LimitadorDePedidos limitador = new LimitadorDePedidos(Duration.ofMillis(300));
+        OllamaModeloConversacional modelo = modeloConLimitador(limitador);
+        ExecutorService hilos = Executors.newCachedThreadPool();
+        try {
+            Future<String> chat = hilos.submit(() -> modelo.responder("I", TURNOS));
+            LimitadorDePedidosTest.esperarHasta(() -> pedidos.get() == 1);
+
+            assertEquals("Hola, soy Alma.", modelo.responder("I", TURNOS, EXTRACCION));
+            assertEquals("Hola, soy Alma.", chat.get(10, TimeUnit.SECONDS));
+            assertEquals(2, pedidos.get());
+        } finally {
+            hilos.shutdownNow();
+        }
     }
 }

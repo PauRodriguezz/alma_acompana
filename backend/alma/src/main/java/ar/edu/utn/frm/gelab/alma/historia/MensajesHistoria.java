@@ -1,5 +1,7 @@
 package ar.edu.utn.frm.gelab.alma.historia;
 
+import ar.edu.utn.frm.gelab.alma.historia.domain.DatoFaltante;
+
 /**
  * Textos que ve la persona en el módulo de historia de vida (contrato del grafo, sección 6). Los generales
  * (400, 401, 403, 404) son los de {@code common/MensajesError}; el texto de cada pregunta del guion está en
@@ -24,6 +26,22 @@ public final class MensajesHistoria {
 
     // 409.
     public static final String PREGUNTA_YA_REGISTRADA = "Esa pregunta ya fue respondida.";
+    /** Una repregunta que no aplica al recuerdo, ya no falta o ya se preguntó el máximo de veces (5.7). */
+    public static final String REPREGUNTA_YA_NO_HACE_FALTA = "Esa pregunta ya no hace falta.";
+
+    // Textos fijos de las repreguntas (5.7).
+    public static final String REPREGUNTA_ANIO = "¿Te acordás en qué año fue, o cuántos años tenías?";
+    public static final String REPREGUNTA_LUGARES = "¿Dónde pasó esto?";
+    public static final String REPREGUNTA_PERSONAS = "¿Quién más estaba con vos en ese momento?";
+
+    /** El texto fijo con el que se repregunta por un dato. */
+    public static String repregunta(DatoFaltante dato) {
+        return switch (dato) {
+            case ANIO -> REPREGUNTA_ANIO;
+            case LUGARES -> REPREGUNTA_LUGARES;
+            case PERSONAS -> REPREGUNTA_PERSONAS;
+        };
+    }
 
     private MensajesHistoria() {
     }

@@ -16,11 +16,22 @@ public class ConfiguracionHistoria {
     /** Tope de caracteres del texto de una respuesta (5.8). */
     private int textoMax = 1000;
 
+    /** Máximo de veces que se pregunta por cada dato de un recuerdo (5.7). */
+    private int intentosMax = 2;
+
     /** Temperatura de la llamada de extracción (5.4). */
     private double extraccionTemperatura = 0.1;
 
     /** Tope de tokens de salida de la llamada de extracción (5.4). */
     private int extraccionMaxTokens = 600;
+
+    public int getIntentosMax() {
+        return intentosMax;
+    }
+
+    public void setIntentosMax(int intentosMax) {
+        this.intentosMax = intentosMax;
+    }
 
     public double getExtraccionTemperatura() {
         return extraccionTemperatura;

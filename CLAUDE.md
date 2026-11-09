@@ -34,7 +34,7 @@ alma_acompana/
 └── CLAUDE.md
 ```
 
-- **Back:** un paquete por módulo (`auth`, `persona`, `administrador`, `bienestar`, `chat`, `ejercicios` (catálogo; el juego de la persona mayor irá después en `juegos`), `historiavida`, `juegos`, `microcapsulas`, `recordatorios`), cada uno con `controller/`, `service/`, `repository/`, `domain/`, `dto/`. Los paquetes transversales son `config/`, `common/` e `ia/`.
+- **Back:** un paquete por módulo (`auth`, `persona`, `administrador`, `bienestar`, `chat`, `ejercicios` (catálogo; el juego de la persona mayor irá después en `juegos`), `historia`, `juegos`, `microcapsulas`, `recordatorios`), cada uno con `controller/`, `service/`, `repository/`, `domain/`, `dto/`. Los paquetes transversales son `config/`, `common/` e `ia/`.
 - **Front:** `src/` con `App.tsx`, `main.tsx` e `index.css`, `components/ui/` (shadcn), `components/alma/`, `features/<modulo>/` y `lib/` (ver "Carpetas del front").
 
 ## Comandos
@@ -79,7 +79,7 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 - Sin Flyway.
 - El operador es el `ADMINISTRADOR`: hay una sola tabla de cuentas y un solo login.
 - Login por nombre de usuario y contraseña, JWT HS256 sin estado. El detalle está en el contrato.
-- Neo4j se usa recién en la Etapa 2 (historia de vida). El modelo de IA se usa desde el chat, en la Etapa 1.
+- Neo4j se usa recién en la Etapa 3 (historia de vida). El modelo de IA se usa desde el chat, en la Etapa 1.
 - El contenedor de Ollama necesita `ollama signin` una vez (la sesión queda en el volumen).
 - El modelo devuelve un bloque de razonamiento antes de la respuesta: nunca se le muestra a la persona mayor.
 - La respuesta del chat se envía completa, con el indicador "Alma está pensando…" mientras tanto (sin streaming ni SSE).
@@ -93,6 +93,7 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 - Casos de uso (CU-xx) y diagrama de clases (`DC_PPS`) del informe: son la fuente de verdad funcional.
 - `docs/contrato-juegos.md`: contrato del juego de estimulación (CU-05). Leelo antes de tocar el juego, el selector de ejercicios o el hub de Entretenimiento.
 - `docs/contrato-chat.md`: contrato del chat con Alma (CU-02: saludo, guardrails, contexto del modelo y pantalla del chat). Leelo antes de tocar `chat/`, `ia/` o `features/chat/`.
+- `docs/contrato-grafo.md`: contrato de la historia de vida (CU-03: grafo en Neo4j, guion y progreso, extractor, cola y repreguntas). Leelo antes de tocar `historia/` o el límite de pedidos de `ia/`.
 
 - `docs/contrato-microcapsulas.md`: contrato de la lectura de microcápsulas (CU-06). Leelo antes de tocar el listado, el detalle o las guardadas de la persona mayor.
 

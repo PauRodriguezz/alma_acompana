@@ -15,6 +15,8 @@ import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import ar.edu.utn.frm.gelab.alma.historia.domain.DatoFaltante;
+import ar.edu.utn.frm.gelab.alma.historia.domain.DatosParaCompletar;
 import ar.edu.utn.frm.gelab.alma.historia.domain.EtapaDeVida;
 import ar.edu.utn.frm.gelab.alma.historia.domain.NombreNormalizado;
 import ar.edu.utn.frm.gelab.alma.historia.domain.NuevoRecuerdo;
@@ -246,6 +248,89 @@ public class EscrituraDelGrafo {
         return recuerdoId;
     }
 
+    /** Resultado de {@link #registrarIntento}. */
+    public enum ResultadoIntento {
+        REGISTRADO,
+        /** El recuerdo no existe o no es de la persona. */
+        RECUERDO_INEXISTENTE,
+        /** El dato no aplica a ese recuerdo, ya no falta o ya se preguntó el máximo de veces. */
+        NO_CORRESPONDE
+    }
+
+    /**
+     * Cuenta un intento (responder o saltear una repregunta, contrato 5.7) en una sola transacción: bloquea el
+     * nodo de la persona (como responder y saltear el guion: dos pedidos a la vez no pueden pasar los dos el
+     * chequeo del máximo) y suma 1 al contador del dato con una sola consulta que solo lo hace si el dato está en
+     * la lista {@code repreguntas} de la pregunta de origen, si todavía falta y si el contador vale menos de
+     * {@code maximo}. No crea preguntas ni toca el progreso.
+     */
+    @Transactional(MANEJADOR_NEO4J)
+    public ResultadoIntento registrarIntento(Long personaId, String recuerdoId, DatoFaltante dato, int maximo) {
+        bloquearPersona(personaId);
+        if (!existeRecuerdo(personaId, recuerdoId)) {
+            return ResultadoIntento.RECUERDO_INEXISTENTE;
+        }
+        String contador = CypherRepreguntas.propiedadIntentos(dato);
+        int propiedades = ejecutar("""
+                MATCH (:PersonaMayor {idPersonaMayor: $persona})-[:TIENE_RECUERDO]->(r:Recuerdo {idRecuerdo: $recuerdo})
+                      -[:SURGIO_DE]->(q:PreguntaGuion)
+                WHERE $dato IN q.repreguntas AND coalesce(r.%1$s, 0) < $maximo AND %2$s
+                SET r.%1$s = coalesce(r.%1$s, 0) + 1
+                """.formatted(contador, CypherRepreguntas.condicionFalta(dato)),
+                parametros("persona", personaId, "recuerdo", recuerdoId, "dato", dato.name(), "maximo", maximo))
+                .counters().propertiesSet();
+        return propiedades == 1 ? ResultadoIntento.REGISTRADO : ResultadoIntento.NO_CORRESPONDE;
+    }
+
+    /**
+     * Aplica la respuesta de una repregunta a un recuerdo ya creado (contrato, 5.7), en una transacción y con el
+     * nodo de la persona bloqueado. Solo toca lo del dato preguntado y nunca el título ni la descripción:
+     * <ul>
+     *   <li>{@code ANIO}: fija año, precisión y etapa solo si el recuerdo no tiene año o es {@code ESTIMADA};
+     *       nunca pisa un año {@code EXACTA}, {@code APROXIMADA} o {@code CALCULADA_POR_EDAD};</li>
+     *   <li>{@code LUGARES} y {@code PERSONAS}: suma los nuevos, reutilizando los que ya existen.</li>
+     * </ul>
+     * Si el recuerdo ya no existe (por ejemplo, la persona se dio de baja), no hace nada.
+     */
+    @Transactional(MANEJADOR_NEO4J)
+    public void completarRecuerdo(Long personaId, String recuerdoId, DatosParaCompletar datos) {
+        bloquearPersona(personaId);
+        if (!existeRecuerdo(personaId, recuerdoId)) {
+            return;
+        }
+        switch (datos.dato()) {
+            case ANIO -> {
+                if (datos.anio() != null) {
+                    ejecutar("""
+                            MATCH (r:Recuerdo {idRecuerdo: $recuerdo})
+                            WHERE r.anio IS NULL OR r.precision = 'ESTIMADA'
+                            SET r.anio = $anio, r.precision = $precision, r.etapaDeVida = $etapa
+                            """, parametros("recuerdo", recuerdoId, "anio", datos.anio(), "precision",
+                            datos.precision().name(), "etapa", datos.etapa().name()));
+                }
+            }
+            case LUGARES -> {
+                for (String lugar : datos.lugares()) {
+                    String existente = buscarLugar(personaId, NombreNormalizado.de(lugar));
+                    enlazarLugar(recuerdoId, existente != null ? existente : crearLugar(lugar));
+                }
+            }
+            case PERSONAS -> {
+                for (NuevoRecuerdo.PersonaNueva persona : datos.personas()) {
+                    enlazarOCrearPersona(personaId, recuerdoId, persona);
+                }
+            }
+        }
+    }
+
+    private boolean existeRecuerdo(Long personaId, String recuerdoId) {
+        return neo4jClient.query("""
+                MATCH (:PersonaMayor {idPersonaMayor: $persona})-[:TIENE_RECUERDO]->(r:Recuerdo {idRecuerdo: $recuerdo})
+                RETURN count(r) AS c
+                """).bindAll(parametros("persona", personaId, "recuerdo", recuerdoId)).fetch().one()
+                .map(fila -> ((Number) fila.get("c")).longValue() > 0).orElse(false);
+    }
+
     /**
      * Con nombre: se reutiliza la persona con ese {@code nombreNormalizado} (P6) sin cambiarle el vínculo.
      * Sin nombre: se reutiliza si hay exactamente una persona con ese vínculo (P7). Si no, se crea.
@@ -342,7 +427,7 @@ public class EscrituraDelGrafo {
     private void enlazarLugar(String recuerdoId, String lugarId) {
         ejecutar("""
                 MATCH (r:Recuerdo {idRecuerdo: $recuerdo}), (l:Lugar {idLugar: $lugar})
-                CREATE (r)-[:OCURRIO_EN]->(l)
+                MERGE (r)-[:OCURRIO_EN]->(l)
                 """, parametros("recuerdo", recuerdoId, "lugar", lugarId));
     }
 

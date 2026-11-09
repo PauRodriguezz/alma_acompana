@@ -9,6 +9,8 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
+import ar.edu.utn.frm.gelab.alma.historia.domain.DatoFaltante;
+import ar.edu.utn.frm.gelab.alma.historia.domain.DatosParaCompletar;
 import ar.edu.utn.frm.gelab.alma.historia.domain.NombreNormalizado;
 import ar.edu.utn.frm.gelab.alma.historia.domain.NuevoRecuerdo;
 import ar.edu.utn.frm.gelab.alma.historia.extraccion.CalculoDeAnio;
@@ -43,6 +45,23 @@ public class RecuerdoService {
                 anio.anio(), anio.precision(), anio.etapa(), personasSinRepetir(respuesta.personas()),
                 lugaresSinRepetir(respuesta.lugares()));
         return escritura.registrarRecuerdo(trabajo.personaId(), nuevo);
+    }
+
+    /**
+     * Aplica la respuesta de una repregunta a un recuerdo ya creado (contrato, 5.7): usa solo lo que corresponde al
+     * dato preguntado, y nunca el título ni la descripción. Para {@code ANIO} acepta un año o una edad (misma regla
+     * de 5.6, sin franja de edad: una repregunta nunca estima); si la respuesta no aporta ninguno, no cambia nada.
+     */
+    public void completar(TrabajoDeExtraccion trabajo, RespuestaExtraida respuesta) {
+        TrabajoDeExtraccion.Repregunta repregunta = trabajo.repregunta();
+        AnioDelRecuerdo anio = repregunta.dato() == DatoFaltante.ANIO
+                ? CalculoDeAnio.calcular(respuesta.anio(), respuesta.anioAproximado(), respuesta.edadMencionada(),
+                        null, null, trabajo.fechaNacimiento().getYear(), LocalDate.now(clock).getYear())
+                : null;
+        escritura.completarRecuerdo(trabajo.personaId(), repregunta.recuerdoId(),
+                new DatosParaCompletar(repregunta.dato(), anio != null ? anio.anio() : null,
+                        anio != null ? anio.precision() : null, anio != null ? anio.etapa() : null,
+                        personasSinRepetir(respuesta.personas()), lugaresSinRepetir(respuesta.lugares())));
     }
 
     /** Las personas con nombre repetido (mismo {@code nombreNormalizado}) cuentan una sola vez. */

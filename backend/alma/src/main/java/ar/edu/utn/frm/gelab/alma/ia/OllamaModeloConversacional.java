@@ -60,19 +60,25 @@ public class OllamaModeloConversacional implements ModeloConversacional {
 
     @Override
     public String responder(String instrucciones, List<TurnoConversacion> turnos) {
-        return llamar(chatModel, armarPrompt(instrucciones, turnos, temperatura, maxTokens));
+        return llamar(chatModel, armarPrompt(instrucciones, turnos, temperatura, maxTokens), false);
     }
 
     @Override
     public String responder(String instrucciones, List<TurnoConversacion> turnos, OpcionesDeLlamada opciones) {
         return llamar(chatModelExtraccion,
-                armarPrompt(instrucciones, turnos, opciones.temperatura(), opciones.maxTokens()));
+                armarPrompt(instrucciones, turnos, opciones.temperatura(), opciones.maxTokens()), true);
     }
 
-    private String llamar(OllamaChatModel cliente, Prompt prompt) {
+    /**
+     * @param segundoPlano {@code true} para la extracción: espera su turno sin tope y detrás de los chats
+     *                     ({@link LimitadorDePedidos#ejecutarEnSegundoPlano}); {@code false} para el chat.
+     */
+    private String llamar(OllamaChatModel cliente, Prompt prompt, boolean segundoPlano) {
         long inicio = System.nanoTime();
         try {
-            ChatResponse respuesta = limitador.ejecutar(() -> cliente.call(prompt));
+            ChatResponse respuesta = segundoPlano
+                    ? limitador.ejecutarEnSegundoPlano(() -> cliente.call(prompt))
+                    : limitador.ejecutar(() -> cliente.call(prompt));
             registrarConsumo(respuesta, inicio);
             String texto = textoDe(respuesta);
             if (texto.isEmpty()) {

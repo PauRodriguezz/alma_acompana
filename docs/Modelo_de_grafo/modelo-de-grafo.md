@@ -26,12 +26,12 @@ El único dato compartido entre las dos bases es el **identificador de la person
 | Nodo | Propiedades | Notas |
 |---|---|---|
 | `PersonaMayor` | `idPersonaMayor` | Mismo id que en PostgreSQL. Único. |
-| `PreguntaGuion` | `idPreguntaGuion`, `texto`, `orden`, `edadDesde?`, `edadHasta?` | Único nodo compartido por todas las personas. `orden` es único. Las preguntas sin época no tienen franja de edad. |
-| `Recuerdo` | `idRecuerdo`, `titulo`, `descripcion`, `anio?`, `precision?`, `etapaDeVida?`, `fechaRegistro` | Si tiene `anio`, tiene `precision`. |
+| `PreguntaGuion` | `idPreguntaGuion`, `texto`, `orden`, `edadDesde?`, `edadHasta?`, `repreguntas` | Único nodo compartido por todas las personas. `orden` es único. Las preguntas sin época no tienen franja de edad. `repreguntas` es la lista (hasta 3 elementos, puede estar vacía) de datos por los que se puede repreguntar sobre esa pregunta, en orden de prioridad: `ANIO`, `LUGARES`, `PERSONAS`. |
+| `Recuerdo` | `idRecuerdo`, `titulo`, `descripcion`, `anio?`, `precision?`, `etapaDeVida?`, `fechaRegistro`, `intentosAnio`, `intentosLugares`, `intentosPersonas` | Si tiene `anio`, tiene `precision`. Los tres contadores cuentan cuántas veces se preguntó por cada dato (valen 0 si no existen y nunca pasan de 2). |
 | `Persona` | `idPersona`, `nombre?`, `nombreNormalizado?` | El nombre puede faltar si solo se menciona el vínculo ("mi tío"). |
 | `Lugar` | `idLugar`, `nombre`, `nombreNormalizado` | |
 
-`?` indica propiedad opcional. El tipo de los identificadores se define en el contrato de implementación.
+`?` indica propiedad opcional. **Identificadores:** `PersonaMayor.idPersonaMayor` es un `Long` (el mismo id que la persona mayor tiene en PostgreSQL); `PreguntaGuion.idPreguntaGuion` es un `Integer` fijo, definido en el archivo del guion; `Recuerdo`, `Persona` y `Lugar` llevan un UUID como `String`, generado por la aplicación (Neo4j no tiene un contador seguro: su número interno se puede reutilizar tras un borrado). El detalle está en `docs/contrato-grafo.md`, secciones 2 y 4.1.
 
 ## Relaciones
 
@@ -51,7 +51,7 @@ El vínculo es propiedad de `CONOCE` y no de `Persona`, porque describe cómo se
 
 Neo4j no tiene enumerados: se guardan como texto y la aplicación controla los valores.
 
-**`Recuerdo.precision`:** `EXACTA` (la persona dijo el año), `APROXIMADA` ("por los años 70"), `CALCULADA_POR_EDAD` (a partir de la edad mencionada y la fecha de nacimiento), `ESTIMADA` (a partir de la franja de edad de la pregunta).
+**`Recuerdo.precision`:** `EXACTA` (la persona dijo el año), `APROXIMADA` (la persona dijo un año aproximado, en cifras: por ejemplo, "por 1970"), `CALCULADA_POR_EDAD` (a partir de la edad mencionada y la fecha de nacimiento), `ESTIMADA` (a partir de la franja de edad de la pregunta). Una década escrita ("los años 70") no se convierte en año: el extractor solo acepta un año que aparece escrito en cifras en la respuesta, así que ese recuerdo queda `ESTIMADA` con la franja de la pregunta.
 
 **`Recuerdo.etapaDeVida`:** `INFANCIA` (0 a 11), `ADOLESCENCIA` (12 a 17), `JUVENTUD` (18 a 29), `ADULTEZ` (30 a 59), `VEJEZ` (60 o más). Se deriva de la edad que la persona tenía en el año del recuerdo.
 
@@ -63,11 +63,13 @@ Neo4j no tiene enumerados: se guardan como texto y la aplicación controla los v
 4. **Progreso:** la pregunta pendiente es la de menor `orden` sin `RESPONDIO` ni `SALTEO`. No hay un puntero de progreso aparte.
 5. **Sin duplicados:** dentro del grafo de una persona no hay dos `Persona` ni dos `Lugar` con el mismo `nombreNormalizado`.
 6. **Coherencia temporal:** todo recuerdo con `anio` tiene `precision`. Si la respuesta no aporta datos temporales, el año se estima con la franja de la pregunta (`ESTIMADA`). Si la pregunta no tiene franja, el recuerdo queda sin año y la línea de tiempo lo muestra aparte.
-7. **Repreguntas:** las preguntas de seguimiento no crean nodos `PreguntaGuion` ni cambian el progreso. Sus respuestas completan el `Recuerdo` de origen.
+7. **Repreguntas:** las preguntas de seguimiento no crean nodos `PreguntaGuion` ni cambian el progreso. Sus respuestas completan el `Recuerdo` de origen. Cada dato (año, lugares, personas) de cada recuerdo se pregunta como máximo 2 veces en total, contadas con `intentosAnio`, `intentosLugares` e `intentosPersonas`; responder y saltear cuentan igual.
 8. **Baja de usuario:** al eliminar a la persona se borran su nodo `PersonaMayor` y todos sus `Recuerdo`, `Persona` y `Lugar`. Las `PreguntaGuion` no se tocan.
-9. **Guion compartido:** las `PreguntaGuion` se cargan una sola vez, con un proceso de carga inicial.
+9. **Guion compartido:** las `PreguntaGuion` se cargan al arrancar la aplicación, con un proceso de carga inicial que solo crea las preguntas que no existen (por `idPreguntaGuion`) y no modifica las que ya están: así, un cambio hecho en el grafo no se pisa en un reinicio.
 
 Las restricciones de unicidad (ver `restricciones.cypher`) cubren los identificadores y `PreguntaGuion.orden`. El resto de las reglas las valida la aplicación.
+
+La aplicación crea esas restricciones al arrancar con una **copia** de este archivo: `backend/alma/src/main/resources/historia/restricciones.cypher` (igual, salvo una línea de comentario que avisa que es una copia). **Hay que mantenerlas sincronizadas:** la prueba `RestriccionesCypherTest` falla si dejan de ser iguales.
 
 **Aislamiento:** toda consulta sobre `Recuerdo`, `Persona` o `Lugar` tiene que partir del nodo `PersonaMayor`. Sin ese ancla se mezclarían datos de distintas personas.
 
