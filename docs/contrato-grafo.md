@@ -1,0 +1,548 @@
+# Contrato del Grafo: guion, progreso, extractor y repreguntas · Alma Acompaña
+
+**Estado:** propuesta para revisar entre los dos. Una vez aprobada es la referencia única para `feature/grafo` (solo back). Si algo cambia, se cambia primero acá.
+
+**Fuente de verdad:** los casos de uso CU-03 y CU-04 (`docs/casos-de-uso.md`) y el modelo de grafo (`docs/Modelo_de_grafo/modelo-de-grafo.md`, con `restricciones.cypher`, `consultas.cypher` y `datos-de-ejemplo.cypher`). Si este contrato contradice esos documentos, ganan los documentos y se corrige el contrato, salvo en lo que este contrato declara expresamente como ajuste al modelo (sección 4.1).
+
+**Dónde va:** `docs/contrato-grafo.md`. El `CLAUDE.md` debe enlazarlo en la sección "Documentos".
+
+**Última revisión contra el repo:** commit `41e53e8` (rama `grafo` con la carpeta `docs/Modelo_de_grafo/`), sobre el commit `d35f1a9` de `main`.
+
+**Contratos relacionados:** `docs/contrato-login.md` (token, roles, errores, convenciones), `docs/contrato-chat.md` (el modelo de IA y su límite de un pedido a la vez) y `docs/contrato-fecha-nacimiento.md` (precondición, ver sección 2). Todo lo que no se redefine acá sigue como está en esos documentos.
+
+**Responsable:** Paula (módulo Historia de vida). Rama: `feature/grafo`, a partir de `main`. La segunda rama (`feature/historia-de-vida`: línea de tiempo, pregunta pendiente y chat) tendrá su propio contrato y va después.
+
+---
+
+## 1. Alcance
+
+**Incluye:**
+- El grafo en Neo4j con sus cinco nodos y siete relaciones (`docs/Modelo_de_grafo/modelo-de-grafo.md`), sus restricciones de unicidad y la conexión transaccional.
+- El guion de 22 preguntas de historia de vida y su carga automática al arrancar.
+- El progreso de cada persona: próxima pregunta, responder, saltear y estado del guion (consultas P1 a P5).
+- El extractor: convierte la respuesta de la persona en un recuerdo con personas y lugares, en segundo plano, con validación, un reintento y un respaldo.
+- La cola de extracciones y la prioridad del chat sobre ellas.
+- Las repreguntas, que completan el año, los lugares y las personas de un recuerdo.
+- La baja del subgrafo de una persona y los datos de ejemplo para `ana`.
+- Pruebas automáticas y la prueba manual con el modelo real.
+
+**No incluye (segunda rama):**
+- La línea de tiempo y el detalle de un recuerdo (P10 a P12) y todo el front.
+- Que Alma ofrezca continuar la historia de vida y que las respuestas viajen por el chat (CU-02, camino alterno Nº4). En esta rama la persona responde por los endpoints de la sección 7, que se prueban con Swagger.
+- Los recuerdos en el prompt del chat (P13 a P15): `{progreso}` y `{recuerdos}` siguen valiendo "No hay información."
+- Editar o borrar recuerdos desde la aplicación.
+- Crear, editar o borrar preguntas del guion desde el panel de operador (ver "Límites conocidos", sección 12, para saber cómo se haría).
+- Que lo que la persona cuente de más, en la charla libre, se sume al recuerdo (mejora futura).
+
+---
+
+## 2. Decisiones
+
+| Tema | Decisión | Motivo |
+|---|---|---|
+| Precondición | La fecha de nacimiento de `PersonaMayor` es **obligatoria** (`docs/contrato-fecha-nacimiento.md`). Ese cambio se mezcla a `main` **antes** de empezar esta rama. Este contrato no trata el caso de una persona sin fecha | El año por edad, el año estimado y la etapa de vida dependen de ella |
+| Estilo de acceso | **Imperativo** (`Neo4jRepository`, `Neo4jClient`, `List` y `Optional`). Nada reactivo (`Mono`, `Flux`, WebFlux). No se mezclan los dos estilos | El back usa `spring-boot-starter-webmvc`. Buena parte de la documentación de Spring Data Neo4j usa ejemplos reactivos: se ignoran |
+| Cómo se lee | Cada consulta de `docs/Modelo_de_grafo/consultas.cypher` que haga falta va como método de repositorio con `@Query` que devuelve un DTO o una proyección. **No** se confía en que Spring cargue el grafo de una persona a través de las entidades | El mapeo ingenuo de relaciones carga mucho más del grafo de lo previsto. Con Cypher explícito el ancla en `PersonaMayor` (aislamiento entre personas) se ve en el código |
+| Cómo se escribe | Con Cypher explícito (`MERGE` y `CREATE`) por `Neo4jClient` o `@Query`, **siempre anclado en el nodo `PersonaMayor`**. Cada operación es una sola transacción | Evita duplicados (regla de integridad 5), se puede repetir sin romper nada y respeta la regla de anclaje |
+| Entidades | `@Node` finas, una por tipo de nodo, **sin listas de relaciones** salvo las que haga falta para escribir. `@RelationshipProperties` solo si hace falta para `RESPONDIO`/`SALTEO` (`fecha`) y `CONOCE` (`vinculo`) | Mismo motivo que arriba |
+| Identificadores | `PersonaMayor.idPersonaMayor`: **`Long`, el mismo id que `PersonaMayor.id` en PostgreSQL**. `PreguntaGuion.idPreguntaGuion`: `Integer` fijo en el archivo del guion. `Recuerdo`, `Persona` y `Lugar`: **`String` con un UUID generado por la aplicación** | PostgreSQL genera sus ids solos, pero Neo4j no tiene un contador seguro (su número interno se puede reutilizar tras un borrado, y la baja de una persona borra su subgrafo). Un UUID se genera con una línea y no necesita coordinación; un número propio exigiría un contador dentro de Neo4j. Es la única excepción a "ids `Long`" del resto del proyecto |
+| Restricciones | Las seis de `docs/Modelo_de_grafo/restricciones.cypher`, creadas al arrancar (ya llevan `IF NOT EXISTS`). Spring Data no las crea | Reglas de unicidad del modelo |
+| Transacciones | El proyecto tiene JPA y Neo4j a la vez. El módulo de historia usa un manejador de transacciones **propio de Neo4j**, con su nombre (`@Transactional("neo4jTransactionManager")`), y el resto del proyecto sigue con el de JPA sin cambios. **Se comprueba primero con una prueba (checklist, punto 1)** que una escritura al grafo se deshace si falla a la mitad, y el resultado se anota en el historial de este contrato | Con los dos starters, Spring Boot puede no crear solo el manejador de Neo4j. Si no se prueba, un `@Transactional` sin calificar podría no cubrir las escrituras al grafo |
+| Dos bases, sin transacción común | No hay transacción que abarque PostgreSQL y Neo4j. La baja de una persona borra primero en PostgreSQL y después el subgrafo, y el borrado del subgrafo se puede repetir sin error | El único dato compartido entre las bases es el id de la persona |
+| Nodo de la persona | Se crea con `MERGE` la **primera vez** que la persona usa el módulo (cualquier endpoint de la sección 7). No guarda otros datos | El modelo no duplica datos de perfil |
+| Guion | 22 preguntas en `src/main/resources/historia/guion.json` (Anexo A). **La carga solo crea las preguntas que no existen** (por `idPreguntaGuion`); no modifica las que ya están. Cambiar el texto de una pregunta existente, durante el desarrollo, se hace a mano en el Neo4j Browser o recreando el volumen. Las preguntas nuevas se agregan al final con `orden` mayor y no se reordena | La fuente de verdad pasa a ser el grafo y no el archivo: así, si más adelante un operador edita el guion, un reinicio no le pisa los cambios |
+| Repreguntas aplicables | Cada `PreguntaGuion` lleva una propiedad `repreguntas`: la lista ordenada de datos por los que tiene sentido repreguntar (`ANIO`, `LUGARES`, `PERSONAS`). Va en el nodo y no solo en el archivo (Anexo A) | "¿Dónde pasó esto?" no tiene sentido después de "¿Qué comida de tu infancia te acordás?". Guardarla en el nodo la hace editable más adelante |
+| Presentación de la pregunta | El back arma, con textos fijos y sin consultar al modelo, una **introducción** que acompaña a la pregunta (sección 5.2). Las preguntas del guion no llevan la introducción adentro | Es predecible, no gasta el único turno del modelo y no cambia el sentido de la pregunta |
+| Progreso | Se deduce de las relaciones `RESPONDIO` y `SALTEO`. No hay un puntero aparte (regla 4) | Modelo de grafo |
+| Orden de respuesta | Se puede responder o saltear **cualquier** pregunta pendiente, no solo la próxima. Una pregunta ya respondida o salteada no se puede volver a responder (regla 3) | El front siempre muestra la próxima; no hace falta bloquear de más |
+| La pregunta se marca al momento | Al responder, la pregunta queda `RESPONDIO` **de inmediato**, sin esperar la extracción, y la extracción se encola. Si la extracción falla, igual queda respondida (respaldo, 5.4) | CU-03, paso 9: el progreso se guarda con cada respuesta |
+| Cola de extracciones | **En memoria** (un solo hilo). Si el back se reinicia, se pierden las que estaban esperando. Se acepta: la respuesta ya quedó registrada como respondida, aunque su recuerdo no llegue a crearse | Persistir la cola en PostgreSQL es más robusto y bastante más trabajo; no se justifica en el MVP |
+| Prioridad del chat | `LimitadorDePedidos` pasa a tener **dos niveles**: el chat espera su turno hasta 10 s como hoy, y la extracción solo toma el turno si **ningún chat está esperando**. Una extracción que ya está llamando al modelo **no se corta**: cada llamada tiene un tope propio de 25 s, así que en un caso raro el chat puede recibir el `503` de siempre. Es una limitación aceptada | Cortar la extracción en curso suma complejidad que no se justifica en el MVP |
+| Modelo | El mismo `gemma4:cloud` (`OLLAMA_MODEL`). Razonamiento desactivado, **temperatura 0,1** y tope de **600** tokens de salida, propios de la extracción (el chat sigue con 0,6 y 400). Se agrega a `ia/` la forma de pedir parámetros distintos por llamada | Para extraer datos conviene una temperatura baja (0 a 0,2) |
+| Repreguntas: cuántas veces | **Cada dato de cada recuerdo se pregunta como máximo 2 veces en total, una por charla.** No hay tope de repreguntas seguidas: dentro de una misma charla se puede preguntar cada dato faltante una vez (hasta 3 seguidas). Cuenta como intento tanto responder (aunque no aporte el dato) como saltear. El back cuenta los intentos con tres propiedades numéricas del recuerdo (4.1); "una por charla" lo resuelve el front (5.6) | El servidor no guarda sesiones, así que no sabe qué es "una charla"; los contadores son de tamaño fijo y no crecen con el grafo |
+| Estado de la extracción | Mientras una extracción está en cola o en curso, el back lo informa en `GET /api/historia/repreguntas/siguiente` (7.5). No hay notificaciones ni sockets | CU-03: el procesamiento es transparente, sin feedback técnico |
+| Baja de la persona | Hoy el panel de operador **no** da de baja personas (solo ejercicios y microcápsulas). Se implementa `HistoriaDeVidaService.eliminarHistoria(personaId)` y se prueba, pero **no se engancha a ningún endpoint**. Cuando exista la baja de personas, tiene que llamarla | Regla de integridad 8 |
+| Datos de ejemplo | Una historia ya cargada para `ana` (Anexo B), en la misma carga inicial que el guion, solo si `alma.seed.enabled=true` y solo si `ana` aún no tiene recuerdos | La segunda rama puede empezar sin esperar al extractor |
+| Fuera del chat | Esta rama **no toca** `chat/`. El chat sigue como en `docs/contrato-chat.md` | Se cambia en la segunda rama |
+
+---
+
+## 3. Convenciones de la API
+
+Valen las de `docs/contrato-login.md` (sección 3). Para este módulo:
+
+- Todo cuelga de `/api/historia`.
+- La persona sale siempre del token (`sub`), nunca de la URL ni del cuerpo.
+- Los textos viajan como texto plano.
+- Los enums van en `MAYUSCULAS_CON_GUION_BAJO`: `EstadoPregunta` (`RESPONDIDA`, `SALTEADA`, `PENDIENTE`), `DatoFaltante` (`ANIO`, `LUGARES`, `PERSONAS`), `EstadoRepregunta` (`PROCESANDO`, `HAY`, `NINGUNA`).
+- Los ids de recuerdos son `String` (UUID); los de preguntas, números.
+
+---
+
+## 4. Datos
+
+### 4.1 Neo4j
+
+Los cinco nodos, las siete relaciones y las propiedades son los de `docs/Modelo_de_grafo/modelo-de-grafo.md`, con estos **ajustes** (hay que reflejarlos en ese documento, ver sección 13):
+
+| Cambio | Detalle |
+|---|---|
+| Tipo de id | Ver sección 2: `Long` para `PersonaMayor`, `Integer` para `PreguntaGuion`, `String` con UUID para `Recuerdo`, `Persona` y `Lugar` |
+| `PreguntaGuion.repreguntas` (nueva, lista de texto, puede estar vacía, hasta 3 elementos) | Los datos por los que se puede repreguntar sobre esa pregunta, en orden de prioridad. Es una propiedad de la pregunta, igual para todas las personas |
+| `Recuerdo.intentosAnio`, `Recuerdo.intentosLugares`, `Recuerdo.intentosPersonas` (nuevas, enteros, valen 0 si no existen) | Cuántas veces se preguntó por cada dato de ese recuerdo. Se suman 1 al responder o saltear una repregunta y nunca pasan de 2. No las muestra ningún endpoint de lectura de la segunda rama |
+| Enums | `precision` y `etapaDeVida` se guardan como texto y se controlan con enums de Java, como dice el modelo |
+
+Las reglas de integridad que las restricciones no cubren las valida la capa de servicio: 3 (estado de la pregunta), 5 (sin duplicados), 6 (coherencia temporal) y 7 (repreguntas).
+
+### 4.2 Lo que se lee de PostgreSQL
+
+Con `PersonaMayorRepository.findByCuentaId(cuentaId)`: `id`, `nombre` y `fechaNacimiento` (obligatoria). Si no existe la `PersonaMayor`, `404`.
+
+"Hoy" y el año actual salen de `LocalDate.now(clock)` del `Clock` inyectado.
+
+### 4.3 Nada nuevo en PostgreSQL
+
+No hay tablas ni cambios en entidades JPA.
+
+---
+
+## 5. Reglas de negocio
+
+### 5.1 Responder una pregunta
+
+1. Se busca la `PersonaMayor`; si no existe, `404`. Se hace `MERGE` del nodo de la persona en el grafo.
+2. Se valida el cuerpo (5.8). Se busca la pregunta; si no existe, `404`.
+3. Se registra `RESPONDIO` con la `fecha` en **una sola consulta** que solo crea la relación si la persona aún no tiene `RESPONDIO` ni `SALTEO` hacia esa pregunta. Si ya la tenía, `409` y no se encola nada (regla 3, también con dos pedidos a la vez).
+4. Se encola la extracción (5.3) y se responde `202`.
+
+### 5.2 Próxima pregunta y su introducción
+
+La próxima pregunta es la de menor `orden` sin `RESPONDIO` ni `SALTEO` (P1). Junto con ella el back devuelve una **introducción** de texto fijo, según el caso:
+
+| Caso | Cuándo | Introducción |
+|---|---|---|
+| Primera vez | La persona no respondió ni salteó ninguna pregunta | "Me gustaría conocerte mejor. Te voy a hacer preguntas de a una sobre tu vida, y podés saltear las que quieras." |
+| Después de un salteo | La última pregunta registrada (P3) fue salteada | "Está bien, pasemos a otra." |
+| Normal | Cualquier otro caso | Una de tres frases, según el `orden` de la pregunta módulo 3: "Sigamos con otra pregunta." / "Ahora me gustaría saber otra cosa." / "Vamos con la siguiente." |
+| Sin preguntas pendientes | No queda ninguna (CU-03, camino alterno Nº4) | No hay pregunta ni introducción: se devuelve el mensaje final "Ya respondiste todas las preguntas que tengo por ahora. ¡Gracias por compartir tu historia conmigo!" |
+
+El front muestra la introducción y la pregunta como un solo mensaje de Alma, en dos renglones. Los textos van como constantes en `MensajesHistoria`.
+
+### 5.3 Saltear una pregunta
+
+Igual que 5.1 pero se registra `SALTEO`, no se valida texto, no se encola nada y no se toca el grafo de recuerdos. Responde `204`. Si ya estaba respondida o salteada, `409`.
+
+### 5.4 Extracción (en segundo plano)
+
+El trabajo de extracción lleva: el id de la persona, el id de la pregunta, el texto de la respuesta y, si es repregunta, el recuerdo y el dato que completa. Se atiende de a uno, en orden de llegada, y respeta la prioridad del chat (sección 2).
+
+1. **Pedido:** el prompt lleva el texto de la pregunta (para interpretar respuestas breves), la respuesta y el esquema de 5.5. Razonamiento desactivado, temperatura 0,1, tope de 600 tokens y 25 s por llamada.
+2. **Limpieza:** se extrae solo el bloque JSON (sin texto antes o después ni delimitadores ```` ```json ````).
+3. **Conversión:** se pasa a la clase Java del esquema normalizando tipos (`"1957"` pasa a número) y nulos (`"null"` pasa a nulo); un campo que falta se completa con nulo o lista vacía.
+4. **Validación de estructura:** `titulo` y `descripcion` no vacíos; `anio` entre 1900 y el año actual; `edadMencionada` entre 0 y 110; `personas` y `lugares` son listas.
+5. **Validación de contenido** ("no inventar datos"): `anio` y `edadMencionada` solo se aceptan si ese número **aparece escrito en cifras** en el texto de la respuesta (los números escritos con letras no se detectan: límite conocido); si no, se descartan y el recuerdo se crea sin ese dato. Se descarta toda persona cuyo nombre normalizado coincida con el de la propia persona mayor.
+6. **Reintento:** si falla un paso entre 2 y 4, se repite el pedido **una sola vez**, indicando el error al modelo. El paso 5 no provoca reintento: descarta.
+7. **Respaldo:** si el segundo intento falla, o el modelo no está disponible, o se acaba el tiempo, se crea igual un `Recuerdo` con título igual al texto de la pregunta, descripción igual a la respuesta textual, sin personas ni lugares y con año estimado (5.6) si la pregunta tiene franja de edad. La pregunta ya estaba registrada como respondida. (En una repregunta no hay respaldo: el recuerdo ya existe y simplemente no cambia.)
+
+En todos los casos, el trabajo termina sin lanzar errores hacia afuera: un fallo del modelo se registra en el log (sin el texto) y no afecta a nada más.
+
+### 5.5 Esquema del JSON de la extracción
+
+Los campos sin datos van como `null` o lista vacía. El modelo no inventa datos: `anio` solo si la persona lo dijo, `edadMencionada` solo si dijo una edad, `nombre` es `null` si solo se menciona el vínculo ("mi tío"), la propia persona no se incluye, y **las mascotas no son personas**: se mencionan en la descripción del recuerdo y no van en `personas`.
+
+```json
+{
+  "titulo": "Mi maestra Elena",
+  "descripcion": "Su maestra de primer grado, que le enseñó a leer.",
+  "anio": 1957,
+  "anioAproximado": false,
+  "edadMencionada": null,
+  "personas": [{ "nombre": "Elena", "vinculo": "maestra" }],
+  "lugares": ["Escuela N° 12"]
+}
+```
+
+### 5.6 Qué se escribe en el grafo
+
+Todo en **una sola transacción** de Neo4j, y siempre anclado en el `PersonaMayor`.
+
+| Dato | Qué se hace |
+|---|---|
+| Recuerdo | Se crea con `titulo`, `descripcion`, `fechaRegistro` (ahora), `anio`, `precision` y `etapaDeVida` según la fila siguiente, con los tres contadores de intentos en 0. Se enlaza con `TIENE_RECUERDO` y con `SURGIO_DE` hacia la pregunta de origen (regla 2) |
+| Año y precisión | `anio` con `anioAproximado = false` da `EXACTA`; con `true`, `APROXIMADA`. Si no hay `anio` pero sí `edadMencionada`: año = año de nacimiento + edad, `CALCULADA_POR_EDAD`. Si no hay ninguno de los dos y la pregunta tiene franja de edad: año = año de nacimiento + (`edadDesde` + `edadHasta`) / 2 (división entera), `ESTIMADA`. Si nada de eso, el recuerdo queda **sin año ni precisión** (regla 6). Un año anterior al nacimiento se descarta |
+| Etapa de vida | Edad en el año del recuerdo = `anio` menos el año de nacimiento. `INFANCIA` 0 a 11, `ADOLESCENCIA` 12 a 17, `JUVENTUD` 18 a 29, `ADULTEZ` 30 a 59, `VEJEZ` 60 o más. Sin año no hay etapa |
+| Personas | `nombreNormalizado`: minúsculas, sin tildes ni diéresis (la `ñ` pasa a `n`) y espacios colapsados. **Con nombre:** si ya existe una persona con ese `nombreNormalizado` (P6), se reutiliza y **no se cambia su vínculo**; si no, se crea con `CONOCE {vinculo}`. **Sin nombre:** si hay **exactamente una** persona con ese vínculo (P7), se reutiliza; si no hay o hay más de una, se crea una nueva sin nombre. Después se enlaza con `PARTICIPA_EN` hacia el recuerdo |
+| Lugares | Con el `nombreNormalizado` (P8): si ya existe, se reutiliza; si no, se crea. Se enlaza con `OCURRIO_EN`. Un recuerdo puede tener más de un lugar |
+| Duplicados | Nunca dos `Persona` ni dos `Lugar` con el mismo `nombreNormalizado` en el grafo de una persona (regla 5), aunque lleguen dos extracciones seguidas |
+
+### 5.7 Repreguntas
+
+Completan un recuerdo ya creado **sin crear nodos `PreguntaGuion` ni tocar el progreso** (regla 7).
+
+**Cuándo un dato es candidato a repreguntar.** Para un recuerdo, el dato está en la lista `repreguntas` de su pregunta de origen **y**:
+
+| Dato | Falta cuando |
+|---|---|
+| `ANIO` | el recuerdo no tiene año, o tiene un año con precisión `ESTIMADA` (una estimación por franja no cuenta como año real) |
+| `LUGARES` | no tiene ningún `OCURRIO_EN` |
+| `PERSONAS` | ninguna persona `PARTICIPA_EN` el recuerdo |
+
+**y** el contador de intentos de ese dato es menor que 2 (`intentosAnio`, `intentosLugares` o `intentosPersonas`).
+
+El orden de preguntas dentro de un recuerdo es el de la lista `repreguntas` de la pregunta.
+
+**"Una vez por charla" lo resuelve el front.** El servidor no guarda sesiones. Quien muestra las repreguntas (el front, en la segunda rama) lleva en memoria qué datos ya preguntó **en esa charla** y se los manda al back en `excluir` (7.5), para no volver a preguntar lo mismo en el mismo rato. La memoria del front se pierde al recargar o al volver a ingresar: esa es la "otra charla". Así, un dato sin respuesta se vuelve a ofrecer en la charla siguiente, y como máximo dos veces en total.
+
+**Textos fijos** (constantes en `MensajesHistoria`):
+
+| Dato | Texto |
+|---|---|
+| `ANIO` | "¿Te acordás en qué año fue, o cuántos años tenías?" |
+| `LUGARES` | "¿Dónde pasó esto?" |
+| `PERSONAS` | "¿Quién más estaba con vos en ese momento?" |
+
+**Al responder o saltear:** se suma 1 al contador de ese dato en una sola consulta que solo lo hace si vale menos de 2 (si no, `409`).
+
+**Al responder además:** se encola una extracción de la respuesta con el mismo esquema (5.5) y el back **aplica solo lo que corresponde al dato preguntado**:
+
+- `ANIO`: si la respuesta aporta un año o una edad (misma regla de 5.6), se fija el año, la precisión y la etapa de vida, **reemplazando** un año `ESTIMADA` o la ausencia de año. No pisa un año `EXACTA`, `APROXIMADA` o `CALCULADA_POR_EDAD` que ya existiera.
+- `LUGARES`: se suman los lugares nuevos (con la regla de duplicados de 5.6).
+- `PERSONAS`: se suman las personas nuevas (con la regla de duplicados de 5.6).
+
+Nunca cambia `titulo` ni `descripcion`, ni agrega datos que no son del dato preguntado. Si la respuesta no aporta nada ("no me acuerdo"), o la extracción falla, el recuerdo no cambia y el intento ya quedó contado.
+
+**La charla libre no es una repregunta.** Lo que la persona cuente de más, sin que sea la respuesta a una repregunta, va al chat normal y **no se guarda** en el grafo (mejora futura).
+
+### 5.8 Validaciones
+
+| Campo | Regla | Mensaje |
+|---|---|---|
+| `texto` (responder, repregunta) | Obligatorio y con texto (sin contar espacios) | "Escribí una respuesta o elegí saltear la pregunta." (el de CU-03) |
+| `texto` | Hasta 1000 caracteres | "Tu respuesta es muy larga. Probá con una más corta." |
+| `{preguntaId}` | Debe existir | `404`, texto general |
+| `{dato}` y valores de `excluir` | Uno de `ANIO`, `LUGARES`, `PERSONAS` | `400`, "Revisá los datos ingresados." |
+
+El límite de 1000 caracteres es una propiedad de `historia.properties`.
+
+### 5.9 Privacidad y registro
+
+Lo que la persona cuenta de su vida es sensible. Igual que en el chat:
+
+- **No se escribe en ningún log el texto de las respuestas, ni del prompt, ni del JSON del modelo, ni los nombres de personas y lugares.** Sí se registran la duración, los tokens y el tipo de error.
+- No se clasifica ni se genera alertas a partir del contenido.
+- Con el modelo en la nube, lo que se cuenta sale del equipo. Para la PPS se usan datos sintéticos. Con usuarios reales corresponde el perfil local del modelo.
+
+### 5.10 Baja de la persona
+
+`eliminarHistoria(personaId)` borra el nodo `PersonaMayor` y todos sus `Recuerdo`, `Persona` y `Lugar` (regla 8). **No** modifica los `PreguntaGuion` ni los datos de otras personas. Si la persona no tiene nodo, termina sin error.
+
+---
+
+## 6. Textos
+
+| Dónde | Texto |
+|---|---|
+| Respuesta vacía | "Escribí una respuesta o elegí saltear la pregunta." |
+| Respuesta muy larga | "Tu respuesta es muy larga. Probá con una más corta." |
+| Pregunta ya respondida o salteada (`409`) | "Esa pregunta ya fue respondida." |
+| Repregunta que ya no corresponde (`409`) | "Esa pregunta ya no hace falta." |
+| Introducciones y mensaje final | Ver 5.2 |
+| Repreguntas | Ver 5.7 |
+
+**Texto acordado para la segunda rama** (lo muestra el front o el chat, no este módulo): al terminar las repreguntas de un recuerdo, Alma pregunta *"¿Querés contarme algo más sobre esto o te hago otra pregunta?"*. Si la persona elige otra pregunta, se sigue con `GET /guion/proxima`. Si elige contar algo más, charla con Alma como en el chat normal, y eso no se guarda en el grafo (5.7).
+
+Los textos del módulo van como constantes en `historia/MensajesHistoria`. Los generales (`400`, `401`, `403`, `404`) son los de `common/MensajesError`. El texto de las preguntas del guion va en `guion.json`.
+
+---
+
+## 7. Endpoints
+
+Todos exigen sesión de `PERSONA_MAYOR`. `@Tag(name = "Historia de vida")` y `@Operation` en cada uno.
+
+### 7.1 `GET /api/historia/guion/proxima`
+
+Próxima pregunta pendiente (P1) con su introducción (5.2).
+
+**200 OK**
+```json
+{
+  "pregunta": { "id": 7, "orden": 7, "texto": "¿Qué te acordás de tu escuela primaria?" },
+  "introduccion": "Sigamos con otra pregunta.",
+  "mensajeFinal": null,
+  "quedanPendientes": true
+}
+```
+Si no quedan pendientes: `{ "pregunta": null, "introduccion": null, "mensajeFinal": "Ya respondiste todas las preguntas que tengo por ahora. ¡Gracias por compartir tu historia conmigo!", "quedanPendientes": false }`.
+
+### 7.2 `GET /api/historia/guion/estado`
+
+Todas las preguntas con su estado (P4) y la última respondida o salteada (P3).
+
+**200 OK**
+```json
+{
+  "respondidas": 4,
+  "salteadas": 1,
+  "pendientes": 17,
+  "preguntas": [
+    { "id": 1, "orden": 1, "texto": "…", "estado": "RESPONDIDA" },
+    { "id": 8, "orden": 8, "texto": "…", "estado": "SALTEADA" },
+    { "id": 3, "orden": 3, "texto": "…", "estado": "PENDIENTE" }
+  ],
+  "ultima": { "preguntaId": 8, "estado": "SALTEADA", "fecha": "2026-11-09T11:10:00-03:00" }
+}
+```
+`ultima` es `null` si no hay ninguna.
+
+### 7.3 `POST /api/historia/guion/{preguntaId}/respuesta`
+
+Registra la respuesta y encola la extracción (5.1).
+
+**Request:** `{ "texto": "Nací en Cipolletti, en una casa chica con patio…" }`
+
+**202 Accepted**, sin cuerpo.
+
+**Errores:** `400` (5.8), `401`, `403`, `404` (persona o pregunta), `409` (ya respondida o salteada).
+
+### 7.4 `POST /api/historia/guion/{preguntaId}/salteo`
+
+Registra el salteo (5.3). **204 No Content.** Errores: `401`, `403`, `404`, `409`.
+
+### 7.5 `GET /api/historia/repreguntas/siguiente`
+
+Dice si hay una repregunta candidata (5.7).
+
+**Parámetros opcionales**
+- `preguntaId`: busca la repregunta del recuerdo que surgió de esa pregunta del guion (el que se acaba de crear). Sin este parámetro, busca en **todos** los recuerdos de la persona y devuelve el **más antiguo** (por `fechaRegistro`) que tenga una repregunta candidata, con su primer dato candidato.
+- `excluir`: datos separados por coma (por ejemplo `ANIO,LUGARES`) que no se deben devolver, porque ya se preguntaron en esta charla (5.7).
+
+**200 OK**
+```json
+{
+  "estado": "HAY",
+  "repregunta": { "recuerdoId": "5f1c…", "dato": "ANIO", "texto": "¿Te acordás en qué año fue, o cuántos años tenías?" }
+}
+```
+- `estado: "PROCESANDO"`: hay una extracción en cola o en curso de esta persona; el cliente vuelve a preguntar en unos segundos. `repregunta` es `null`.
+- `estado: "NINGUNA"`: no hay repregunta candidata. `repregunta` es `null`.
+
+**Errores:** `400` (valor inválido en `excluir`), `401`, `403`, `404` (persona).
+
+### 7.6 `POST /api/historia/repreguntas/{recuerdoId}/{dato}/respuesta`
+
+Responde una repregunta (5.7). **Request:** `{ "texto": "Fue en 1962" }`. **202 Accepted.**
+
+**Errores:** `400`, `401`, `403`, `404` (el recuerdo no existe o no es de la persona), `409` (el dato no aplica a ese recuerdo, ya no falta o ya se preguntó 2 veces).
+
+### 7.7 `POST /api/historia/repreguntas/{recuerdoId}/{dato}/salteo`
+
+Saltea una repregunta (suma un intento). **204 No Content.** Mismos errores que 7.6, sin `400` por texto.
+
+**Formato de los errores:** Problem Details, igual que el resto de `/api` (`docs/contrato-login.md`, sección 7).
+
+---
+
+## 8. Reglas de acceso
+
+| Ruta | Quién puede |
+|---|---|
+| `/api/historia/**` | Solo `PERSONA_MAYOR`. Un `ADMINISTRADOR` recibe `403` |
+
+Sin token o con token vencido: `401`. Una persona nunca puede leer ni modificar recuerdos de otra: todo el acceso al grafo parte del nodo de la persona del token (sección 2).
+
+---
+
+## 9. Errores y mensajes
+
+Formato Problem Details y textos generales: los de `common/MensajesError` (`docs/contrato-login.md`, sección 7). Los del módulo van en `historia/MensajesHistoria` (sección 6).
+
+---
+
+## 10. Back: qué implementar
+
+Paquete base: `ar.edu.utn.frm.gelab.alma`. Un paquete nuevo, `historia/`, y cambios en `ia/`.
+
+**`historia/`**
+- `controller/`: `HistoriaController` (7.1 a 7.7).
+- `dto/`: las respuestas y pedidos de la sección 7.
+- `domain/`: las `@Node` (`PersonaMayorNodo`, `PreguntaGuion`, `Recuerdo`, `Persona`, `Lugar`) y los enums (`PrecisionAnio`, `EtapaDeVida`, `EstadoPregunta`, `DatoFaltante`, `EstadoRepregunta`). Las clases de nodo llevan sufijo si chocan con las de JPA (`PersonaMayor` ya existe en `persona/domain`).
+- `repository/`: repositorios de Neo4j con las consultas `@Query` y `Neo4jClient` para las escrituras.
+- `service/`: `HistoriaDeVidaService` (guion, progreso, introducción, `eliminarHistoria`), `RecuerdoService` (escribe el recuerdo, 5.6) y `RepreguntaService` (5.7).
+- `extraccion/`: `ExtractorDeRecuerdos` (pedido, limpieza, conversión, validación, reintento y respaldo, 5.4), `RespuestaExtraida` (el esquema de 5.5) y `ColaDeExtracciones` (un hilo, en memoria, con el estado "procesando" por persona).
+- `config/`: `ConfiguracionNeo4j` (el manejador de transacciones propio, sección 2), `CargaInicialDelGrafo` (restricciones, guion que solo crea y datos de ejemplo) y `ConfiguracionHistoria` (`@ConfigurationProperties` con `@PropertySource` en UTF-8, igual que `ConfiguracionChat`).
+- `MensajesHistoria`: sección 6.
+- Recursos: `src/main/resources/historia/guion.json` (Anexo A, con `repreguntas` de cada pregunta), `historia.properties` (límite de 1000 caracteres, máximo de 2 intentos por dato, parámetros del modelo para extracción) y el prompt del extractor en `historia/prompt-extractor.txt`.
+
+**`ia/`** (compartido con el chat: avisar antes de tocarlo)
+- `ModeloConversacional` / `OllamaModeloConversacional`: poder pedir temperatura, tope de tokens y tiempo máximo **por llamada** (hoy son fijos). El chat conserva sus valores.
+- `LimitadorDePedidos`: dos niveles (sección 2). **El comportamiento actual del chat no cambia**, y sus pruebas existentes siguen pasando.
+
+Los módulos se comunican solo por sus servicios: `historia/` usa `PersonaMayorRepository` (solo lectura de `id`, `nombre` y `fechaNacimiento`) y `ia/`. Solo `ia/` importa Spring AI.
+
+**Cambios en archivos compartidos (avisar antes de tocarlos; sirven para la descripción del PR)**
+
+| Archivo | Cambio |
+|---|---|
+| `config/SecurityConfig.java` | Una línea: `.requestMatchers("/api/historia/**").hasRole("PERSONA_MAYOR")`, **antes** de `.requestMatchers("/api/**").authenticated()` |
+| `ia/` | Ver arriba |
+
+**No se tocan:** `pom.xml` (los starters de Neo4j y de pruebas de Neo4j ya están), `application.properties` (la conexión a Neo4j ya está), `AlmaApplication.java`, `GlobalExceptionHandler`, `DatosDePrueba`, el front, `chat/` y los demás módulos.
+
+**Checklist (en este orden)**
+
+0. **Precondición:** `docs/contrato-fecha-nacimiento.md` hecho y mezclado a `main`; `feature/grafo` parte de ese `main`.
+1. **Prueba de transacciones:** con JPA y Neo4j juntos, una escritura al grafo dentro del manejador propio se deshace si falla a la mitad, y las consultas de PostgreSQL siguen funcionando igual. Verificar que el arranque no tenga avisos de repositorios ambiguos. Anotar el resultado en el historial.
+2. **Prueba del modelo (Anexo C):** probar el prompt del extractor contra `gemma4:cloud` con las respuestas sintéticas. Si el modelo no sirve, se avisa antes de seguir.
+3. **Paso 1 (grafo, guion y progreso):** nodos, restricciones, carga del guion y de los datos de ejemplo, nodo de la persona, endpoints 7.1 a 7.4. Sin IA. Se puede mezclar a `main` apenas esté lista, para que la segunda rama empiece.
+4. **Paso 2 (extractor):** extractor, escritura del recuerdo y respaldo (5.4 a 5.6). Modelo de prueba en las pruebas.
+5. **Paso 3 (cola):** cola y prioridad del chat.
+6. **Paso 4 (repreguntas):** repreguntas y endpoints 7.5 a 7.7. Es lo primero que se recorta si el tiempo aprieta: lo anterior ya deja una historia de vida funcional.
+7. **Paso 5 (cierre):** `eliminarHistoria`, documentación del modelo, `CLAUDE.md` y `casos-de-uso.md`.
+
+---
+
+## 11. Pruebas y criterio de "listo"
+
+"**Modelo de prueba**" quiere decir una clase que se usa solo en los tests y reemplaza la conexión real con Ollama (implementa `ModeloConversacional` y devuelve respuestas programadas: un JSON válido, uno roto, un error, una demora). Así los tests son rápidos, siempre dan lo mismo y no necesitan Ollama ni internet. `ChatIntegrationTests` ya hace lo mismo con su clase `ModeloFalso`.
+
+**Automáticas** (mismo patrón de `ChatIntegrationTests` y `SesionDePrueba`, contra el Neo4j de `docker compose up -d`; cuentas con prefijo `test_historia_`; cada prueba **borra al terminar** el subgrafo de sus personas con `eliminarHistoria`)
+
+*Grafo y guion:*
+- Al arrancar, hay 22 preguntas, cada una con su lista `repreguntas`; arrancar dos veces no duplica nada.
+- **La carga no pisa cambios:** si se modifica el texto de una pregunta en la base y se vuelve a ejecutar la carga, el texto queda como estaba; una pregunta que no existe sí se crea.
+- `GET /guion/proxima` devuelve la de menor `orden` sin `RESPONDIO` ni `SALTEO`; con todas respondidas o salteadas devuelve `pregunta: null` y el mensaje final.
+- Introducción: "Primera vez" cuando no hay nada registrado; "Después de un salteo" cuando la última fue un salteo; "Normal" en el resto, con las tres frases según el `orden`.
+- Responder y saltear cambian el estado y la próxima; el estado cuenta bien respondidas, salteadas y pendientes; `ultima` es la más reciente.
+- Responder dos veces la misma pregunta (también dos pedidos a la vez) da `409` y deja una sola relación. Saltear una respondida da `409`.
+- **Aislamiento:** dos personas con una persona del mismo nombre y un lugar del mismo nombre: cada una ve solo lo suyo y el progreso de una no cambia el de la otra.
+- Sin token `401`; con token de `admin` `403`; texto vacío o de más de 1000 caracteres `400` con el mensaje del contrato; pregunta inexistente `404`.
+
+*Extractor (con el modelo de prueba):*
+- Respuesta válida: se crea un recuerdo con `SURGIO_DE`, `TIENE_RECUERDO`, personas con `CONOCE` y `PARTICIPA_EN`, y lugares con `OCURRIO_EN`, con los tres contadores en 0.
+- Año: con año exacto, aproximado, por edad, estimado por franja y sin franja (sin año). Un año anterior al nacimiento se descarta.
+- Etapa de vida en los límites (11/12, 17/18, 29/30, 59/60) y sin año.
+- Un `anio` o una `edadMencionada` que no aparecen en el texto se descartan. La propia persona mayor no entra como `Persona`.
+- JSON con texto antes y después, con delimitadores de código, con `"anio": "1957"`, con `"null"` y sin el campo `lugares`: se corrige y se guarda.
+- JSON inválido dos veces, error del modelo o demora excesiva: se crea el recuerdo de respaldo, la pregunta queda respondida y no hay error hacia afuera.
+- Sin duplicados: dos respuestas que mencionan a "Marta" y a "Cipolletti" dejan una sola `Persona` y un solo `Lugar`; "MARTA" y "Marta" cuentan como la misma; una persona sin nombre con un vínculo único se reutiliza y con dos del mismo vínculo se crea otra.
+- Ningún log contiene el texto de las respuestas (revisar).
+
+*Cola y prioridad:*
+- Con varias extracciones encoladas se atienden de a una y en orden.
+- Con un chat esperando, la extracción no toma el turno; sin chat, sí.
+- Las pruebas del chat que ya existen siguen pasando.
+
+*Repreguntas:*
+- `siguiente` devuelve `PROCESANDO` mientras la extracción está en curso, `HAY` con el dato y el texto fijo correctos, y `NINGUNA` cuando no hay candidata.
+- Solo se ofrecen datos de la lista `repreguntas` de la pregunta de origen (por ejemplo, para "¿Dónde naciste?", que tiene la lista vacía, nunca hay repregunta).
+- `ANIO` es candidato con un recuerdo sin año y con uno `ESTIMADA`, y no con uno `EXACTA`, `APROXIMADA` o `CALCULADA_POR_EDAD`. `LUGARES` y `PERSONAS` solo si el recuerdo no tiene ninguno.
+- `excluir` saca esos datos del resultado. Sin `preguntaId`, devuelve el recuerdo más antiguo con una candidata.
+- Responder o saltear suma 1 al contador del dato; con el contador en 2, `siguiente` ya no lo ofrece y 7.6 y 7.7 dan `409`. Saltear y "no me acuerdo" cuentan igual.
+- Responder `ANIO` con un año o una edad reemplaza una estimación y fija precisión y etapa; no pisa un año ya exacto. Responder `LUGARES` o `PERSONAS` suma sin duplicar. Nunca cambia `titulo` ni `descripcion`.
+- No se crean `PreguntaGuion` ni cambia el progreso.
+- Un recuerdo de otra persona da `404`.
+
+*Baja:*
+- `eliminarHistoria` borra el nodo de la persona y sus recuerdos, personas y lugares, no toca las preguntas ni lo de otra persona, y repetirlo no da error.
+
+**Manual con el modelo real**
+- Anexo C, antes de construir y otra vez con el extractor terminado.
+- Con `docker compose up -d`, `ollama signin` hecho y el back corriendo: desde Swagger, responder 3 preguntas y saltear 1; ver en el **Neo4j Browser** (`http://localhost:7474`) el grafo dibujado, con recuerdos, personas y lugares; probar repreguntas (responder, saltear, "no me acuerdo" y ver los contadores); probar un reinicio del back con una extracción en cola.
+
+**Listo cuando:** con `docker compose up -d` y el back corriendo, `ana` tiene su historia de ejemplo; desde Swagger se responde y se saltea el guion, el progreso se retoma donde se dejó y cada respuesta se convierte, en segundo plano, en un recuerdo con sus personas y lugares visible en el Neo4j Browser; las repreguntas completan lo que falta y respetan el máximo de 2 intentos por dato; ante un fallo del modelo la respuesta igual queda guardada; el chat nunca queda esperando detrás de una extracción en cola; y las pruebas automáticas, incluidas las anteriores, pasan.
+
+---
+
+## 12. Pendientes para decidir y límites conocidos
+
+**Pendientes**
+1. **Frases de la sección 5.2 y 5.7:** son una propuesta. Se pueden cambiar sin tocar nada más.
+2. **Qué repreguntas aplican a cada pregunta** (columna del Anexo A): propuesta a revisar.
+
+**Límites conocidos (ya decididos)**
+- La cola de extracciones está en memoria: un reinicio pierde las que esperaban.
+- Una extracción en curso no se corta: en un caso raro el chat recibe el error de siempre.
+- Los años escritos con letras ("quince años") no se detectan.
+- Los apodos y los pronombres no se reconocen como personas.
+- Los recuerdos de las preguntas sin dato de año (por ejemplo, domingo en familia o tradición) pueden quedar "sin fecha" en la línea de tiempo, a propósito: el año no es relevante.
+- Lo que la persona cuenta de más en la charla libre no se guarda en el grafo.
+- **Un operador que edite el guion (futuro).** El diseño actual lo permite sin cambios grandes: el progreso se deduce de las relaciones, los ids de pregunta son fijos y la carga no pisa lo que ya existe. Lo que faltaría: endpoints y pantallas del panel (como los de ejercicios), **baja lógica** de preguntas (una propiedad `fechaBaja` en `PreguntaGuion`, donde "sin valor" significa activa, y un filtro en las consultas de progreso, porque borrar una pregunta rompería el `SURGIO_DE` de sus recuerdos y el historial de quienes la respondieron), un `orden` que se pueda renumerar sin romper la restricción de unicidad (por ejemplo, ordenar de 10 en 10 al crear), y actualizar el modelo de grafo, que hoy dice que el guion lo mantiene el equipo de desarrollo, y los casos de uso. Cambiar el texto de una pregunta ya respondida no modifica los recuerdos que ya surgieron de ella.
+
+---
+
+## 13. Documentos a actualizar
+
+- `docs/casos-de-uso.md`, CU-03: estado de implementación del Back; reflejar las repreguntas (regla de integridad 7) y la introducción de cada pregunta. La descripción general no se modifica.
+- `docs/Modelo_de_grafo/modelo-de-grafo.md`: tipos de id (sección 2), las propiedades nuevas `PreguntaGuion.repreguntas` y `Recuerdo.intentosAnio/intentosLugares/intentosPersonas` (4.1) y una nota de que el guion se carga solo si no existe.
+- `CLAUDE.md`: enlazar este contrato en "Documentos".
+
+---
+
+## 14. Historial de cambios
+
+- **v1 (07/11/2026):** primera propuesta, contra el commit `d35f1a9`.
+- **v2 (08/11/2026):** contrato autocontenido (sin referencias a documentos que no están en el repo); guion de 22 preguntas con repreguntas aplicables por pregunta y carga que no pisa cambios; introducción fija de cada pregunta; fecha de nacimiento obligatoria como precondición; repreguntas sin tope por respuesta, máximo 2 intentos por dato con tres contadores numéricos (se descarta la lista `datosPreguntados`) y "una por charla" resuelta en el front con `excluir`; `siguiente` con `preguntaId` para retomar recuerdos viejos; las mascotas no se guardan como personas; "modelo falso" pasa a llamarse "modelo de prueba" y se explica; nota de cómo se haría la edición del guion por un operador.
+
+---
+
+## Anexo A. Guion
+
+Contenido de `src/main/resources/historia/guion.json`. Los ids son fijos y no se reutilizan; el `orden` es único. "Franja" son edades (sin franja: no sirve para estimar el año). **Repreguntas** es la lista (en orden) que se guarda en el nodo; `ANIO` además se ofrece cuando el año quedó estimado.
+
+| id | orden | Pregunta | Franja | Repreguntas |
+|---|---|---|---|---|
+| 1 | 1 | ¿Dónde naciste? | 0 a 0 | (ninguna) |
+| 2 | 2 | ¿Cómo era la casa donde pasaste tu infancia? | 0 a 11 | LUGARES, PERSONAS |
+| 3 | 3 | ¿Con quiénes vivías en tu infancia? | 0 a 11 | PERSONAS |
+| 4 | 4 | ¿Cómo era el barrio donde creciste? | 0 a 17 | LUGARES, PERSONAS |
+| 5 | 5 | ¿A qué te gustaba jugar en tu infancia? | 4 a 11 | PERSONAS |
+| 6 | 6 | ¿Qué comida de tu infancia te acordás con cariño? | 0 a 11 | PERSONAS |
+| 7 | 7 | ¿Qué te acordás de tu escuela primaria? | 6 a 12 | ANIO, LUGARES, PERSONAS |
+| 8 | 8 | ¿Te acordás de algún maestro o maestra que te haya marcado? | 6 a 17 | ANIO, LUGARES |
+| 9 | 9 | ¿Quién fue una persona muy importante para vos en tu infancia? | 0 a 11 | PERSONAS |
+| 10 | 10 | ¿Con quiénes pasabas el tiempo en tu adolescencia? | 12 a 17 | LUGARES |
+| 11 | 11 | ¿Qué música o qué bailes te gustaban de joven? | 12 a 25 | LUGARES |
+| 12 | 12 | ¿Cuál fue tu primer trabajo? | 14 a 25 | ANIO, LUGARES, PERSONAS |
+| 13 | 13 | ¿Cómo fue la primera casa donde viviste por tu cuenta? | 18 a 35 | ANIO, LUGARES, PERSONAS |
+| 14 | 14 | ¿Cómo conociste a tu pareja? | 18 a 35 | ANIO, LUGARES |
+| 15 | 15 | Si tuviste hijos o hijas, ¿cómo fue el día en que nació el primero? | sin franja | ANIO, LUGARES, PERSONAS |
+| 16 | 16 | ¿Cuál fue uno de los días más felices de tu vida? | sin franja | ANIO, LUGARES, PERSONAS |
+| 17 | 17 | ¿Hubo algún viaje que te haya marcado? | sin franja | ANIO, LUGARES, PERSONAS |
+| 18 | 18 | ¿Hubo alguna mudanza que te haya cambiado la vida? | sin franja | ANIO, LUGARES |
+| 19 | 19 | ¿Qué logro de tu vida te hace sentir más orgullo? | sin franja | ANIO, PERSONAS |
+| 20 | 20 | ¿Tuviste alguna mascota que hayas querido mucho? | sin franja | ANIO |
+| 21 | 21 | ¿Cómo era un domingo típico con tu familia? | sin franja | LUGARES, PERSONAS |
+| 22 | 22 | ¿Qué tradición o comida de tu familia te gustaría que no se olvide? | sin franja | PERSONAS |
+
+## Anexo B. Datos de ejemplo para `ana`
+
+`ana` (nacida el 12/05/1950) con las preguntas 1, 2, 7 y 17 respondidas, la 8 salteada y la 3 como próxima pendiente. Recuerdos:
+
+- "Nací en Cipolletti": 1950, `ESTIMADA`, `INFANCIA`, lugar Cipolletti (pregunta 1).
+- "La casa de la calle San Martín": 1958, `APROXIMADA`, `INFANCIA`, con Marta (hermana) y Rosa (madre), en Cipolletti (pregunta 2).
+- "Mi maestra Elena": 1957, `EXACTA`, `INFANCIA`, con Elena (maestra), en la Escuela N° 12 (pregunta 7).
+- "Un viaje a la costa": **sin año**, con una persona sin nombre (marido), lugar "la costa", con `intentosAnio` en 1 (pregunta 17).
+
+Cubre un recuerdo sin año, una persona sin nombre y una repregunta con un intento ya usado. Se carga solo si `alma.seed.enabled=true` y `ana` no tiene recuerdos. `carlos` queda sin historia. (Los archivos `datos-de-ejemplo.cypher` del modelo son otra cosa: se cargan a mano en un Neo4j de pruebas y no sirven para la aplicación.)
+
+## Anexo C. Prueba del modelo (respuestas sintéticas)
+
+Antes de construir el extractor, se manda cada respuesta, con el texto de su pregunta, al prompt del extractor contra `gemma4:cloud`, y se anota si el resultado cumple. Casos:
+
+| N° | Pregunta | Respuesta | Debe dar |
+|---|---|---|---|
+| E1 | 7 (escuela) | "En 1957 empecé primer grado en la Escuela 12. Mi maestra Elena me enseñó a leer." | `anio` 1957; persona Elena (maestra); lugar Escuela 12 |
+| E2 | 12 (primer trabajo) | "Trabajé en una panadería cuando tenía 17 años, con mi tío." | `edadMencionada` 17; persona sin nombre con vínculo "tío"; sin `anio` |
+| E3 | 2 (casa) | "Por los años 50, en Cipolletti, en una casa con patio." | `anio` 1950 y `anioAproximado` verdadero; lugar Cipolletti |
+| E4 | 17 (viaje) | "Un viaje a la costa con mi marido, me acuerdo del mar." | Sin `anio` ni edad; persona con vínculo "marido" y sin nombre; lugar la costa |
+| E5 | 16 (día feliz) | "Cuando nació mi nieta." | Respuesta corta: título y descripción no vacíos; sin `anio`; sin personas con nombre inventado |
+| E6 | 14 (pareja) | "Lo conocí en un baile, se llamaba Roberto." | Persona Roberto; **sin** `anio` |
+| E7 | 10 (adolescencia) | "Me llamo Ana y salía con mis amigas Marta y Rosa." (la persona es Ana) | Marta y Rosa; **Ana no entra** como persona |
+| E8 | 9 (persona importante) | "Mi abuela, que me crió." | Persona sin nombre con vínculo "abuela" |
+| E9 | 22 (tradición) | "Los ñoquis del 29, con toda la familia en la casa de mi hermana en Neuquén." | Lugar Neuquén; persona con vínculo "hermana"; sin `anio` |
+| E10 | 5 (juegos) | "No me acuerdo de nada." | No inventa nada; título y descripción no vacíos; sin personas ni lugares |
+| E11 | 20 (mascota) | "Tuve un perro, el Pepe, cuando vivíamos en la chacra." | **Pepe no entra** como persona; aparece en la descripción; lugar la chacra; sin `anio` |
+| E12 | 15 (hijos) | "Mi hijo Martín nació en 1978, en el Hospital Regional." | `anio` 1978; persona Martín (hijo); lugar Hospital Regional |
+| E13 | 17 (viaje), como repregunta de `ANIO` | "Y fue cuando yo tenía 30 años." | `edadMencionada` 30; sin personas ni lugares nuevos |
+
+Criterios: JSON válido en el 90 % o más (con la limpieza y la conversión del backend); **ningún dato inventado** en ningún caso (año, edad o nombres que no están en el texto); E7 sin la propia persona; E11 sin la mascota como persona. Los resultados se anotan en el informe de la PPS, no en este contrato. Si el modelo no cumple, se prueba `gpt-oss:120b-cloud` y se avisa antes de seguir.

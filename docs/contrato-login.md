@@ -127,7 +127,7 @@ Datos personales de la persona del token, para la pantalla Perfil (CU-13 y CU-14
 { "nombre": "Ana", "apellido": "Pérez", "fechaNacimiento": "1950-05-12", "nombreUsuario": "ana" }
 ```
 
-- `fechaNacimiento` viene como `yyyy-MM-dd`, o `null` si la persona no la tiene cargada.
+- `fechaNacimiento` viene siempre como `yyyy-MM-dd` (es obligatoria en `PersonaMayor`; ver `docs/contrato-fecha-nacimiento.md`).
 - No incluye `id`, `rol` ni la contraseña.
 - `nombre` y `apellido` salen de `PersonaMayor`. `nombreUsuario` sale de `Cuenta`.
 
@@ -330,6 +330,7 @@ Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay
 
 - **v1 (23/10/2026):** primera propuesta.
 - **v2 (23/10/2026, contra el commit `b47fe79`):** se marcó lo que ya está hecho (springdoc, `OpenApiConfig`, parte de `SecurityConfig`), se agregó lo que falta en `SecurityConfig` y en Swagger, se aclaró que la zona horaria es la de Jackson, y se avisó que el `CLAUDE.md` debe estar en la raíz.
+- **v7 (08/11/2026):** sección 4.4: `fechaNacimiento` pasa a ser obligatoria y `GET /api/perfil` la devuelve siempre como `yyyy-MM-dd`, nunca `null` (`docs/contrato-fecha-nacimiento.md`).
 - **v6 (28/10/2026):** se agregó `GET /api/perfil` (sección 4.4) para la pantalla Perfil, y la fila de accesibilidad y perfil en las reglas de acceso (sección 6).
 - **v5 (23/10/2026):** sección 7: el campo `type` no viaja cuando vale `about:blank` (comportamiento de Spring 7, equivalente según RFC 9457); se quitó de los ejemplos.
 - **v4 (23/10/2026):** se ajustó al diagrama de clases (DC_PPS_3): `nombre` y `apellido` salen de `PersonaMayor` y `Administrador`; las preferencias de accesibilidad quedan en `tamanioLetra` y `altoContraste` (se quitó `reducirMovimiento`), solo para `PERSONA_MAYOR`, y viajan en el login y en `/me`; se agregaron las entidades y el seed correspondiente.

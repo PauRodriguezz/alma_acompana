@@ -13,5 +13,4 @@ export const AJUSTE_ACCESIBILIDAD = "Tamaño de letra y contraste"
 
 // PROPUESTOS (aprobados): no están en el Figma ni en los casos de uso.
 export const CARGANDO_DATOS = "Cargando…"
-export const FECHA_SIN_CARGAR = "Todavía no está cargada."
 export const ERROR_CARGA = "No pudimos cargar tus datos. Probá de nuevo en un rato."

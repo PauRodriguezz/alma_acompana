@@ -22,7 +22,6 @@ import {
   ETIQUETA_FECHA_NACIMIENTO,
   ETIQUETA_NOMBRE,
   ETIQUETA_USUARIO,
-  FECHA_SIN_CARGAR,
   SUBTITULO_PERFIL,
   TITULO_AJUSTES,
   TITULO_DATOS,
@@ -85,9 +84,7 @@ export function PerfilPage() {
               <Dato etiqueta={ETIQUETA_NOMBRE}>{estado.perfil.nombre}</Dato>
               <Dato etiqueta={ETIQUETA_APELLIDO}>{estado.perfil.apellido}</Dato>
               <Dato etiqueta={ETIQUETA_FECHA_NACIMIENTO}>
-                {estado.perfil.fechaNacimiento
-                  ? fechaCorta(estado.perfil.fechaNacimiento)
-                  : FECHA_SIN_CARGAR}
+                {fechaCorta(estado.perfil.fechaNacimiento)}
               </Dato>
               <Dato etiqueta={ETIQUETA_USUARIO}>{estado.perfil.nombreUsuario}</Dato>
             </dl>

@@ -759,6 +759,7 @@ class ChatIntegrationTests {
             PersonaMayor persona = new PersonaMayor();
             persona.setNombre(nombre);
             persona.setApellido(apellido);
+            persona.setFechaNacimiento(LocalDate.of(1950, 5, 12));
             persona.setCuenta(cuenta);
             persona.setPreferenciaAccesibilidad(preferencia);
             personaMayorRepository.save(persona);
