@@ -22,6 +22,7 @@ import ar.edu.utn.frm.gelab.alma.bienestar.domain.NivelAnimo;
 import ar.edu.utn.frm.gelab.alma.bienestar.service.RegistroAnimoService;
 import ar.edu.utn.frm.gelab.alma.chat.ConfiguracionChat;
 import ar.edu.utn.frm.gelab.alma.chat.MensajesChat;
+import ar.edu.utn.frm.gelab.alma.historia.service.RecuerdosParaElChat;
 import ar.edu.utn.frm.gelab.alma.recordatorios.dto.CitaResponse;
 import ar.edu.utn.frm.gelab.alma.recordatorios.dto.ItemAgendaResponse;
 import ar.edu.utn.frm.gelab.alma.recordatorios.dto.MedicacionResponse;
@@ -45,13 +46,15 @@ public class ContextoDelChat {
     private final ConfiguracionChat configuracion;
     private final RegistroAnimoService animoService;
     private final RecordatorioService recordatorioService;
+    private final RecuerdosParaElChat recuerdosParaElChat;
     private final Clock clock;
 
     public ContextoDelChat(ConfiguracionChat configuracion, RegistroAnimoService animoService,
-            RecordatorioService recordatorioService, Clock clock) {
+            RecordatorioService recordatorioService, RecuerdosParaElChat recuerdosParaElChat, Clock clock) {
         this.configuracion = configuracion;
         this.animoService = animoService;
         this.recordatorioService = recordatorioService;
+        this.recuerdosParaElChat = recuerdosParaElChat;
         this.clock = clock;
         this.plantilla = leerPlantilla();
     }
@@ -77,17 +80,22 @@ public class ContextoDelChat {
                 : MensajesChat.SALUDO_VARIOS_RECORDATORIOS;
     }
 
-    /** El system prompt con el ánimo, los recordatorios de hoy y las citas próximas de esa cuenta. */
-    public String instrucciones(Long cuentaId) {
+    /**
+     * El system prompt con el ánimo, los recordatorios de hoy, las citas próximas, el progreso de la historia de
+     * vida y los recuerdos relacionados con el {@code mensaje} actual, de esa cuenta. Los dos últimos los arma
+     * {@link RecuerdosParaElChat}: el chat no lee Neo4j.
+     */
+    public String instrucciones(Long cuentaId, String mensaje) {
         LocalDate hoy = LocalDate.now(clock);
+        RecuerdosParaElChat.Resultado historia = recuerdosParaElChat.armar(cuentaId, mensaje);
         Map<String, String> valores = Map.of(
                 "respuesta_urgencia", configuracion.getRespuestas().getUrgencia(),
                 "respuesta_malestar_grave", configuracion.getRespuestas().getMalestarGrave(),
                 "animo", animoDeHoy(cuentaId),
                 "recordatorios", recordatoriosDeHoy(cuentaId, hoy),
                 "citas_proximas", citasProximas(cuentaId, hoy),
-                "progreso", MensajesChat.SIN_INFORMACION,
-                "recuerdos", MensajesChat.SIN_INFORMACION);
+                "progreso", historia.progreso(),
+                "recuerdos", historia.recuerdos());
         // Una sola pasada sobre la plantilla: lo que se inserta nunca se vuelve a examinar, así un título
         // de recordatorio o de cita con algo como "{animo}" no se reemplaza.
         Matcher matcher = MARCADOR.matcher(plantilla);

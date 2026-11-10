@@ -1,6 +1,6 @@
 # Contrato de historia de vida (rama B): línea de tiempo, guion en el chat y recuerdos en el prompt
 
-**Versión:** 2
+**Versión:** 3
 **Rama:** `feature/historia-de-vida` (back y front)
 **Parte de:** `feature/grafo` (ver 2.12 y 15)
 **Complementa a:** `docs/contrato-grafo.md` (grafo, guion, extracción y repreguntas, endpoints 7.1 a 7.7) y `docs/contrato-chat.md` (chat).
@@ -124,7 +124,7 @@ El detalle es la ruta `/historia-de-vida/:recuerdoId`, con botón "Volver" (`Enl
 
 ### 2.8 Dos endpoints de lectura nuevos
 
-- `GET /api/historia/recuerdos`: listado para la línea de tiempo (P10 y P11).
+- `GET /api/historia/recuerdos`: listado para la línea de tiempo (P10; la ausencia de recuerdos sale de P10, ver 5.3).
 - `GET /api/historia/recuerdos/{recuerdoId}`: detalle (P12).
 
 Quedan separados para que el listado sea liviano (sin descripción completa de cada recuerdo) y el detalle traiga personas y lugares.
@@ -190,7 +190,7 @@ Consultas a implementar (en `LecturaDelGrafo`, con `Neo4jClient`, siguiendo `doc
 | Consulta | Uso |
 |---|---|
 | P10 | Línea de tiempo: recuerdos de la persona ordenados por `anio` (nulos al final). |
-| P11 | ¿Tiene recuerdos? (para el estado vacío). |
+| P11 | **No se implementa.** ¿Tiene recuerdos? (para el estado vacío): el estado vacío sale de P10, que devuelve una lista vacía (ver 5.3). |
 | P12 | Detalle de un recuerdo con personas y lugares. |
 | P13 | Recuerdos donde participa una persona (por `nombreNormalizado`). |
 | P14 | Recuerdos que ocurrieron en un lugar (por `nombreNormalizado`). |
@@ -212,7 +212,7 @@ Consultas a implementar (en `LecturaDelGrafo`, con `Neo4jClient`, siguiendo `doc
 
 ### 5.3 Estado vacío
 
-Si P11 indica que no hay recuerdos, el listado devuelve lista vacía (200) y el front muestra el estado vacío (ver 6), que invita a empezar a responder preguntas (CU-04, camino alterno Nº 1), junto con la tarjeta de pregunta pendiente si corresponde.
+Si P10 no devuelve ningún recuerdo (P11 no se implementa: una consulta más para saber lo que P10 ya dice), el listado devuelve lista vacía (200) y el front muestra el estado vacío (ver 6), que invita a empezar a responder preguntas (CU-04, camino alterno Nº 1), junto con la tarjeta de pregunta pendiente si corresponde.
 
 ### 5.4 Pregunta pendiente (B3)
 
@@ -226,10 +226,11 @@ La tarjeta "Próxima parada" aparece al final del camino cuando `GET /api/histor
 
 ### 5.5 Recuerdos y progreso en el prompt (B5)
 
-**Progreso (`{progreso}`)** — solo cantidades, tomadas de `/guion/estado`:
+**Progreso (`{progreso}`)** — solo cantidades, del mismo estado de las preguntas que informa `/guion/estado` (P4), pero **leído en solo lectura con `LecturaDelGrafo.estadoDeTodas`, sin pasar por `/guion/estado`** (`HistoriaDeVidaService.estado` hace el `MERGE` del nodo de la persona y abre una transacción de escritura; leer para el chat no puede crear nada):
 
 - Con alguna respuesta o salteo: `Respondió 4, salteó 1, quedan 16.`
 - Sin ninguna respuesta ni salteo: `No hay información.` (`MensajesChat.SIN_INFORMACION`, como hoy).
+- Una persona sin nodo en el grafo (todavía no usó el módulo de historia): `No hay información.`, tanto en `{progreso}` como en `{recuerdos}`, **y el chat no le crea el nodo**.
 
 **Recuerdos (`{recuerdos}`)** — hasta **3** recuerdos relacionados con el mensaje actual:
 
@@ -237,7 +238,15 @@ La tarjeta "Próxima parada" aparece al final del camino cuando `GET /api/histor
 2. Se busca cada nombre de persona y de lugar del grafo (P16/P17) como palabra completa dentro del mensaje normalizado. **El nombre guardado se vuelve a normalizar con la misma función `DetectorDeRiesgo.normalizar` antes de comparar**: `NombreNormalizado.de` conserva la puntuación ("escuela n° 12") y `normalizar` la elimina ("escuela n 12"), así que comparar uno contra otro no coincidiría. Cada coincidencia pide sus recuerdos (P13/P14, que siguen buscando por el `nombreNormalizado` guardado).
 3. Se buscan frases de etapa de vida de una lista fija (ver 5.5.1). Cada coincidencia pide los recuerdos de esa etapa (P15).
 4. Se juntan los resultados sin repetir, y se toman 3 como máximo: primero los de coincidencia por persona o lugar, después los de etapa; dentro de cada grupo, los más recientes por `fechaRegistro`.
-5. Cada recuerdo se escribe en una línea: `- <título> (<año>): <descripción>. Con <persona> (<vínculo>), en <lugar>.` Las partes que no existen se omiten (sin año: `- <título>: <descripción>.`; sin lugar ni personas: se corta tras la descripción).
+5. Cada recuerdo se escribe en una línea: `- <título> (<año>): <descripción>. Con <persona> (<vínculo>), en <lugar>.` Las partes que no existen se omiten. Detalle del formato:
+   - Sin año: `- <título>: <descripción>.`
+   - Sin lugar ni personas: se corta tras la descripción.
+   - Con lugar y sin personas, el lugar va con mayúscula: `... <descripción>. En <lugar>.`
+   - Varias personas o varios lugares se separan con `, ` (`Con Marta (hermana), Rosa (madre), en Cipolletti, la costa.`).
+   - Una persona sin nombre se escribe solo con el vínculo (`Con marido`); una con nombre y sin vínculo, solo con el nombre (`Con Elena`).
+   - **Sin punto doble:** si la descripción ya termina en `.` o en `…` (por el corte de 5.5.2), no se le agrega otro punto; si no termina en ninguno de los dos, se le agrega uno.
+   - **Una sola línea por recuerdo:** los saltos de línea y los grupos de espacios del título, la descripción, las personas y los lugares pasan a un solo espacio.
+   - Sin descripción pero con personas o lugares: `- <título>. Con <persona>.`
 6. Si no hay ninguna coincidencia, `{recuerdos}` queda en `No hay información.`
 
 Ejemplo de línea:
@@ -261,9 +270,12 @@ Lista fija, configurable en `historia.properties`, normalizada:
 
 #### 5.5.2 Límites del prompt
 
-- La descripción de cada recuerdo se corta a **300 caracteres** (con "…" al final si se cortó).
+- **Corte de textos** (la descripción de cada recuerdo en el prompt, a **300** caracteres, y el `resumen` del listado, a **140**): se toman los primeros N caracteres, se quitan los espacios del final y se agrega "…" si se cortó. Un texto cortado puede medir entonces N + 1 caracteres. Un texto que mide N o menos queda igual.
 - Los reemplazos de `{progreso}` y `{recuerdos}` se hacen en la misma pasada que los demás marcadores (como hoy en `ContextoDelChat.instrucciones`): un recuerdo que contenga el texto `{animo}` o `{progreso}` **no** se vuelve a reemplazar.
-- Una falla al leer el grafo para el prompt **no** rompe el chat: se usa `No hay información.` y se registra el error (sin el texto del mensaje ni de los recuerdos).
+- **Las fallas no rompen el chat.** Una falla al leer el grafo para el prompt se registra (solo el tipo de error, sin el texto del mensaje ni de los recuerdos) y **la parte que falló** queda en `No hay información.`: el progreso y los recuerdos fallan por separado (si falla uno, el otro se arma igual).
+- **Presupuesto de tiempo propio.** Toda la lectura del grafo para el prompt (progreso y recuerdos juntos) tiene un tope de **2 s** (`alma.historia.lectura-chat-timeout-ms`, ver 10.5). Corre en un ejecutor chico y acotado, de **4 hilos y sin cola**: si el tope se cumple, o si los 4 hilos están ocupados (se rechaza de inmediato, sin hacer esperar al mensaje), el chat sigue con `No hay información.` en las dos partes y se registra un aviso sin texto de la persona. El mensaje no espera más que el tope, aunque Neo4j esté caído o la red descarte paquetes (el driver tardaría hasta unos 21 s por consulta). No cambia la configuración del driver, así que las escrituras no se ven afectadas.
+- **Una lectura cancelada deja de ejecutar consultas.** Cuando el tope cancela la lectura, el hilo queda interrumpido; antes de cada consulta (por cada persona y cada lugar mencionados, por cada etapa y entre el progreso y los recuerdos) se mira la marca de interrupción y, si está puesta, no se hace ninguna más.
+- **Lectura tolerante de la precisión y la etapa** (listado y detalle, 7.3 y 7.4): si el valor de `precision` o de `etapaDeVida` guardado en el grafo no es uno de los enums (por ejemplo, cargado a mano en Neo4j), se devuelve `null` en ese campo; no se lanza error y el recuerdo aparece igual (200).
 
 ### 5.6 Respuestas del guion y alarmas (B6)
 
@@ -271,7 +283,7 @@ Lista fija, configurable en `historia.properties`, normalizada:
 
 1. Validar el texto: no vacío (400 con `RESPUESTA_OBLIGATORIA`) y largo máximo igual al de 7.3 del contrato del grafo (1000 caracteres).
 2. `DetectorDeRiesgo.detectar(texto)`.
-3. Si hay riesgo: responder `200` con `ALARMA` y el texto predefinido; **no** encolar, **no** marcar la pregunta como respondida y **no** contar intentos. La pregunta sigue pendiente.
+3. Si hay riesgo: responder `200` con `ALARMA` y el texto predefinido; **no** encolar, **no** marcar la pregunta como respondida y **no** contar intentos. La pregunta sigue pendiente. **No se valida que la pregunta (o el recuerdo y el dato, en las repreguntas) exista ni que esté sin responder:** con riesgo, una pregunta inexistente o ya respondida da `200 ALARMA` y no `404` ni `409` (la seguridad va primero). El texto sale de `ConfiguracionChat.Respuestas.para(TipoDeRiesgo)`, el mismo método que usa `ChatService`.
 4. Si no hay riesgo: continuar como hoy (guardar respuesta, encolar extracción) y responder `202` con `ACEPTADA`.
 
 ### 5.7 Cuando algo falla en la espera
@@ -322,7 +334,7 @@ El campo del chat corta en 500 caracteres (`LIMITE_MENSAJE`). En modo guion el c
 
 ### Del back
 
-- Respuestas de alarma de 7.1 y 7.2: las mismas de `ConfiguracionChat` para `MALESTAR_GRAVE` y `URGENCIA_MEDICA` (no se duplican textos).
+- Respuestas de alarma de 7.1 y 7.2: las mismas de `ConfiguracionChat` para `MALESTAR_GRAVE` y `URGENCIA_MEDICA` (no se duplican textos), que se eligen con `ConfiguracionChat.Respuestas.para(TipoDeRiesgo)`.
 - Introducciones, preguntas, repreguntas y `mensajeFinal`: los de `MensajesHistoria` y `guion.json`. No cambian.
 
 ---
@@ -343,17 +355,17 @@ Antes: `202 Accepted` sin cuerpo. Ahora, con cuerpo:
 { "estado": "ACEPTADA" }
 ```
 
-- `200 OK`: el detector de riesgo se activó (ver 5.6). No se guardó ni se encoló nada; la pregunta sigue pendiente. El front muestra `respuesta` como mensaje de Alma y **desactiva** el objetivo.
+- `200 OK`: el detector de riesgo se activó (ver 5.6). No se guardó ni se encoló nada; la pregunta sigue pendiente. **No se validó que la pregunta exista ni que siga sin responder:** con riesgo no hay `404` ni `409`. El front muestra `respuesta` como mensaje de Alma y **desactiva** el objetivo.
 
 ```json
 { "estado": "ALARMA", "respuesta": "<texto predefinido>" }
 ```
 
-Errores: los de 7.3 del contrato del grafo (400 por texto vacío o demasiado largo, 404 pregunta inexistente, 409 pregunta ya respondida o salteada).
+Errores: los de 7.3 del contrato del grafo (400 por texto vacío o demasiado largo, 404 pregunta inexistente, 409 pregunta ya respondida o salteada). El `400` por largo va **antes** de detectar el riesgo (un texto de más de 1000 caracteres da `400` aunque tenga una frase de riesgo); el `404` y el `409` solo se dan si no hay riesgo.
 
 #### 7.2 `POST /repreguntas/{recuerdoId}/{dato}/respuesta` (ajusta 7.6 del contrato del grafo)
 
-Igual que 7.1: `202` con `{ "estado": "ACEPTADA" }` o `200` con `{ "estado": "ALARMA", "respuesta": "..." }`. Con `ALARMA` no se cuenta el intento ni se completa el dato.
+Igual que 7.1: `202` con `{ "estado": "ACEPTADA" }` o `200` con `{ "estado": "ALARMA", "respuesta": "..." }`. Con `ALARMA` no se cuenta el intento ni se completa el dato, y **no se valida que el recuerdo exista ni que el dato aplique** (no hay `404` ni `409`). El `400` por largo va antes de detectar el riesgo.
 
 #### Sin cambios
 
@@ -439,10 +451,10 @@ Formato ya existente de la app. Nuevos o relevantes:
 |---|---|
 | 400 | Texto vacío o demasiado largo en 7.1 y 7.2. |
 | 401 / 403 | Sin sesión / rol incorrecto. |
-| 404 | Pregunta, recuerdo o dato inexistente, o recuerdo de otra persona (5.2). |
-| 409 | `ConflictoException`: pregunta ya respondida o salteada; la repregunta ya no corresponde (dato que no aplica, que ya no falta o que ya se preguntó el máximo de veces). |
+| 404 | Pregunta, recuerdo o dato inexistente, o recuerdo de otra persona (5.2). **No se da en 7.1 y 7.2 si el texto activa el detector de riesgo** (5.6). |
+| 409 | `ConflictoException`: pregunta ya respondida o salteada; la repregunta ya no corresponde (dato que no aplica, que ya no falta o que ya se preguntó el máximo de veces). **No se da en 7.1 y 7.2 si el texto activa el detector de riesgo** (5.6). |
 
-La alarma (`estado: "ALARMA"`) **no** es un error: es una respuesta válida con 200.
+La alarma (`estado: "ALARMA"`) **no** es un error: es una respuesta válida con 200. Con riesgo detectado no se valida que la pregunta o el recuerdo existan ni que estén sin responder: la seguridad va primero.
 
 ---
 
@@ -461,7 +473,7 @@ DTOs nuevos (records) en `historia/dto`: `ListaDeRecuerdosResponse`, `RecuerdoRe
 
 ### 10.2 Repositorio
 
-`LecturaDelGrafo`: agregar las consultas P10 a P17 (sección 4), con `Neo4jClient` y records de lectura, sin entidades. Todas arrancan del nodo `PersonaMayor` (Long id = id de PostgreSQL de la persona).
+`LecturaDelGrafo`: agregar las consultas P10 y P12 a P17 (sección 4; P11 no se implementa), con `Neo4jClient` y records de lectura, sin entidades. Todas arrancan del nodo `PersonaMayor` (Long id = id de PostgreSQL de la persona).
 
 ### 10.3 Servicios
 
@@ -483,6 +495,9 @@ En `historia.properties` / `ConfiguracionHistoria`:
 - Frases de etapa de vida (5.5.1).
 - Máximo de recuerdos en el prompt: 3.
 - Largo máximo de la descripción en el prompt: 300; del resumen del listado: 140.
+- Tope de tiempo de la lectura del grafo para el prompt del chat: **2000 ms** (`alma.historia.lectura-chat-timeout-ms`, `getLecturaChatTimeoutMs`).
+- Máximo de lecturas del grafo para el chat a la vez: **4 hilos**, sin cola (`alma.historia.lectura-chat-hilos-max`, `getLecturaChatHilosMax`). Con los 4 ocupados, la lectura se rechaza de inmediato (5.5.2).
+- Las claves de `historia.properties` son `alma.historia.max-recuerdos-prompt`, `alma.historia.descripcion-prompt-max`, `alma.historia.resumen-max` y `alma.historia.frases-etapa.<etapa>` (frases separadas por coma).
 
 ---
 
@@ -587,9 +602,12 @@ Pantallas y estados que **no están en el Figma** y se resuelven con los compone
 | `HistoriaDeVidaService.java`, `RepreguntaService.java` | Chequeo de riesgo en respuestas del guion. |
 | `LecturaDelGrafo.java` | Consultas P10 a P17. |
 | `ContextoDelChat.java`, `ChatService.java` | `{progreso}` y `{recuerdos}` con datos reales; parámetro del mensaje. |
-| `historia.properties`, `ConfiguracionHistoria.java` | Frases de etapa y límites. |
-| `ChatIntegrationTests.java` | Las aserciones de las líneas 297 y 298 siguen válidas (sin historia → `No hay información.`); agregar pruebas con historia (ver 13). |
-| `HistoriaGuionIntegrationTests.java`, `RepreguntaEndpointsIntegrationTests.java` | Las aserciones `isAccepted` siguen válidas (el 202 se mantiene); se puede agregar la comprobación del cuerpo `ACEPTADA`. |
+| `ConfiguracionChat.java`, `ChatService.java` | `ConfiguracionChat.Respuestas.para(TipoDeRiesgo)`: el texto predefinido de cada riesgo. `ChatService` lo usa en lugar de elegir el texto por su cuenta, y `HistoriaDeVidaService` y `RepreguntaService` lo comparten (5.6). El comportamiento del chat no cambia. |
+| `historia.properties`, `ConfiguracionHistoria.java` | Frases de etapa, límites, tope de tiempo y hilos de la lectura para el chat (10.5). |
+| `ChatIntegrationTests.java` | **No se tocó.** Las aserciones de las líneas 297 y 298 siguen válidas (sin historia → `No hay información.`). Las pruebas nuevas del prompt con historia están en archivos aparte (ver 13). |
+| `HistoriaGuionIntegrationTests.java` | Las aserciones `isAccepted` siguen igual (el 202 se mantiene). La que comparaba el cuerpo vacío (`content().string("")`) pasó a comprobar el cuerpo `{"estado":"ACEPTADA"}`. Ahora inyecta `ModeloDePrueba` y lo reinicia en el `@BeforeEach` (para comprobar que con alarma no se encola nada), y agrega las pruebas de alarma. |
+| `RepreguntaEndpointsIntegrationTests.java` | Igual: `isAccepted` sin cambios y el cuerpo `ACEPTADA` en lugar del cuerpo vacío. La aserción de OpenAPI (`losTresEndpointsEstanEnLosEsquemas...`) antes exigía que el `POST .../respuesta` **no** documentara un `200`; ahora exige que lo documente (es la `ALARMA`), y lo mismo para el del guion. |
+| `RecuerdosDePrueba.java` (test) | Helpers nuevos: `descripcion`, `etapa` y `agregarPersona` (con `CONOCE {vinculo}` y `PARTICIPA_EN`), para armar recuerdos con datos distintos. |
 | `frontend/src/App.tsx` | Rutas nuevas. |
 | `frontend/src/features/chat/*` | Modo guion (11.4). |
 | `docs/contrato-grafo.md` | Ajuste de 5.9 y nota en 7.3/7.6 (ver 14). |
@@ -602,7 +620,9 @@ Pantallas y estados que **no están en el Figma** y se resuelven con los compone
 
 ### Back (automáticas, integración)
 
-Patrón de nombres `test_historia_...`, usando `ModeloDePrueba` (extractor simulado) y `GrafoDePrueba`/`RecuerdosDePrueba`.
+**Convención de nombres.** Los métodos de prueba van en camelCase, como en el resto del código (`sinTokenDevuelve401`), y no con el prefijo `test_historia_...`: ese prefijo es el de los **usuarios** de prueba (`test_historia_a`, `test_historia_chat_a`...), que cada prueba crea y borra con `eliminarHistoria`. Se usa `ModeloDePrueba` (extractor simulado) y `GrafoDePrueba`/`RecuerdosDePrueba`.
+
+**Dónde viven.** Las pruebas del prompt con historia viven en el paquete `historia` (`RecuerdosEnElChatIntegrationTests`, `RecuerdosEnElChatFallaTest`, `RecuerdosEnElChatLecturaLentaTest`, `RecuerdosParaElChatTopeTest`, `TextoDeRecuerdosTest`), y no en `chat`: los ayudantes `ModeloDePrueba`, `RecuerdosDePrueba` y `PersonasDeHistoria` son privados de ese paquete y `ModeloDePrueba` guarda el prompt que recibe. Se leen del `POST /api/chat/mensajes`. `ChatIntegrationTests` no se tocó; la prueba de `Respuestas.para` está en `chat` (`RespuestasParaTest`).
 
 - Listado: orden por año, empate por `fechaRegistro`, sin año al final; lista vacía.
 - Detalle: personas y lugares; 404 de recuerdo inexistente; 404 de recuerdo de **otra** persona.
@@ -657,6 +677,10 @@ Patrón de nombres `test_historia_...`, usando `ModeloDePrueba` (extractor simul
 6. **Una sola extracción a la vez.** La cola de extracción es en memoria y de un solo hilo (como en el grafo): si el back se reinicia, las extracciones encoladas se pierden y la pregunta queda como respondida sin recuerdo.
 7. **Sin edición.** Si la extracción se equivoca, la persona no puede corregir el recuerdo desde la app en esta rama.
 8. **Datos en la nube.** Los recuerdos viajan al modelo en la nube dentro del prompt (2.13); con usuarios reales corresponde el perfil local.
+9. **El detector de riesgo es el del chat, con sus mismos límites.** Es el mismo `DetectorDeRiesgo` con las mismas listas de `chat.properties`. Una frase de duelo en pasado como "cuando se murió mi mamá me quería morir de la tristeza" **no activa la alarma** (las listas detectan "me quiero morir" y "quisiera/quería morirme", no "me quería morir"): la respuesta se guarda y se encola como cualquier otra (`limiteConocido_unaFraseDeDueloConMeQueriaMorirNoActivaLaAlarma` lo documenta; si se ajusta el detector, hay que actualizar la prueba). En cambio, una frase de duelo con "se suicidó" **sí activa la alarma** (la lista incluye `suicid\w+`), aunque la persona hable de otra persona, y esa respuesta no se guarda: el recuerdo se pierde y la pregunta sigue pendiente. Es el mismo comportamiento que ya tiene el chat.
+10. **Los paquetes `historia` y `chat` quedan acoplados en las dos direcciones.** `historia.service` importa `DetectorDeRiesgo` y `ConfiguracionChat` (alarmas), y `chat.service` importa `RecuerdosParaElChat` (prompt). No hay ciclo de beans (Spring los resuelve sin problema), pero un cambio en uno puede afectar al otro. Es lo que pide este contrato (2.9 y 2.11).
+11. **Una lectura colgada sigue hasta que el driver la corta.** El tope de 2 s no mata la consulta: la cancela (interrumpe su hilo) y el chat sigue, pero un socket bloqueado puede no responder a la interrupción y el hilo queda ocupado hasta que el driver corte la conexión (unos 21 s por consulta si la red descarta paquetes; 0,3 s si el puerto está cerrado). Por eso el ejecutor tiene un máximo de 4 hilos y, con los 4 ocupados, las lecturas se rechazan de inmediato y los mensajes salen sin recuerdos.
+12. **El primer mensaje tras un rato inactivo puede salir sin recuerdos.** Con el pool de conexiones del driver frío (primera conexión, o una conexión vencida), la primera lectura puede tardar más de 2 s y pasar el tope: ese mensaje va con `No hay información.` en `{progreso}` y `{recuerdos}`, aunque la persona tenga historia. Los siguientes ya van con datos. El tope es ajustable (10.5).
 
 ---
 
@@ -666,6 +690,7 @@ Patrón de nombres `test_historia_...`, usando `ModeloDePrueba` (extractor simul
 |---|---|
 | 1 | Primer borrador para revisión. |
 | 2 | Correcciones tras la revisión contra el código, los casos de uso y el Figma. **Código:** el chat está en `/`; el `preguntaOrigenId` se guarda para pedir la repregunta correcta; el mensaje de Alma lleva la introducción del back y el cierre sin preguntas usa el `mensajeFinal` del back; la respuesta aceptada sigue siendo 202 (ahora con cuerpo) y solo la alarma devuelve 200; `RecuerdosParaElChat` recibe `cuentaId`; el tope de espera pasa a 60 s; nombre y mensaje se normalizan con la misma función; texto de respuesta vacía en modo guion; tope de 1000 caracteres en modo guion; se quitó un 409 que no existe. **Casos de uso:** la invitación usa el texto del CU-02 y se muestra como mensaje de Alma a continuación de su respuesta; no se reofrece tras una alarma. **Figma:** camino de paradas con "Ver recuerdos anteriores", tarjeta "Próxima parada", botones "Otra pregunta" y "Volver a Historia de vida" (reemplazan al "Saltear" junto al campo), sección 11.8. **Privacidad:** decisión explícita en 2.13 (aclarando que lo que la persona cuenta viaja al modelo, en el chat y en la extracción). **Otros:** referencia cruzada del encabezado corregida, punto de corte móvil/escritorio definido (`lg`) y nota sobre los dos botones "Otra pregunta". Se quitó la sección "Cómo usar con Claude Code". |
+| 3 | Ajustes para que el contrato refleje lo que hizo el código al armar el back (sin cambiar el comportamiento pedido). **P11 no se implementa:** el estado vacío sale de P10 (secciones 2.8, 4, 5.3 y 10.2). **5.5:** el progreso se lee en solo lectura con `estadoDeTodas`, sin pasar por `/guion/estado`; una persona sin nodo queda en `No hay información.` sin que se le cree el nodo; formato de la línea del recuerdo (`En <lugar>` con lugar y sin personas, separadores `, `, persona sin nombre solo con el vínculo, sin punto doble, saltos de línea a espacios). **5.5.2:** corte a N más "…"; progreso y recuerdos fallan por separado; tope de 2 s y ejecutor de 4 hilos sin cola con rechazo inmediato; una lectura cancelada deja de ejecutar consultas al ser interrumpida; precisión y etapa tolerantes (`null` si el valor del grafo no es válido). **5.6, 6, 7.1, 7.2 y 9:** con riesgo detectado no se valida que la pregunta o el recuerdo existan ni que estén sin responder (`200 ALARMA`, la seguridad va primero; el `400` por largo va antes) y el texto sale de `ConfiguracionChat.Respuestas.para(TipoDeRiesgo)`. **10.5:** tope de 2000 ms y 4 hilos. **12:** `ConfiguracionChat` y `ChatService`, `RecuerdosDePrueba`, `HistoriaGuionIntegrationTests`, `RepreguntaEndpointsIntegrationTests` (la aserción de OpenAPI pasó a exigir el `200`) y que `ChatIntegrationTests` no se tocó. **13:** convención de nombres de pruebas y dónde viven las del prompt. **15:** límites nuevos (9 a 12). |
 
 ---
 

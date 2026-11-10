@@ -2,12 +2,16 @@ package ar.edu.utn.frm.gelab.alma.historia.service;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import ar.edu.utn.frm.gelab.alma.chat.ConfiguracionChat;
+import ar.edu.utn.frm.gelab.alma.chat.guardrails.DetectorDeRiesgo;
+import ar.edu.utn.frm.gelab.alma.chat.guardrails.TipoDeRiesgo;
 import ar.edu.utn.frm.gelab.alma.common.exception.ConflictoException;
 import ar.edu.utn.frm.gelab.alma.common.exception.DatosInvalidosException;
 import ar.edu.utn.frm.gelab.alma.common.exception.RecursoNoEncontradoException;
@@ -18,6 +22,7 @@ import ar.edu.utn.frm.gelab.alma.historia.domain.EstadoRepregunta;
 import ar.edu.utn.frm.gelab.alma.historia.domain.PreguntaDelGuion;
 import ar.edu.utn.frm.gelab.alma.historia.dto.RepreguntaDto;
 import ar.edu.utn.frm.gelab.alma.historia.dto.RepreguntaSiguienteResponse;
+import ar.edu.utn.frm.gelab.alma.historia.dto.RespuestaDelGuionResponse;
 import ar.edu.utn.frm.gelab.alma.historia.extraccion.ColaDeExtracciones;
 import ar.edu.utn.frm.gelab.alma.historia.extraccion.TrabajoDeExtraccion;
 import ar.edu.utn.frm.gelab.alma.historia.repository.EscrituraDelGrafo;
@@ -42,14 +47,19 @@ public class RepreguntaService {
     private final EscrituraDelGrafo escritura;
     private final ColaDeExtracciones cola;
     private final ConfiguracionHistoria configuracion;
+    private final DetectorDeRiesgo detector;
+    private final ConfiguracionChat chat;
 
     public RepreguntaService(PersonaMayorRepository personaMayorRepository, LecturaDelGrafo lectura,
-            EscrituraDelGrafo escritura, ColaDeExtracciones cola, ConfiguracionHistoria configuracion) {
+            EscrituraDelGrafo escritura, ColaDeExtracciones cola, ConfiguracionHistoria configuracion,
+            DetectorDeRiesgo detector, ConfiguracionChat chat) {
         this.personaMayorRepository = personaMayorRepository;
         this.lectura = lectura;
         this.escritura = escritura;
         this.cola = cola;
         this.configuracion = configuracion;
+        this.detector = detector;
+        this.chat = chat;
     }
 
     /**
@@ -84,13 +94,20 @@ public class RepreguntaService {
      * @throws DatosInvalidosException      400: la respuesta es más larga que el máximo
      * @throws ConflictoException           409: el dato no aplica a ese recuerdo, ya no falta o ya se preguntó el máximo
      */
-    public void responder(Long cuentaId, String recuerdoId, DatoFaltante dato, String texto) {
+    public RespuestaDelGuionResponse responder(Long cuentaId, String recuerdoId, DatoFaltante dato, String texto) {
         PersonaMayor persona = persona(cuentaId);
         if (texto.length() > configuracion.getTextoMax()) {
             throw new DatosInvalidosException("texto", MensajesHistoria.RESPUESTA_MUY_LARGA);
         }
+        // Contrato de historia de vida, 5.6: con riesgo no se cuenta el intento, no se completa el dato y no se
+        // encola nada (tampoco se valida que el recuerdo exista).
+        Optional<TipoDeRiesgo> riesgo = detector.detectar(texto);
+        if (riesgo.isPresent()) {
+            return RespuestaDelGuionResponse.alarma(chat.getRespuestas().para(riesgo.get()));
+        }
         registrarIntento(persona.getId(), recuerdoId, dato);
         encolarExtraccion(persona, recuerdoId, dato, texto);
+        return RespuestaDelGuionResponse.aceptada();
     }
 
     /**

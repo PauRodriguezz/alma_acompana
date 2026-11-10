@@ -17,8 +17,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.neo4j.core.Neo4jClient;
@@ -47,6 +50,7 @@ import tools.jackson.databind.json.JsonMapper;
  */
 @SpringBootTest(properties = "alma.seed.enabled=false")
 @AutoConfigureMockMvc
+@ExtendWith(OutputCaptureExtension.class)
 @Import(ModeloDePruebaConfig.class)
 @Timeout(value = 120, unit = TimeUnit.SECONDS)
 class RepreguntaEndpointsIntegrationTests {
@@ -279,19 +283,96 @@ class RepreguntaEndpointsIntegrationTests {
     // ---------- 7.6: POST /repreguntas/{recuerdoId}/{dato}/respuesta ----------
 
     @Test
-    void responderDevuelve202SinCuerpoYCompletaElRecuerdo() throws Exception {
+    void responderDevuelve202ConEstadoACEPTADAYCompletaElRecuerdo() throws Exception {
         String id = recuerdoSinAnio(personaA, ESCUELA);
         modelo.responde("{\"titulo\":\"X\",\"descripcion\":\"Y\",\"anio\":1962,\"anioAproximado\":false,"
                 + "\"edadMencionada\":null,\"personas\":[],\"lugares\":[]}");
 
         mockMvc.perform(con(responder(id, "ANIO", cuerpo("Fue en 1962")), tokenA))
                 .andExpect(status().isAccepted())
-                .andExpect(content().string(""));
+                .andExpect(content().json("{\"estado\":\"ACEPTADA\"}", true));
         esperarCola();
 
         assertThat(recuerdos.propiedades(id)).containsEntry("anio", 1962L).containsEntry("precision", "EXACTA")
                 .containsEntry("intentosAnio", 1L).containsEntry("titulo", "Un recuerdo");
         mockMvc.perform(con(get(SIGUIENTE), tokenA)).andExpect(jsonPath("$.repregunta.dato").value("LUGARES"));
+    }
+
+    // ---------- Alarmas (contrato de historia de vida, 2.9, 5.6 y 7.2) ----------
+
+    @Test
+    void unaRepreguntaConMalestarGraveDevuelve200ALARMAYNoCuentaIntentoNiCompletaElDato() throws Exception {
+        alarmaEnRepregunta("Fue en 1962 pero ya no quiero vivir más",
+                "Gracias por contármelo. Lo que sentís es importante y no tenés que atravesarlo sin compañía. "
+                        + "Podés llamar gratis a la Línea de Salud Mental 0800-999-0091, a cualquier hora, o al "
+                        + "Centro de Asistencia al Suicida 0800-345-1435. Si estás en peligro, llamá al 911. Si "
+                        + "podés, contáselo también a alguien de tu confianza que esté cerca.");
+    }
+
+    @Test
+    void unaRepreguntaConUrgenciaMedicaDevuelve200ALARMAYNoCuentaIntentoNiCompletaElDato() throws Exception {
+        alarmaEnRepregunta("Me duele el pecho desde 1962",
+                "Lo que me contás puede ser urgente. Por favor, llamá ahora al 911 o pedile a alguien que esté "
+                        + "cerca que te ayude. Yo no puedo evaluar lo que te pasa, pero ellos sí.");
+    }
+
+    private void alarmaEnRepregunta(String texto, String esperado) throws Exception {
+        String id = recuerdoSinAnio(personaA, ESCUELA);
+
+        mockMvc.perform(con(responder(id, "ANIO", cuerpo(texto)), tokenA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ALARMA"))
+                .andExpect(jsonPath("$.respuesta").value(esperado));
+        esperarCola();
+
+        assertThat(modelo.pedidos()).as("no se encoló ninguna extracción").isEmpty();
+        assertThat(recuerdos.propiedades(id)).containsEntry("intentosAnio", 0L).containsEntry("anio", null)
+                .containsEntry("titulo", "Un recuerdo");
+        // El dato sigue faltando y se vuelve a ofrecer.
+        mockMvc.perform(con(get(SIGUIENTE), tokenA))
+                .andExpect(jsonPath("$.estado").value("HAY"))
+                .andExpect(jsonPath("$.repregunta.recuerdoId").value(id))
+                .andExpect(jsonPath("$.repregunta.dato").value("ANIO"));
+        // Y se puede responder con normalidad: ahí sí cuenta el intento.
+        mockMvc.perform(con(responder(id, "ANIO", cuerpo("Fue en 1962")), tokenA)).andExpect(status().isAccepted());
+        esperarCola();
+        assertThat(recuerdos.propiedades(id)).containsEntry("intentosAnio", 1L);
+    }
+
+    @Test
+    void unaAlarmaEnUnaRepreguntaNoDejaElTextoDeLaPersonaEnElLog(CapturedOutput salida) throws Exception {
+        String id = recuerdoSinAnio(personaA, ESCUELA);
+
+        mockMvc.perform(con(responder(id, "ANIO", cuerpo("Me duele el pecho, lo vio Zulema Quiñones")), tokenA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ALARMA"));
+        esperarCola();
+
+        assertThat(salida.getAll()).doesNotContain("Zulema").doesNotContain("Quiñones")
+                .doesNotContain("Me duele el pecho");
+    }
+
+    @Test
+    void unaRespuestaDeRiesgoMuyLargaDa400AntesDeDetectarYNoCuentaIntento() throws Exception {
+        String id = recuerdoSinAnio(personaA, ESCUELA);
+
+        // Largo y con palabras de riesgo: el 400 por largo va primero (5.6), no la alarma ni el intento.
+        mockMvc.perform(con(responder(id, "ANIO", cuerpo("Ya no quiero vivir más " + "x".repeat(1001))), tokenA))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores[0].campo").value("texto"))
+                .andExpect(jsonPath("$.errores[0].mensaje").value(MUY_LARGA));
+
+        assertThat(recuerdos.propiedades(id)).containsEntry("intentosAnio", 0L);
+        assertThat(modelo.pedidos()).isEmpty();
+    }
+
+    @Test
+    void conRiesgoNoSeValidaQueElRecuerdoExista() throws Exception {
+        // Sin riesgo daría 404; con riesgo, 200 ALARMA (la seguridad va primero, decisión del contrato 5.6).
+        mockMvc.perform(con(responder(java.util.UUID.randomUUID().toString(), "ANIO", cuerpo("Me duele el pecho")),
+                        tokenA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ALARMA"));
     }
 
     @Test
@@ -452,8 +533,9 @@ class RepreguntaEndpointsIntegrationTests {
         // 7.6: el cuerpo es el de texto de historia, no el de juegos.
         JsonNode responder = rutas.get("/api/historia/repreguntas/{recuerdoId}/{dato}/respuesta").get("post");
         assertThat(referencia(responder)).endsWith("/RespuestaTextoRequest");
-        assertThat(responder.get("responses").has("202")).as("7.6 documenta 202").isTrue();
-        assertThat(responder.get("responses").has("200")).as("y no un 200 por defecto").isFalse();
+        assertThat(responder.get("responses").has("202")).as("7.2 documenta 202 (ACEPTADA)").isTrue();
+        // Desde el contrato de historia de vida (7.2) el 200 es intencional: es la ALARMA.
+        assertThat(responder.get("responses").has("200")).as("y 200 (ALARMA)").isTrue();
         JsonNode dato = responder.get("parameters").valueStream().filter(p -> p.get("name").asString().equals("dato"))
                 .findFirst().orElseThrow();
         assertThat(valores(dato.get("schema"))).containsExactlyInAnyOrder("ANIO", "LUGARES", "PERSONAS");
@@ -478,6 +560,7 @@ class RepreguntaEndpointsIntegrationTests {
         JsonNode guion = rutas.get("/api/historia/guion/{preguntaId}/respuesta").get("post");
         assertThat(referencia(guion)).endsWith("/RespuestaTextoRequest");
         assertThat(guion.get("responses").has("202")).as("7.3 documenta 202").isTrue();
+        assertThat(guion.get("responses").has("200")).as("y 200 (ALARMA, contrato de historia de vida 7.1)").isTrue();
         assertThat(rutas.get("/api/historia/guion/{preguntaId}/salteo").get("post").get("responses").has("204"))
                 .as("7.4 documenta 204").isTrue();
     }

@@ -62,6 +62,35 @@ final class RecuerdosDePrueba {
                 """).bindAll(Map.of("recuerdo", recuerdoId, "id", UUID.randomUUID().toString(), "nombre", nombre)).run();
     }
 
+    /** Cambia la etapa de vida de un recuerdo (por defecto {@code crear} pone INFANCIA si tiene año). */
+    void etapa(String recuerdoId, String etapa) {
+        neo4j.query("MATCH (r:Recuerdo {idRecuerdo: $id}) SET r.etapaDeVida = $etapa")
+                .bindAll(Map.of("id", recuerdoId, "etapa", etapa)).run();
+    }
+
+    /** Cambia la descripción de un recuerdo. */
+    void descripcion(String recuerdoId, String descripcion) {
+        neo4j.query("MATCH (r:Recuerdo {idRecuerdo: $id}) SET r.descripcion = $descripcion")
+                .bindAll(Map.of("id", recuerdoId, "descripcion", descripcion)).run();
+    }
+
+    /** Agrega una persona (con {@code CONOCE {vinculo}} y {@code PARTICIPA_EN}). Nombre y vínculo pueden ser nulos. */
+    void agregarPersona(long personaId, String recuerdoId, String nombre, String vinculo) {
+        Map<String, Object> parametros = new HashMap<>();
+        parametros.put("persona", personaId);
+        parametros.put("recuerdo", recuerdoId);
+        parametros.put("id", UUID.randomUUID().toString());
+        parametros.put("nombre", nombre);
+        parametros.put("normalizado", nombre == null ? null : nombre.toLowerCase());
+        parametros.put("vinculo", vinculo);
+        neo4j.query("""
+                MATCH (p:PersonaMayor {idPersonaMayor: $persona}), (r:Recuerdo {idRecuerdo: $recuerdo})
+                CREATE (pe:Persona {idPersona: $id, nombre: $nombre, nombreNormalizado: $normalizado})
+                CREATE (p)-[:CONOCE {vinculo: $vinculo}]->(pe)
+                CREATE (pe)-[:PARTICIPA_EN]->(r)
+                """).bindAll(parametros).run();
+    }
+
     Map<String, Object> propiedades(String recuerdoId) {
         return filas(neo4j, """
                 MATCH (r:Recuerdo {idRecuerdo: $id})

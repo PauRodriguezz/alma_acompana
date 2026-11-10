@@ -138,4 +138,139 @@ public class LecturaDelGrafo {
                         fila.get("fecha").isNull() ? null : fila.get("fecha").asZonedDateTime()))
                 .all().stream().toList();
     }
+
+    // ---------- Recuerdos (contrato de historia de vida, sección 4: P10 a P17) ----------
+
+    /**
+     * P10: los recuerdos de la persona en orden cronológico: por año, con empate por {@code fechaRegistro}; los
+     * que no tienen año van al final, también por {@code fechaRegistro} (5.1). Si no tiene recuerdos, lista vacía
+     * (no hace falta P11).
+     */
+    public List<RecuerdoLeido> recuerdosEnOrden(Long personaId) {
+        return neo4jClient.query("""
+                MATCH (:PersonaMayor {idPersonaMayor: $persona})-[:TIENE_RECUERDO]->(r:Recuerdo)
+                RETURN %s
+                ORDER BY r.anio IS NULL, r.anio, r.fechaRegistro, r.idRecuerdo
+                """.formatted(COLUMNAS_DE_RECUERDO))
+                .bindAll(Map.of("persona", personaId))
+                .fetchAs(RecuerdoLeido.class)
+                .mappedBy((tipos, fila) -> aRecuerdo(fila))
+                .all().stream().toList();
+    }
+
+    /**
+     * P12: un recuerdo con sus personas (y el vínculo de cada una) y sus lugares. Vacío si no existe o no es de la
+     * persona: la consulta parte de su nodo (5.2).
+     */
+    public Optional<DetalleDeRecuerdo> detalleDeRecuerdo(Long personaId, String recuerdoId) {
+        return neo4jClient.query("""
+                MATCH (p:PersonaMayor {idPersonaMayor: $persona})-[:TIENE_RECUERDO]->(r:Recuerdo {idRecuerdo: $recuerdo})
+                RETURN %s,
+                       [(pe:Persona)-[:PARTICIPA_EN]->(r) | {id: pe.idPersona, nombre: pe.nombre,
+                           vinculo: head([(p)-[c:CONOCE]->(pe) | c.vinculo])}] AS personas,
+                       [(r)-[:OCURRIO_EN]->(l:Lugar) | {id: l.idLugar, nombre: l.nombre}] AS lugares
+                """.formatted(COLUMNAS_DE_RECUERDO))
+                .bindAll(Map.of("persona", personaId, "recuerdo", recuerdoId))
+                .fetchAs(DetalleDeRecuerdo.class)
+                .mappedBy((tipos, fila) -> new DetalleDeRecuerdo(aRecuerdo(fila),
+                        fila.get("personas").asList(v -> new DetalleDeRecuerdo.PersonaLeida(
+                                v.get("id").asString(), texto(v.get("nombre")), texto(v.get("vinculo")))),
+                        fila.get("lugares").asList(v -> new DetalleDeRecuerdo.LugarLeido(
+                                v.get("id").asString(), v.get("nombre").asString()))))
+                .one();
+    }
+
+    /** P13: recuerdos donde participa la persona con ese {@code nombreNormalizado} guardado. Más nuevos primero. */
+    public List<RecuerdoParaElPrompt> recuerdosDePersona(Long personaId, String nombreNormalizado) {
+        return paraElPrompt("""
+                MATCH (p:PersonaMayor {idPersonaMayor: $persona})
+                MATCH (p)-[:CONOCE]->(:Persona {nombreNormalizado: $valor})-[:PARTICIPA_EN]->(r:Recuerdo)
+                      <-[:TIENE_RECUERDO]-(p)
+                """, personaId, nombreNormalizado);
+    }
+
+    /** P14: recuerdos que ocurrieron en el lugar con ese {@code nombreNormalizado} guardado. Más nuevos primero. */
+    public List<RecuerdoParaElPrompt> recuerdosDeLugar(Long personaId, String nombreNormalizado) {
+        return paraElPrompt("""
+                MATCH (p:PersonaMayor {idPersonaMayor: $persona})
+                MATCH (p)-[:TIENE_RECUERDO]->(r:Recuerdo)-[:OCURRIO_EN]->(:Lugar {nombreNormalizado: $valor})
+                """, personaId, nombreNormalizado);
+    }
+
+    /** P15: recuerdos de una etapa de vida. Más nuevos primero. */
+    public List<RecuerdoParaElPrompt> recuerdosDeEtapa(Long personaId, String etapaDeVida) {
+        return paraElPrompt("""
+                MATCH (p:PersonaMayor {idPersonaMayor: $persona})
+                MATCH (p)-[:TIENE_RECUERDO]->(r:Recuerdo {etapaDeVida: $valor})
+                """, personaId, etapaDeVida);
+    }
+
+    /** P16: las personas de la vida de la persona con nombre (las que solo tienen vínculo no se pueden mencionar). */
+    public List<NombreConocido> personasConocidas(Long personaId) {
+        return nombres("""
+                MATCH (:PersonaMayor {idPersonaMayor: $persona})-[:CONOCE]->(pe:Persona)
+                WHERE pe.nombre IS NOT NULL AND pe.nombreNormalizado IS NOT NULL
+                RETURN DISTINCT pe.nombre AS nombre, pe.nombreNormalizado AS normalizado
+                """, personaId);
+    }
+
+    /** P17: los lugares de la historia de la persona. */
+    public List<NombreConocido> lugaresConocidos(Long personaId) {
+        return nombres("""
+                MATCH (:PersonaMayor {idPersonaMayor: $persona})-[:TIENE_RECUERDO]->(:Recuerdo)-[:OCURRIO_EN]->(l:Lugar)
+                RETURN DISTINCT l.nombre AS nombre, l.nombreNormalizado AS normalizado
+                """, personaId);
+    }
+
+    private List<RecuerdoParaElPrompt> paraElPrompt(String partida, Long personaId, String valor) {
+        return neo4jClient.query(partida + """
+                WITH DISTINCT p, r
+                RETURN r.idRecuerdo AS id, r.titulo AS titulo, r.descripcion AS descripcion, r.anio AS anio,
+                       r.fechaRegistro AS fecha,
+                       [(pe:Persona)-[:PARTICIPA_EN]->(r) | {nombre: pe.nombre,
+                           vinculo: head([(p)-[c:CONOCE]->(pe) | c.vinculo])}] AS personas,
+                       [(r)-[:OCURRIO_EN]->(l:Lugar) | l.nombre] AS lugares
+                ORDER BY r.fechaRegistro DESC, r.idRecuerdo
+                """)
+                .bindAll(Map.of("persona", personaId, "valor", valor))
+                .fetchAs(RecuerdoParaElPrompt.class)
+                .mappedBy((tipos, fila) -> new RecuerdoParaElPrompt(
+                        fila.get("id").asString(),
+                        fila.get("titulo").asString(),
+                        texto(fila.get("descripcion")),
+                        fila.get("anio").isNull() ? null : fila.get("anio").asInt(),
+                        fila.get("fecha").isNull() ? null : fila.get("fecha").asZonedDateTime(),
+                        fila.get("personas").asList(v -> new RecuerdoParaElPrompt.Participante(
+                                texto(v.get("nombre")), texto(v.get("vinculo")))),
+                        fila.get("lugares").asList(Value::asString)))
+                .all().stream().toList();
+    }
+
+    private List<NombreConocido> nombres(String cypher, Long personaId) {
+        return neo4jClient.query(cypher)
+                .bindAll(Map.of("persona", personaId))
+                .fetchAs(NombreConocido.class)
+                .mappedBy((tipos, fila) -> new NombreConocido(fila.get("nombre").asString(),
+                        fila.get("normalizado").asString()))
+                .all().stream().toList();
+    }
+
+    private static final String COLUMNAS_DE_RECUERDO = """
+            r.idRecuerdo AS id, r.titulo AS titulo, r.descripcion AS descripcion, r.anio AS anio,
+            r.precision AS precision, r.etapaDeVida AS etapa, r.fechaRegistro AS fecha""";
+
+    private static RecuerdoLeido aRecuerdo(org.neo4j.driver.Record fila) {
+        return new RecuerdoLeido(
+                fila.get("id").asString(),
+                fila.get("titulo").asString(),
+                texto(fila.get("descripcion")),
+                fila.get("anio").isNull() ? null : fila.get("anio").asInt(),
+                texto(fila.get("precision")),
+                texto(fila.get("etapa")),
+                fila.get("fecha").isNull() ? null : fila.get("fecha").asZonedDateTime());
+    }
+
+    private static String texto(Value valor) {
+        return valor.isNull() ? null : valor.asString();
+    }
 }

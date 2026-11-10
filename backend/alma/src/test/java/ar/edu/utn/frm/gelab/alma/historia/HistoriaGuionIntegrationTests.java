@@ -18,9 +18,12 @@ import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -49,6 +52,7 @@ import ar.edu.utn.frm.gelab.alma.persona.repository.PersonaMayorRepository;
  */
 @SpringBootTest(properties = "alma.seed.enabled=false")
 @AutoConfigureMockMvc
+@ExtendWith(OutputCaptureExtension.class)
 @Import({ HistoriaGuionIntegrationTests.ConfigReloj.class, ModeloDePruebaConfig.class })
 // Contexto propio (reloj movible): se cierra al terminar para liberar su pool de conexiones de PostgreSQL.
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
@@ -132,6 +136,8 @@ class HistoriaGuionIntegrationTests {
 
     @Autowired
     private ColaDeExtracciones cola;
+    @Autowired
+    private ModeloDePrueba modelo;
 
     private PersonasDeHistoria personas;
     private Persona personaA;
@@ -144,6 +150,7 @@ class HistoriaGuionIntegrationTests {
     void preparar() {
         personas = new PersonasDeHistoria(cuentaRepository, personaMayorRepository, passwordEncoder, historia, jwtEncoder);
         USUARIOS.forEach(personas::borrar);
+        modelo.reiniciar();
         reloj.poner(AHORA);
         personaA = personas.crear(USUARIO_A);
         personaB = personas.crear(USUARIO_B);
@@ -340,17 +347,122 @@ class HistoriaGuionIntegrationTests {
     // ---------- POST respuesta y salteo (7.3, 7.4 y 5.1 a 5.3) ----------
 
     @Test
-    void responderDevuelve202SinCuerpoYSaltearDevuelve204() throws Exception {
+    void responderDevuelve202ConEstadoACEPTADASinRespuestaYSaltearDevuelve204() throws Exception {
         mockMvc.perform(pedir(post("/api/historia/guion/1/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
                         .content(cuerpo("Nací en un pueblo.")))
                 .andExpect(status().isAccepted())
-                .andExpect(content().string(""));
+                .andExpect(content().json("{\"estado\":\"ACEPTADA\"}", true));
         mockMvc.perform(pedir(post("/api/historia/guion/2/salteo"), tokenA))
                 .andExpect(status().isNoContent())
                 .andExpect(content().string(""));
 
         assertThat(relaciones(personaA, 1)).isEqualTo(1);
         assertThat(relaciones(personaA, 2)).isEqualTo(1);
+    }
+
+    // ---------- Alarmas en las respuestas del guion (contrato de historia de vida, 2.9, 5.6 y 7.1) ----------
+
+    private static final String URGENCIA = "Lo que me contás puede ser urgente. Por favor, llamá ahora al 911 o "
+            + "pedile a alguien que esté cerca que te ayude. Yo no puedo evaluar lo que te pasa, pero ellos sí.";
+    private static final String MALESTAR = "Gracias por contármelo. Lo que sentís es importante y no tenés que "
+            + "atravesarlo sin compañía. Podés llamar gratis a la Línea de Salud Mental 0800-999-0091, a "
+            + "cualquier hora, o al Centro de Asistencia al Suicida 0800-345-1435. Si estás en peligro, llamá al "
+            + "911. Si podés, contáselo también a alguien de tu confianza que esté cerca.";
+
+    @Test
+    void unaRespuestaConMalestarGraveDevuelve200ALARMAConElTextoDelChatYNoGuardaNiEncolaNada() throws Exception {
+        alarma("Ya no quiero vivir", MALESTAR);
+    }
+
+    @Test
+    void unaRespuestaConUrgenciaMedicaDevuelve200ALARMAConElTextoDelChatYNoGuardaNiEncolaNada() throws Exception {
+        alarma("Me duele el pecho", URGENCIA);
+    }
+
+    private void alarma(String texto, String esperado) throws Exception {
+        mockMvc.perform(pedir(post("/api/historia/guion/1/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo(texto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ALARMA"))
+                .andExpect(jsonPath("$.respuesta").value(esperado));
+        esperarCola();
+
+        assertThat(modelo.pedidos()).as("no se encoló ninguna extracción").isEmpty();
+        assertThat(recuerdosDe(personaA)).as("no se guardó ningún recuerdo").isZero();
+        assertThat(relaciones(personaA, 1)).as("la pregunta no quedó respondida").isZero();
+        mockMvc.perform(pedir(get(PROXIMA), tokenA))
+                .andExpect(jsonPath("$.pregunta.id").value(1))
+                .andExpect(jsonPath("$.introduccion").value(PRIMERA_VEZ));
+        mockMvc.perform(pedir(get(ESTADO), tokenA))
+                .andExpect(jsonPath("$.respondidas").value(0))
+                .andExpect(jsonPath("$.salteadas").value(0));
+    }
+
+    @Test
+    void unaAlarmaNoDejaElTextoDeLaPersonaEnElLog(CapturedOutput salida) throws Exception {
+        mockMvc.perform(pedir(post("/api/historia/guion/1/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo("Ya no quiero vivir, me lo contó Zulema Quiñones")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ALARMA"));
+        esperarCola();
+
+        assertThat(salida.getAll()).doesNotContain("Zulema").doesNotContain("Quiñones")
+                .doesNotContain("Ya no quiero vivir");
+    }
+
+    @Test
+    void despuesDeUnaAlarmaLaMismaPreguntaSePuedeResponderNormalmente() throws Exception {
+        alarma("Ya no quiero vivir", MALESTAR);
+
+        responder(tokenA, 1, "Nací en un pueblo.");
+        esperarCola();
+
+        assertThat(relaciones(personaA, 1)).isEqualTo(1);
+        assertThat(recuerdosDe(personaA)).isEqualTo(1);
+    }
+
+    @Test
+    void conRiesgoNoSeValidaQueLaPreguntaExistaNiQueSigaPendiente() throws Exception {
+        responder(tokenA, 1, "Una respuesta.");
+        esperarCola();
+
+        // Ya respondida: sin riesgo daría 409; con riesgo, 200 ALARMA (la seguridad va primero).
+        mockMvc.perform(pedir(post("/api/historia/guion/1/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo("Ya no quiero vivir")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ALARMA"));
+        // Inexistente: sin riesgo daría 404.
+        mockMvc.perform(pedir(post("/api/historia/guion/9999/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo("Me duele el pecho")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ALARMA"));
+        assertThat(relaciones(personaA, 1)).isEqualTo(1);
+    }
+
+    @Test
+    void unaRespuestaDeRiesgoMuyLargaDa400AntesDeDetectar() throws Exception {
+        mockMvc.perform(pedir(post("/api/historia/guion/1/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo("Ya no quiero vivir " + "a".repeat(1001))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errores[0].mensaje").value(MUY_LARGA));
+    }
+
+    /**
+     * LÍMITE CONOCIDO (a anotar en el contrato): una frase de duelo con "me quería morir de la tristeza" NO activa
+     * la alarma, porque las listas de {@code chat.properties} detectan "me quiero morir", "quiero morirme" y
+     * "quisiera/quería morirme", pero no "me quería morir". Es el mismo límite del chat (contrato de chat, 5.3 y
+     * T8): una formulación indirecta o en pasado no se detecta. Esta prueba solo documenta el resultado de hoy;
+     * si se ajusta el detector, hay que actualizarla.
+     */
+    @Test
+    void limiteConocido_unaFraseDeDueloConMeQueriaMorirNoActivaLaAlarma() throws Exception {
+        mockMvc.perform(pedir(post("/api/historia/guion/1/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo("cuando se murió mi mamá me quería morir de la tristeza")))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.estado").value("ACEPTADA"));
+        esperarCola();
+
+        assertThat(relaciones(personaA, 1)).isEqualTo(1);
     }
 
     @Test
@@ -533,6 +645,11 @@ class HistoriaGuionIntegrationTests {
     private long relaciones(Persona persona, int preguntaId) {
         return contar(neo4j, "MATCH (:PersonaMayor {idPersonaMayor: $p})-[r:RESPONDIO|SALTEO]->(:PreguntaGuion {idPreguntaGuion: $q}) "
                 + "RETURN count(r) AS c", "p", persona.personaId(), "q", preguntaId);
+    }
+
+    private long recuerdosDe(Persona persona) {
+        return contar(neo4j, "MATCH (:PersonaMayor {idPersonaMayor: $p})-[:TIENE_RECUERDO]->(r:Recuerdo) "
+                + "RETURN count(r) AS c", "p", persona.personaId());
     }
 
     private long relacionesDePersona(Persona persona) {

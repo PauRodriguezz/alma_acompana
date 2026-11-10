@@ -14,10 +14,15 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import ar.edu.utn.frm.gelab.alma.historia.domain.DatoFaltante;
+import ar.edu.utn.frm.gelab.alma.historia.domain.EstadoDeRespuesta;
 import ar.edu.utn.frm.gelab.alma.historia.dto.EstadoGuionResponse;
+import ar.edu.utn.frm.gelab.alma.historia.dto.ListaDeRecuerdosResponse;
 import ar.edu.utn.frm.gelab.alma.historia.dto.ProximaPreguntaResponse;
+import ar.edu.utn.frm.gelab.alma.historia.dto.RecuerdoDetalleResponse;
 import ar.edu.utn.frm.gelab.alma.historia.dto.RepreguntaSiguienteResponse;
+import ar.edu.utn.frm.gelab.alma.historia.dto.RespuestaDelGuionResponse;
 import ar.edu.utn.frm.gelab.alma.historia.dto.RespuestaTextoRequest;
+import ar.edu.utn.frm.gelab.alma.historia.service.ConsultaDeRecuerdos;
 import ar.edu.utn.frm.gelab.alma.historia.service.HistoriaDeVidaService;
 import ar.edu.utn.frm.gelab.alma.historia.service.RepreguntaService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,10 +41,29 @@ public class HistoriaController {
 
     private final HistoriaDeVidaService historiaService;
     private final RepreguntaService repreguntaService;
+    private final ConsultaDeRecuerdos consultaDeRecuerdos;
 
-    public HistoriaController(HistoriaDeVidaService historiaService, RepreguntaService repreguntaService) {
+    public HistoriaController(HistoriaDeVidaService historiaService, RepreguntaService repreguntaService,
+            ConsultaDeRecuerdos consultaDeRecuerdos) {
         this.historiaService = historiaService;
         this.repreguntaService = repreguntaService;
+        this.consultaDeRecuerdos = consultaDeRecuerdos;
+    }
+
+    @GetMapping("/recuerdos")
+    @Operation(summary = "Ver los recuerdos (línea de tiempo)",
+            description = "Los recuerdos de la persona de más antiguo a más reciente por año; los que no tienen "
+                    + "año van al final. Sin recuerdos, lista vacía.")
+    public ListaDeRecuerdosResponse recuerdos(@AuthenticationPrincipal Jwt jwt) {
+        return consultaDeRecuerdos.listar(cuentaId(jwt));
+    }
+
+    @GetMapping("/recuerdos/{recuerdoId}")
+    @Operation(summary = "Ver el detalle de un recuerdo",
+            description = "Título, descripción, año, personas y lugares. Un recuerdo que no existe o es de otra "
+                    + "persona da 404.")
+    public RecuerdoDetalleResponse recuerdo(@AuthenticationPrincipal Jwt jwt, @PathVariable String recuerdoId) {
+        return consultaDeRecuerdos.detalle(cuentaId(jwt), recuerdoId);
     }
 
     @GetMapping("/guion/proxima")
@@ -62,11 +86,12 @@ public class HistoriaController {
     @Operation(summary = "Responder una pregunta del guion",
             description = "Queda respondida de inmediato. Una pregunta ya respondida o salteada da 409; una "
                     + "que no existe, 404; una respuesta vacía o de más de 1000 caracteres, 400.")
-    @ApiResponse(responseCode = "202", description = "Respuesta registrada; el recuerdo se arma en segundo plano")
-    public ResponseEntity<Void> responder(@AuthenticationPrincipal Jwt jwt, @PathVariable Integer preguntaId,
-            @Valid @RequestBody RespuestaTextoRequest datos) {
-        historiaService.responder(cuentaId(jwt), preguntaId, datos.texto());
-        return ResponseEntity.accepted().build();
+    @ApiResponse(responseCode = "202", description = "ACEPTADA: respuesta registrada; el recuerdo se arma en segundo plano")
+    @ApiResponse(responseCode = "200", description = "ALARMA: el texto activó el detector de riesgo; se devuelve el "
+            + "texto predefinido y no se guarda ni se encola nada (la pregunta sigue pendiente)")
+    public ResponseEntity<RespuestaDelGuionResponse> responder(@AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer preguntaId, @Valid @RequestBody RespuestaTextoRequest datos) {
+        return segunResultado(historiaService.responder(cuentaId(jwt), preguntaId, datos.texto()));
     }
 
     @PostMapping("/guion/{preguntaId}/salteo")
@@ -96,11 +121,13 @@ public class HistoriaController {
                     + "preguntado. Un recuerdo que no existe o no es de la persona da 404; un dato que no aplica, "
                     + "que ya no falta o que ya se preguntó 2 veces, 409; una respuesta vacía o de más de 1000 "
                     + "caracteres, 400.")
-    @ApiResponse(responseCode = "202", description = "Intento contado; el recuerdo se completa en segundo plano")
-    public ResponseEntity<Void> responderRepregunta(@AuthenticationPrincipal Jwt jwt, @PathVariable String recuerdoId,
-            @PathVariable DatoFaltante dato, @Valid @RequestBody RespuestaTextoRequest datos) {
-        repreguntaService.responder(cuentaId(jwt), recuerdoId, dato, datos.texto());
-        return ResponseEntity.accepted().build();
+    @ApiResponse(responseCode = "202", description = "ACEPTADA: intento contado; el recuerdo se completa en segundo plano")
+    @ApiResponse(responseCode = "200", description = "ALARMA: el texto activó el detector de riesgo; se devuelve el "
+            + "texto predefinido, no se cuenta el intento y no se encola nada")
+    public ResponseEntity<RespuestaDelGuionResponse> responderRepregunta(@AuthenticationPrincipal Jwt jwt,
+            @PathVariable String recuerdoId, @PathVariable DatoFaltante dato,
+            @Valid @RequestBody RespuestaTextoRequest datos) {
+        return segunResultado(repreguntaService.responder(cuentaId(jwt), recuerdoId, dato, datos.texto()));
     }
 
     @PostMapping("/repreguntas/{recuerdoId}/{dato}/salteo")
@@ -112,6 +139,13 @@ public class HistoriaController {
             @PathVariable DatoFaltante dato) {
         repreguntaService.saltear(cuentaId(jwt), recuerdoId, dato);
         return ResponseEntity.noContent().build();
+    }
+
+    /** 202 si se aceptó la respuesta; 200 si saltó la alarma (contrato de historia de vida, 7.1 y 7.2). */
+    private static ResponseEntity<RespuestaDelGuionResponse> segunResultado(RespuestaDelGuionResponse resultado) {
+        return resultado.estado() == EstadoDeRespuesta.ALARMA
+                ? ResponseEntity.ok(resultado)
+                : ResponseEntity.accepted().body(resultado);
     }
 
     private static Long cuentaId(Jwt jwt) {

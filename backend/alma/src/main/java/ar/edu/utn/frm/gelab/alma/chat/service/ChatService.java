@@ -86,12 +86,10 @@ public class ChatService {
         // Solo el mensaje nuevo se compara con las listas, no la conversación anterior (5.2).
         Optional<TipoDeRiesgo> riesgo = detector.detectar(mensaje);
         if (riesgo.isPresent()) {
-            return new RespuestaChatResponse(riesgo.get() == TipoDeRiesgo.MALESTAR_GRAVE
-                    ? configuracion.getRespuestas().getMalestarGrave()
-                    : configuracion.getRespuestas().getUrgencia());
+            return new RespuestaChatResponse(configuracion.getRespuestas().para(riesgo.get()));
         }
 
-        String instrucciones = contexto.instrucciones(cuentaId);
+        String instrucciones = contexto.instrucciones(cuentaId, mensaje);
         // El modelo falso de las pruebas no limpia: la limpieza se repite acá, es inofensiva.
         String respuesta = LimpiadorDeRespuesta.limpiar(modelo.responder(instrucciones, turnos(datos, mensaje)));
         if (respuesta.isEmpty()) {

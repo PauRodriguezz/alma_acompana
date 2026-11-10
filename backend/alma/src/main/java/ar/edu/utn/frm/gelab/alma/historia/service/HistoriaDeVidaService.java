@@ -11,6 +11,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import ar.edu.utn.frm.gelab.alma.chat.ConfiguracionChat;
+import ar.edu.utn.frm.gelab.alma.chat.guardrails.DetectorDeRiesgo;
+import ar.edu.utn.frm.gelab.alma.chat.guardrails.TipoDeRiesgo;
 import ar.edu.utn.frm.gelab.alma.common.exception.ConflictoException;
 import ar.edu.utn.frm.gelab.alma.common.exception.DatosInvalidosException;
 import ar.edu.utn.frm.gelab.alma.common.exception.RecursoNoEncontradoException;
@@ -23,6 +26,7 @@ import ar.edu.utn.frm.gelab.alma.historia.dto.EstadoGuionResponse;
 import ar.edu.utn.frm.gelab.alma.historia.dto.PreguntaDto;
 import ar.edu.utn.frm.gelab.alma.historia.dto.PreguntaEstadoDto;
 import ar.edu.utn.frm.gelab.alma.historia.dto.ProximaPreguntaResponse;
+import ar.edu.utn.frm.gelab.alma.historia.dto.RespuestaDelGuionResponse;
 import ar.edu.utn.frm.gelab.alma.historia.dto.UltimaRegistradaDto;
 import ar.edu.utn.frm.gelab.alma.historia.extraccion.ColaDeExtracciones;
 import ar.edu.utn.frm.gelab.alma.historia.extraccion.TrabajoDeExtraccion;
@@ -51,14 +55,19 @@ public class HistoriaDeVidaService {
     private final LecturaDelGrafo lectura;
     private final ConfiguracionHistoria configuracion;
     private final ColaDeExtracciones cola;
+    private final DetectorDeRiesgo detector;
+    private final ConfiguracionChat chat;
 
     public HistoriaDeVidaService(PersonaMayorRepository personaMayorRepository, EscrituraDelGrafo escritura,
-            LecturaDelGrafo lectura, ConfiguracionHistoria configuracion, ColaDeExtracciones cola) {
+            LecturaDelGrafo lectura, ConfiguracionHistoria configuracion, ColaDeExtracciones cola,
+            DetectorDeRiesgo detector, ConfiguracionChat chat) {
         this.personaMayorRepository = personaMayorRepository;
         this.escritura = escritura;
         this.lectura = lectura;
         this.configuracion = configuracion;
         this.cola = cola;
+        this.detector = detector;
+        this.chat = chat;
     }
 
     /**
@@ -102,13 +111,20 @@ public class HistoriaDeVidaService {
      * @throws DatosInvalidosException      400: la respuesta es más larga que el máximo
      * @throws ConflictoException           409: la pregunta ya estaba respondida o salteada
      */
-    public void responder(Long cuentaId, int preguntaId, String texto) {
+    public RespuestaDelGuionResponse responder(Long cuentaId, int preguntaId, String texto) {
         PersonaMayor persona = persona(cuentaId);
         if (texto.length() > configuracion.getTextoMax()) {
             throw new DatosInvalidosException("texto", MensajesHistoria.RESPUESTA_MUY_LARGA);
         }
+        // Contrato de historia de vida, 5.6: si salta el detector de riesgo no se toca nada (ni se valida que la
+        // pregunta exista o siga pendiente): la pregunta sigue pendiente y no se encola la extracción.
+        Optional<TipoDeRiesgo> riesgo = detector.detectar(texto);
+        if (riesgo.isPresent()) {
+            return RespuestaDelGuionResponse.alarma(chat.getRespuestas().para(riesgo.get()));
+        }
         registrar(persona.getId(), preguntaId, TipoProgreso.RESPONDIO);
         encolarExtraccion(persona, preguntaId, texto);
+        return RespuestaDelGuionResponse.aceptada();
     }
 
     /** Registra el salteo (5.3): no valida texto y no toca el grafo de recuerdos. Mismos errores que responder. */

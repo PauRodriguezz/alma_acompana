@@ -1,8 +1,14 @@
 package ar.edu.utn.frm.gelab.alma.historia.config;
 
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+
+import ar.edu.utn.frm.gelab.alma.historia.domain.EtapaDeVida;
 
 /**
  * Propiedades de {@code historia/historia.properties} (contrato del grafo, sección 10). El archivo se lee
@@ -24,6 +30,75 @@ public class ConfiguracionHistoria {
 
     /** Tope de tokens de salida de la llamada de extracción (5.4). */
     private int extraccionMaxTokens = 600;
+
+    /** Largo máximo del resumen de un recuerdo en el listado (contrato de historia de vida, 7.3). */
+    private int resumenMax = 140;
+
+    public int getResumenMax() {
+        return resumenMax;
+    }
+
+    public void setResumenMax(int resumenMax) {
+        this.resumenMax = resumenMax;
+    }
+
+    /** Máximo de recuerdos que se agregan al prompt del chat (contrato de historia de vida, 5.5 y 10.5). */
+    private int maxRecuerdosPrompt = 3;
+
+    /** Largo máximo de la descripción de cada recuerdo en el prompt del chat (5.5.2). */
+    private int descripcionPromptMax = 300;
+
+    /** Frases de etapa de vida que traen recuerdos de esa etapa al prompt (5.5.1). Se normalizan al usarlas. */
+    private Map<EtapaDeVida, List<String>> frasesEtapa = new EnumMap<>(EtapaDeVida.class);
+
+    /**
+     * Tope de tiempo, en milisegundos, de la lectura del grafo para el prompt del chat (progreso y recuerdos juntos).
+     * Si se pasa, el chat sigue con "No hay información." sin esperar más.
+     */
+    private long lecturaChatTimeoutMs = 2000;
+
+    /** Máximo de lecturas del grafo para el chat que corren a la vez. Con todas ocupadas, se rechaza de inmediato. */
+    private int lecturaChatHilosMax = 4;
+
+    public long getLecturaChatTimeoutMs() {
+        return lecturaChatTimeoutMs;
+    }
+
+    public void setLecturaChatTimeoutMs(long lecturaChatTimeoutMs) {
+        this.lecturaChatTimeoutMs = lecturaChatTimeoutMs;
+    }
+
+    public int getLecturaChatHilosMax() {
+        return lecturaChatHilosMax;
+    }
+
+    public void setLecturaChatHilosMax(int lecturaChatHilosMax) {
+        this.lecturaChatHilosMax = lecturaChatHilosMax;
+    }
+
+    public int getMaxRecuerdosPrompt() {
+        return maxRecuerdosPrompt;
+    }
+
+    public void setMaxRecuerdosPrompt(int maxRecuerdosPrompt) {
+        this.maxRecuerdosPrompt = maxRecuerdosPrompt;
+    }
+
+    public int getDescripcionPromptMax() {
+        return descripcionPromptMax;
+    }
+
+    public void setDescripcionPromptMax(int descripcionPromptMax) {
+        this.descripcionPromptMax = descripcionPromptMax;
+    }
+
+    public Map<EtapaDeVida, List<String>> getFrasesEtapa() {
+        return frasesEtapa;
+    }
+
+    public void setFrasesEtapa(Map<EtapaDeVida, List<String>> frasesEtapa) {
+        this.frasesEtapa = frasesEtapa;
+    }
 
     public int getIntentosMax() {
         return intentosMax;
