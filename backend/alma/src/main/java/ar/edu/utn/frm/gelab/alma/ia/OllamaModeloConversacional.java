@@ -15,6 +15,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 /**
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Service;
  * mensajes ni de las respuestas, ni el mensaje de las excepciones (que podría citarlos).
  */
 @Service
+@ConditionalOnProperty(name = "alma.ia.proveedor", havingValue = "ollama")
 public class OllamaModeloConversacional implements ModeloConversacional {
 
     private static final Logger log = LoggerFactory.getLogger(OllamaModeloConversacional.class);
