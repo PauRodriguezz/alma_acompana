@@ -1,12 +1,14 @@
-import { useRef, type FormEvent } from "react"
+import { useState, type FormEvent } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { SentIcon } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
+import { ESCRIBI_TU_RESPUESTA, RESPUESTA_VACIA } from "@/features/historia/mensajes"
+
 import { ENVIAR, ESCRIBILE_A_ALMA } from "../mensajes"
-import { LIMITE_MENSAJE } from "../tipos"
+import { LIMITE_MENSAJE, LIMITE_RESPUESTA_GUION } from "../tipos"
 import { useChat } from "../useChat"
 
 /**
@@ -19,12 +21,23 @@ import { useChat } from "../useChat"
  * - Al enviar, el foco se queda en el campo para seguir escribiendo.
  */
 export function CampoMensaje() {
-  const { borrador, cambiarBorrador, enviar, pendiente } = useChat()
-  const campo = useRef<HTMLInputElement>(null)
+  const { borrador, cambiarBorrador, enviar, pendiente, objetivoActivo, campoDeMensaje: campo } = useChat()
+  const [avisoVacio, setAvisoVacio] = useState(false)
+
+  // En modo guion el campo admite 1000 caracteres y ayuda a responder (contrato de historia de vida, 5.9).
+  const enModoGuion = objetivoActivo !== null
+  const nombre = enModoGuion ? ESCRIBI_TU_RESPUESTA : ESCRIBILE_A_ALMA
 
   function alEnviar(evento: FormEvent) {
     evento.preventDefault()
     if (pendiente) return
+    // Fuera del modo guion un envío vacío no hace nada; en modo guion avisa qué hacer (5.8).
+    if (enModoGuion && borrador.trim() === "") {
+      setAvisoVacio(true)
+      campo.current?.focus()
+      return
+    }
+    setAvisoVacio(false)
     enviar(borrador)
     campo.current?.focus()
   }
@@ -34,17 +47,28 @@ export function CampoMensaje() {
       onSubmit={alEnviar}
       className="sticky bottom-[calc(var(--nav-inferior)+env(safe-area-inset-bottom))] z-20 mt-auto flex items-start gap-2 bg-background py-2 lg:bottom-0"
     >
-      <Input
-        ref={campo}
-        value={borrador}
-        onChange={(evento) => cambiarBorrador(evento.target.value)}
-        maxLength={LIMITE_MENSAJE}
-        placeholder={ESCRIBILE_A_ALMA}
-        aria-label={ESCRIBILE_A_ALMA}
-        autoComplete="off"
-        enterKeyHint="send"
-        className="h-[calc(60rem/17)] flex-1"
-      />
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <Input
+          ref={campo}
+          value={borrador}
+          onChange={(evento) => {
+            cambiarBorrador(evento.target.value)
+            setAvisoVacio(false)
+          }}
+          maxLength={enModoGuion ? LIMITE_RESPUESTA_GUION : LIMITE_MENSAJE}
+          placeholder={nombre}
+          aria-label={nombre}
+          aria-describedby={avisoVacio ? "aviso-respuesta-vacia" : undefined}
+          autoComplete="off"
+          enterKeyHint="send"
+          className="h-[calc(60rem/17)]"
+        />
+        {avisoVacio ? (
+          <p id="aviso-respuesta-vacia" role="alert" className="text-destructive">
+            {RESPUESTA_VACIA}
+          </p>
+        ) : null}
+      </div>
       <Button
         type="submit"
         aria-label={ENVIAR}

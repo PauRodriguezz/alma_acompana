@@ -1,7 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 
 import { LayoutPersona } from "@/components/alma/layout-persona"
-import { PaginaProvisoria } from "@/components/alma/pagina-provisoria"
 import { RutasAdmin } from "@/features/admin/RutasAdmin"
 import { AuthProvider } from "@/features/auth/AuthProvider"
 import { LoginPage } from "@/features/auth/LoginPage"
@@ -16,6 +15,12 @@ import {
   RUTA_LECTURA,
   RUTA_LECTURAS,
 } from "@/features/entretenimiento/rutas"
+import {
+  HistoriaDeVidaPage,
+  RecuerdoDetallePage,
+  RUTA_DETALLE_DE_RECUERDO,
+  RUTA_HISTORIA_DE_VIDA,
+} from "@/features/historia"
 import { JuegoPage, JuegosInicioPage } from "@/features/juegos"
 import { LecturaDetallePage, LecturasPage } from "@/features/lecturas"
 import { PerfilPage } from "@/features/perfil/PerfilPage"
@@ -48,10 +53,8 @@ function App() {
               <Route path={RUTA_JUGAR} element={<JuegoPage />} />
               <Route path={RUTA_LECTURAS} element={<LecturasPage />} />
               <Route path={RUTA_LECTURA} element={<LecturaDetallePage />} />
-              <Route
-                path="/historia-de-vida"
-                element={<PaginaProvisoria titulo="Historia de vida" />}
-              />
+              <Route path={RUTA_HISTORIA_DE_VIDA} element={<HistoriaDeVidaPage />} />
+              <Route path={RUTA_DETALLE_DE_RECUERDO} element={<RecuerdoDetallePage />} />
               <Route path="/recordatorios" element={<RecordatoriosPage />} />
               <Route path="/recordatorios/nuevo" element={<NuevoRecordatorioPage />} />
               <Route path="/recordatorios/:id/editar" element={<EditarRecordatorioPage />} />

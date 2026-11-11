@@ -86,7 +86,7 @@ public class ChatService {
         // Solo el mensaje nuevo se compara con las listas, no la conversación anterior (5.2).
         Optional<TipoDeRiesgo> riesgo = detector.detectar(mensaje);
         if (riesgo.isPresent()) {
-            return new RespuestaChatResponse(configuracion.getRespuestas().para(riesgo.get()));
+            return new RespuestaChatResponse(configuracion.getRespuestas().para(riesgo.get()), true);
         }
 
         String instrucciones = contexto.instrucciones(cuentaId, mensaje);
@@ -95,7 +95,7 @@ public class ChatService {
         if (respuesta.isEmpty()) {
             throw new ModeloNoDisponibleException("El modelo devolvió una respuesta vacía");
         }
-        return new RespuestaChatResponse(respuesta);
+        return new RespuestaChatResponse(respuesta, false);
     }
 
     /** Los últimos N turnos (cada texto cortado) y, al final, el mensaje nuevo (5.5). */
