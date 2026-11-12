@@ -37,7 +37,8 @@ class SeleccionProveedorIaTest {
                     assertThat(c).hasNotFailed();
                     assertThat(c).hasSingleBean(ModeloConversacional.class);
                     assertThat(c).hasSingleBean(OllamaModeloConversacional.class);
-                    assertThat(c).hasSingleBean(OllamaChatModel.class);
+                    // Dos clientes (chat y extracción); ClientesDeIaTest comprueba cuál es cuál.
+                    assertThat(c).getBeanNames(OllamaChatModel.class).hasSize(2);
                     assertThat(c).doesNotHaveBean(GeminiModeloConversacional.class);
                     assertThat(c).doesNotHaveBean(Client.class);
                     assertThat(c).doesNotHaveBean(GoogleGenAiChatModel.class);
@@ -51,7 +52,8 @@ class SeleccionProveedorIaTest {
                     assertThat(c).hasNotFailed();
                     assertThat(c).hasSingleBean(ModeloConversacional.class);
                     assertThat(c).hasSingleBean(GeminiModeloConversacional.class);
-                    assertThat(c).hasSingleBean(GoogleGenAiChatModel.class);
+                    // Dos modelos (chat y extracción); ClientesDeIaTest comprueba cuál es cuál.
+                    assertThat(c).getBeanNames(GoogleGenAiChatModel.class).hasSize(2);
                     assertThat(c).doesNotHaveBean(OllamaModeloConversacional.class);
                     assertThat(c).doesNotHaveBean(OllamaChatModel.class);
                 });

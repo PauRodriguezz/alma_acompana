@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.core.env.Environment;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
@@ -38,8 +37,11 @@ public class ConfiguracionIa {
 
     static final String API_EXTRACCION = "ollamaApiExtraccion";
     static final String CHAT_MODEL_EXTRACCION = "ollamaChatModelExtraccion";
+    static final String CLIENTE_GEMINI_CHAT = "googleGenAiClient";
+    static final String CHAT_MODEL_GEMINI_CHAT = "googleGenAiChatModel";
+    static final String CLIENTE_GEMINI_EXTRACCION = "googleGenAiClientExtraccion";
+    static final String CHAT_MODEL_GEMINI_EXTRACCION = "googleGenAiChatModelExtraccion";
 
-    
     /** Servicio de Google; se usa cuando {@code alma.ia.gemini.base-url} está vacía. */
     static final String URL_BASE_GEMINI = "https://generativelanguage.googleapis.com";
 
@@ -75,29 +77,39 @@ public class ConfiguracionIa {
             @Value("${spring.ai.ollama.chat.options.model}") String modelo) {
         return crearChatModel(ollamaApi, modelo);
     }
-        /**
+
+    /**
      * Segundo cliente, para la extracción de recuerdos (contrato del grafo, 5.4): mismo servidor y mismo modelo,
-     * con su propio tope de 25 s por llamada. Los dos primeros son {@code @Primary}: el chat y Spring AI siguen
-     * recibiendo los de siempre.
+     * con su propio tope de 25 s por llamada. Solo existe con proveedor {@code ollama}: con {@code gemini} la
+     * extracción usa los clientes de Gemini de más abajo. Los dos primeros son {@code @Primary}: el chat y
+     * Spring AI siguen recibiendo los de siempre.
      */
     @Bean(API_EXTRACCION)
+    @ConditionalOnProperty(name = "alma.ia.proveedor", havingValue = "ollama")
     public OllamaApi ollamaApiExtraccion(@Value("${spring.ai.ollama.base-url}") String urlBase,
             @Value("${alma.ia.timeout-extraccion-ms:25000}") long timeoutMs) {
         return crearOllamaApi(urlBase, Duration.ofMillis(timeoutMs));
     }
 
     @Bean(CHAT_MODEL_EXTRACCION)
+    @ConditionalOnProperty(name = "alma.ia.proveedor", havingValue = "ollama")
     public OllamaChatModel ollamaChatModelExtraccion(@Qualifier(API_EXTRACCION) OllamaApi ollamaApi,
             @Value("${spring.ai.ollama.chat.options.model}") String modelo) {
         return crearChatModel(ollamaApi, modelo);
     }
 
     /**
-     * Cliente de Gemini. Solo existe con proveedor {@code gemini} y con clave: sin clave la aplicación
+     * Clientes de Gemini: uno para el chat ({@code @Primary}, 30 s) y otro para la extracción de recuerdos
+     * (nombre propio, 25 s). Solo existen con proveedor {@code gemini} y con clave: sin clave la aplicación
      * arranca igual y {@link GeminiModeloConversacional} avisa y falla en cada pedido. La autoconfiguración
      * de Spring AI está apagada ({@code spring.ai.model.chat=none}).
+     *
+     * <p>Los cuatro beans llevan las mismas dos condiciones (proveedor y clave), en lugar de
+     * {@code @ConditionalOnBean(Client.class)}: así un modelo nunca se arma sobre el cliente equivocado ni
+     * depende del orden en que se registran.
      */
     @Bean
+    @Primary
     @ConditionalOnProperty(name = "alma.ia.proveedor", havingValue = "gemini", matchIfMissing = true)
     @ConditionalOnExpression("!'${alma.ia.gemini.api-key:}'.isBlank()")
     public Client googleGenAiClient(@Value("${alma.ia.gemini.api-key}") String claveApi,
@@ -107,11 +119,30 @@ public class ConfiguracionIa {
     }
 
     @Bean
-    @ConditionalOnBean(Client.class)
+    @Primary
     @ConditionalOnProperty(name = "alma.ia.proveedor", havingValue = "gemini", matchIfMissing = true)
-    public GoogleGenAiChatModel googleGenAiChatModel(Client googleGenAiClient,
+    @ConditionalOnExpression("!'${alma.ia.gemini.api-key:}'.isBlank()")
+    public GoogleGenAiChatModel googleGenAiChatModel(@Qualifier(CLIENTE_GEMINI_CHAT) Client googleGenAiClient,
             @Value("${alma.ia.gemini.modelo}") String modelo) {
         return crearChatModelGemini(googleGenAiClient, modelo);
+    }
+
+    @Bean(CLIENTE_GEMINI_EXTRACCION)
+    @ConditionalOnProperty(name = "alma.ia.proveedor", havingValue = "gemini", matchIfMissing = true)
+    @ConditionalOnExpression("!'${alma.ia.gemini.api-key:}'.isBlank()")
+    public Client googleGenAiClientExtraccion(@Value("${alma.ia.gemini.api-key}") String claveApi,
+            @Value("${alma.ia.gemini.base-url:}") String urlBase,
+            @Value("${alma.ia.timeout-extraccion-ms:25000}") long timeoutExtraccionMs) {
+        return crearClienteGemini(claveApi, urlBase, Duration.ofMillis(timeoutExtraccionMs));
+    }
+
+    @Bean(CHAT_MODEL_GEMINI_EXTRACCION)
+    @ConditionalOnProperty(name = "alma.ia.proveedor", havingValue = "gemini", matchIfMissing = true)
+    @ConditionalOnExpression("!'${alma.ia.gemini.api-key:}'.isBlank()")
+    public GoogleGenAiChatModel googleGenAiChatModelExtraccion(
+            @Qualifier(CLIENTE_GEMINI_EXTRACCION) Client clienteExtraccion,
+            @Value("${alma.ia.gemini.modelo}") String modelo) {
+        return crearChatModelGemini(clienteExtraccion, modelo);
     }
 
     @Bean

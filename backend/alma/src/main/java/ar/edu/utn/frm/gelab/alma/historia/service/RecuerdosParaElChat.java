@@ -13,6 +13,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -103,15 +104,18 @@ public class RecuerdosParaElChat {
 
     /** Lee el grafo en el ejecutor y espera como máximo el tope; si no llega a tiempo, sin información. */
     private Resultado conTope(Long personaId, String mensaje) {
+        // Bandera propia de esta lectura: se pone ANTES de cancelar. No alcanza con la marca de interrupción del
+        // hilo, porque el driver o Spring Data pueden limpiarla antes de que la lectura llegue a su catch.
+        AtomicBoolean cancelada = new AtomicBoolean();
         Future<Resultado> trabajo;
         try {
             trabajo = ejecutor.submit(() -> {
-                String progreso = progreso(personaId);
+                String progreso = progreso(personaId, cancelada);
                 // Si el tope ya canceló la lectura, no se hacen más consultas (el resultado ya no lo lee nadie).
-                if (interrumpida()) {
+                if (interrumpida(cancelada)) {
                     return Resultado.sinInformacion();
                 }
-                return new Resultado(progreso, recuerdos(personaId, mensaje));
+                return new Resultado(progreso, recuerdos(personaId, mensaje, cancelada));
             });
         } catch (RejectedExecutionException e) {
             log.warn("Lectura de historia para el chat rechazada: todos los hilos están ocupados");
@@ -120,11 +124,13 @@ public class RecuerdosParaElChat {
         try {
             return trabajo.get(configuracion.getLecturaChatTimeoutMs(), TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
+            cancelada.set(true);
             trabajo.cancel(true);
             log.warn("La lectura de historia para el chat superó el tope de {} ms",
                     configuracion.getLecturaChatTimeoutMs());
             return Resultado.sinInformacion();
         } catch (InterruptedException e) {
+            cancelada.set(true);
             trabajo.cancel(true);
             Thread.currentThread().interrupt();
             return Resultado.sinInformacion();
@@ -136,7 +142,7 @@ public class RecuerdosParaElChat {
     }
 
     /** 5.5: solo cantidades, de la misma lectura de solo lectura que {@code estado} (P4), sin {@code MERGE}. */
-    private String progreso(Long personaId) {
+    private String progreso(Long personaId, AtomicBoolean cancelada) {
         try {
             List<EstadoDePregunta> todas = lectura.estadoDeTodas(personaId);
             int respondidas = (int) todas.stream().filter(e -> "RESPONDIO".equals(e.tipo())).count();
@@ -146,12 +152,16 @@ public class RecuerdosParaElChat {
             }
             return TextoDeRecuerdos.progreso(respondidas, salteadas, todas.size() - respondidas - salteadas);
         } catch (RuntimeException e) {
-            log.error("No se pudo leer el progreso para el chat ({})", e.getClass().getSimpleName());
+            if (interrumpida(cancelada)) {
+                registrarCancelada(e);
+            } else {
+                log.error("No se pudo leer el progreso para el chat ({})", e.getClass().getSimpleName());
+            }
             return MensajesChat.SIN_INFORMACION;
         }
     }
 
-    private String recuerdos(Long personaId, String mensaje) {
+    private String recuerdos(Long personaId, String mensaje, AtomicBoolean cancelada) {
         try {
             String normalizado = DetectorDeRiesgo.normalizar(mensaje);
             if (normalizado.isEmpty()) {
@@ -159,11 +169,11 @@ public class RecuerdosParaElChat {
             }
             // Primero los de persona o lugar, después los de etapa; cada grupo, de más reciente a más antiguo.
             Map<String, RecuerdoParaElPrompt> elegidos = new LinkedHashMap<>();
-            agregar(elegidos, porNombre(personaId, normalizado));
-            if (interrumpida()) {
+            agregar(elegidos, porNombre(personaId, normalizado, cancelada));
+            if (interrumpida(cancelada)) {
                 return MensajesChat.SIN_INFORMACION;
             }
-            agregar(elegidos, porEtapa(personaId, normalizado));
+            agregar(elegidos, porEtapa(personaId, normalizado, cancelada));
             if (elegidos.isEmpty()) {
                 return MensajesChat.SIN_INFORMACION;
             }
@@ -172,31 +182,35 @@ public class RecuerdosParaElChat {
                     .map(r -> TextoDeRecuerdos.linea(r, descripcionMax))
                     .reduce((a, b) -> a + "\n" + b).orElse(MensajesChat.SIN_INFORMACION);
         } catch (RuntimeException e) {
-            log.error("No se pudieron leer los recuerdos para el chat ({})", e.getClass().getSimpleName());
+            if (interrumpida(cancelada)) {
+                registrarCancelada(e);
+            } else {
+                log.error("No se pudieron leer los recuerdos para el chat ({})", e.getClass().getSimpleName());
+            }
             return MensajesChat.SIN_INFORMACION;
         }
     }
 
     /** P16 y P17 para detectar las menciones; P13 y P14 con el {@code nombreNormalizado} guardado. */
-    private List<RecuerdoParaElPrompt> porNombre(Long personaId, String normalizado) {
+    private List<RecuerdoParaElPrompt> porNombre(Long personaId, String normalizado, AtomicBoolean cancelada) {
         List<RecuerdoParaElPrompt> encontrados = new ArrayList<>();
-        if (interrumpida()) {
+        if (interrumpida(cancelada)) {
             return encontrados;
         }
         for (NombreConocido persona : lectura.personasConocidas(personaId)) {
             if (TextoDeRecuerdos.menciona(normalizado, persona.nombre())) {
-                if (interrumpida()) {
+                if (interrumpida(cancelada)) {
                     return encontrados;
                 }
                 encontrados.addAll(lectura.recuerdosDePersona(personaId, persona.nombreNormalizado()));
             }
         }
-        if (interrumpida()) {
+        if (interrumpida(cancelada)) {
             return encontrados;
         }
         for (NombreConocido lugar : lectura.lugaresConocidos(personaId)) {
             if (TextoDeRecuerdos.menciona(normalizado, lugar.nombre())) {
-                if (interrumpida()) {
+                if (interrumpida(cancelada)) {
                     return encontrados;
                 }
                 encontrados.addAll(lectura.recuerdosDeLugar(personaId, lugar.nombreNormalizado()));
@@ -206,11 +220,11 @@ public class RecuerdosParaElChat {
     }
 
     /** P15 por cada etapa con alguna frase en el mensaje. */
-    private List<RecuerdoParaElPrompt> porEtapa(Long personaId, String normalizado) {
+    private List<RecuerdoParaElPrompt> porEtapa(Long personaId, String normalizado, AtomicBoolean cancelada) {
         List<RecuerdoParaElPrompt> encontrados = new ArrayList<>();
         for (Map.Entry<EtapaDeVida, List<String>> etapa : configuracion.getFrasesEtapa().entrySet()) {
             if (etapa.getValue().stream().anyMatch(frase -> TextoDeRecuerdos.menciona(normalizado, frase))) {
-                if (interrumpida()) {
+                if (interrumpida(cancelada)) {
                     return encontrados;
                 }
                 encontrados.addAll(lectura.recuerdosDeEtapa(personaId, etapa.getKey().name()));
@@ -220,8 +234,14 @@ public class RecuerdosParaElChat {
     }
 
     /** ¿El tope de tiempo canceló esta lectura? Entonces se dejan de hacer consultas (no se limpia la marca). */
-    private static boolean interrumpida() {
-        return Thread.currentThread().isInterrupted();
+    private static boolean interrumpida(AtomicBoolean cancelada) {
+        return cancelada.get() || Thread.currentThread().isInterrupted();
+    }
+
+    /** Una lectura cancelada por el tope no es un error: el WARN del tope ya avisó. Solo el tipo, nunca el mensaje. */
+    private static void registrarCancelada(RuntimeException e) {
+        log.info("Lectura de historia para el chat cancelada por el tope; se descarta ({})",
+                e.getClass().getSimpleName());
     }
 
     /** Suma un grupo sin repetir (el primer grupo gana) y de más reciente a más antiguo por {@code fechaRegistro}. */
