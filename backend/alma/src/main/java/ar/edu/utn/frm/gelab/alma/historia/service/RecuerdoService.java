@@ -64,6 +64,15 @@ public class RecuerdoService {
                         personasSinRepetir(respuesta.personas()), lugaresSinRepetir(respuesta.lugares())));
     }
 
+    /**
+     * Devuelve el intento del dato de una repregunta cuya extracción falló porque el modelo no estaba disponible
+     * (contrato del grafo, 5.7): el contador baja 1 y nunca por debajo de 0.
+     */
+    public void devolverIntento(TrabajoDeExtraccion trabajo) {
+        TrabajoDeExtraccion.Repregunta repregunta = trabajo.repregunta();
+        escritura.devolverIntento(trabajo.personaId(), repregunta.recuerdoId(), repregunta.dato());
+    }
+
     /** Las personas con nombre repetido (mismo {@code nombreNormalizado}) cuentan una sola vez. */
     private static List<NuevoRecuerdo.PersonaNueva> personasSinRepetir(List<PersonaExtraida> personas) {
         Map<String, NuevoRecuerdo.PersonaNueva> conNombre = new LinkedHashMap<>();

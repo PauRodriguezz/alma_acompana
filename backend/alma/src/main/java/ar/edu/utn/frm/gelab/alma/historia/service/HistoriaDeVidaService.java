@@ -105,7 +105,8 @@ public class HistoriaDeVidaService {
      * Registra la respuesta (5.1). El orden es el del contrato: persona, cuerpo, y recién después se toca el
      * grafo, así que un pedido inválido no crea nada en Neo4j. La pregunta queda respondida al instante y, ya
      * confirmada esa transacción, se encola la extracción del recuerdo (5.4): si encolar fallara, la respuesta
-     * sigue registrada.
+     * sigue registrada. Si la respuesta solo dice que no recuerda o no sabe ({@link DetectorDeNoRecuerdo}), la
+     * pregunta queda <b>salteada</b> y no se encola nada; la respuesta HTTP es la misma (202 ACEPTADA).
      *
      * @throws RecursoNoEncontradoException 404: la cuenta no tiene persona mayor o la pregunta no existe
      * @throws DatosInvalidosException      400: la respuesta es más larga que el máximo
@@ -121,6 +122,14 @@ public class HistoriaDeVidaService {
         Optional<TipoDeRiesgo> riesgo = detector.detectar(texto);
         if (riesgo.isPresent()) {
             return RespuestaDelGuionResponse.alarma(chat.getRespuestas().para(riesgo.get()));
+        }
+        // Contrato del grafo, 5.1: una respuesta que solo dice que no recuerda, no sabe o no quiere contar no crea un
+        // recuerdo: se registra como un salteo (la pregunta no se vuelve a ofrecer) y no se encola nada.
+        if (DetectorDeNoRecuerdo.esSinContenido(texto)) {
+            registrar(persona.getId(), preguntaId, TipoProgreso.SALTEO);
+            log.info("Respuesta sin contenido de la persona {}: se registra como salteo, sin recuerdo",
+                    persona.getId());
+            return RespuestaDelGuionResponse.aceptada();
         }
         registrar(persona.getId(), preguntaId, TipoProgreso.RESPONDIO);
         encolarExtraccion(persona, preguntaId, texto);

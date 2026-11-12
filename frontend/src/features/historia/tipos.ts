@@ -14,6 +14,8 @@ export type RecuerdoResumen = {
   precision: PrecisionAnio | null
   etapaDeVida: EtapaDeVida | null
   resumen: string
+  /** Datos que se pueden seguir completando (contrato del mapa de vida, 3.1); vacío si no hay ninguno. */
+  faltantes: DatoFaltante[]
 }
 
 export type ListaDeRecuerdos = {
@@ -41,6 +43,10 @@ export type RecuerdoDetalle = {
   etapaDeVida: EtapaDeVida | null
   personas: PersonaDeRecuerdo[]
   lugares: LugarDeRecuerdo[]
+  /** Igual que en el listado (3.2). */
+  faltantes: DatoFaltante[]
+  /** Texto de la pregunta del guion de la que surgió el recuerdo; null si no se encuentra (3.2). */
+  preguntaTexto: string | null
 }
 
 /** GET /api/historia/guion/estado (7.2 del contrato del grafo). Acá solo se usan los totales. */
@@ -80,6 +86,8 @@ export type Repregunta = {
   recuerdoId: string
   dato: DatoFaltante
   texto: string
+  /** Título del recuerdo al que corresponde (contrato del mapa de vida, 3.3); puede ser null. */
+  tituloRecuerdo?: string | null
 }
 
 /** GET /repreguntas/siguiente. `repregunta` solo viene con HAY. */

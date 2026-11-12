@@ -65,7 +65,10 @@ public class ExtractorDeRecuerdos {
         this.prompt = leerPrompt();
     }
 
-    /** Hasta dos pedidos al modelo; si no sirven o el modelo no responde, el respaldo. No lanza errores. */
+    /**
+     * Hasta dos pedidos al modelo; si no sirven o el modelo no responde, el respaldo. El segundo pedido es el
+     * reintento de una respuesta que no sirvió o de un error transitorio del proveedor (no se suman). No lanza errores.
+     */
     public ResultadoDeExtraccion extraer(TrabajoDeExtraccion trabajo) {
         long inicio = System.nanoTime();
         String errorAnterior = null;
@@ -79,9 +82,18 @@ public class ExtractorDeRecuerdos {
                             new OpcionesDeLlamada(configuracion.getExtraccionTemperatura(),
                                     configuracion.getExtraccionMaxTokens()));
                 } catch (ModeloNoDisponibleException e) {
-                    // Sin modelo, con demora excesiva o sin turno: no se reintenta, va el respaldo.
+                    // Un error transitorio del proveedor (por ejemplo, un 503) se reintenta una vez, con el segundo
+                    // de los dos pedidos y solo si no pasó el límite de tiempo (5.4, paso 6).
+                    if (e.esTransitorio() && pedidos < MAXIMO_DE_PEDIDOS && puedeReintentar(inicio)) {
+                        log.info("Extracción: error transitorio del proveedor (pedido {}, {} ms): se reintenta",
+                                pedidos, milisDesde(inicio));
+                        if (esperarAntesDeReintentar()) {
+                            continue;
+                        }
+                    }
+                    // Sin modelo, con demora excesiva, sin turno o sin otro intento posible: va el respaldo.
                     registrar("el modelo no está disponible", pedidos, inicio, true);
-                    return respaldo(trabajo, pedidos);
+                    return respaldo(trabajo, pedidos, ResultadoDeExtraccion.MotivoDeRespaldo.MODELO_NO_DISPONIBLE);
                 }
                 try {
                     RespuestaExtraida respuesta = validarContenido(convertir(salida), trabajo);
@@ -93,11 +105,36 @@ public class ExtractorDeRecuerdos {
                 }
             }
             registrar("la respuesta del modelo no sirvió", pedidos, inicio, true);
+            return respaldo(trabajo, pedidos, ResultadoDeExtraccion.MotivoDeRespaldo.OTRO);
         } catch (RuntimeException e) {
             // Contrato, 5.4: el trabajo termina sin lanzar errores. El mensaje podría citar el texto.
             registrar("falla inesperada (" + e.getClass().getSimpleName() + ")", pedidos, inicio, true);
         }
-        return respaldo(trabajo, pedidos);
+        return respaldo(trabajo, pedidos, ResultadoDeExtraccion.MotivoDeRespaldo.OTRO);
+    }
+
+    /** ¿Todavía se está dentro del límite de tiempo para repetir un pedido que falló por un error transitorio? */
+    private boolean puedeReintentar(long inicioNanos) {
+        return milisDesde(inicioNanos) <= configuracion.getExtraccionReintentoHastaMs();
+    }
+
+    /** La espera corta antes de repetir el pedido. {@code false} si el hilo se interrumpió (por ejemplo, el apagado). */
+    private boolean esperarAntesDeReintentar() {
+        long espera = configuracion.getExtraccionReintentoEsperaMs();
+        if (espera <= 0) {
+            return !Thread.currentThread().isInterrupted();
+        }
+        try {
+            Thread.sleep(espera);
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
+    private static long milisDesde(long inicioNanos) {
+        return (System.nanoTime() - inicioNanos) / 1_000_000;
     }
 
     // ---------- Pedido ----------
@@ -289,17 +326,18 @@ public class ExtractorDeRecuerdos {
     // ---------- Respaldo (paso 7) ----------
 
     /** Título igual a la pregunta, descripción igual a la respuesta, sin personas ni lugares ni año. */
-    private static ResultadoDeExtraccion respaldo(TrabajoDeExtraccion trabajo, int pedidos) {
+    private static ResultadoDeExtraccion respaldo(TrabajoDeExtraccion trabajo, int pedidos,
+            ResultadoDeExtraccion.MotivoDeRespaldo motivo) {
         RespuestaExtraida respuesta = new RespuestaExtraida(trabajo.textoPregunta(), trabajo.respuesta().strip(),
                 null, false, null, List.of(), List.of());
-        return new ResultadoDeExtraccion(respuesta, pedidos, true);
+        return new ResultadoDeExtraccion(respuesta, pedidos, true, motivo);
     }
 
     // ---------- Utilidades ----------
 
     private static void registrar(String que, int pedidos, long inicioNanos, boolean respaldo) {
         log.info("Extracción: {} (pedidos al modelo: {}, respaldo: {}, {} ms)", que, pedidos, respaldo,
-                (System.nanoTime() - inicioNanos) / 1_000_000);
+                milisDesde(inicioNanos));
     }
 
     private static String leerPrompt() {

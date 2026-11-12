@@ -45,6 +45,7 @@ import ar.edu.utn.frm.gelab.alma.historia.domain.DatoFaltante;
 import ar.edu.utn.frm.gelab.alma.historia.domain.EstadoRepregunta;
 import ar.edu.utn.frm.gelab.alma.historia.dto.RepreguntaSiguienteResponse;
 import ar.edu.utn.frm.gelab.alma.historia.extraccion.ColaDeExtracciones;
+import ar.edu.utn.frm.gelab.alma.historia.repository.EscrituraDelGrafo;
 import ar.edu.utn.frm.gelab.alma.historia.service.HistoriaDeVidaService;
 import ar.edu.utn.frm.gelab.alma.historia.service.RepreguntaService;
 import ar.edu.utn.frm.gelab.alma.persona.repository.PersonaMayorRepository;
@@ -80,6 +81,8 @@ class RepreguntaServiceIntegrationTests {
     private HistoriaDeVidaService historia;
     @Autowired
     private ColaDeExtracciones cola;
+    @Autowired
+    private EscrituraDelGrafo escritura;
     @Autowired
     private ModeloDePrueba modelo;
     @Autowired
@@ -165,11 +168,11 @@ class RepreguntaServiceIntegrationTests {
     }
 
     private RepreguntaSiguienteResponse siguiente() {
-        return repreguntas.siguiente(persona.cuentaId(), null, List.of());
+        return repreguntas.siguiente(persona.cuentaId(), null, null, List.of());
     }
 
     private RepreguntaSiguienteResponse siguiente(Integer preguntaId, DatoFaltante... excluir) {
-        return repreguntas.siguiente(persona.cuentaId(), preguntaId, List.of(excluir));
+        return repreguntas.siguiente(persona.cuentaId(), preguntaId, null, List.of(excluir));
     }
 
     private void responderYEsperar(String recuerdoId, DatoFaltante dato, String texto) {
@@ -210,7 +213,7 @@ class RepreguntaServiceIntegrationTests {
         assertThat(siguiente().repregunta().texto()).isEqualTo("¿Dónde pasó esto?");
 
         assertThat(siguiente(null, LUGARES).repregunta().dato()).isEqualTo(PERSONAS);
-        assertThat(siguiente(null, LUGARES).repregunta().texto()).isEqualTo("¿Quién más estaba con vos en ese momento?");
+        assertThat(siguiente(null, LUGARES).repregunta().texto()).isEqualTo("¿Quién más estaba con vos en ese momento? Si te acordás, contame también cómo se llamaban.");
     }
 
     @Test
@@ -267,7 +270,7 @@ class RepreguntaServiceIntegrationTests {
     void excluirSacaEsosDatosDelResultado() {
         recuerdoSinAnio(ESCUELA);
 
-        assertThat(siguiente(null).repregunta().dato()).isEqualTo(ANIO);
+        assertThat(siguiente().repregunta().dato()).isEqualTo(ANIO);
         assertThat(siguiente(null, ANIO).repregunta().dato()).isEqualTo(LUGARES);
         assertThat(siguiente(null, ANIO, LUGARES).repregunta().dato()).isEqualTo(PERSONAS);
         assertThat(siguiente(null, ANIO, LUGARES, PERSONAS).estado()).isEqualTo(EstadoRepregunta.NINGUNA);
@@ -346,7 +349,7 @@ class RepreguntaServiceIntegrationTests {
     void sinPersonaMayorSiguienteDa404() {
         Long cuentaSinPersona = personas.crearCuentaSinPersona("test_historia_rep_sin_persona");
         try {
-            assertThatThrownBy(() -> repreguntas.siguiente(cuentaSinPersona, null, List.of()))
+            assertThatThrownBy(() -> repreguntas.siguiente(cuentaSinPersona, null, null, List.of()))
                     .isInstanceOf(RecursoNoEncontradoException.class);
         } finally {
             personas.borrar("test_historia_rep_sin_persona");
@@ -482,16 +485,143 @@ class RepreguntaServiceIntegrationTests {
     }
 
     @Test
-    void siLaExtraccionFallaElRecuerdoNoCambiaPeroElIntentoCuenta() {
+    void noMeAcuerdoNoLeHaceNingunPedidoAlModeloPeroElIntentoCuenta() {
+        String id = recuerdoSinAnio(ESCUELA);
+
+        repreguntas.responder(persona.cuentaId(), id, ANIO, "No me acuerdo.");
+
+        assertThat(cola.estaProcesando(persona.personaId())).as("no hay nada en la cola").isFalse();
+        esperarCola();
+        assertThat(modelo.pedidos()).as("no se consultó al modelo").isEmpty();
+        assertThat(propiedades(id)).containsEntry("anio", null).containsEntry("intentosAnio", 1L);
+        // Igual que antes: el dato se vuelve a ofrecer hasta agotar los 2 intentos.
+        assertThat(siguiente().repregunta().dato()).isEqualTo(ANIO);
+    }
+
+    @Test
+    void noQuieroContarOResponderTampocoConsultaAlModeloYCuentaElIntento() {
+        String id = recuerdoSinAnio(ESCUELA);
+
+        repreguntas.responder(persona.cuentaId(), id, LUGARES, "No quiero contar");
+        repreguntas.responder(persona.cuentaId(), id, PERSONAS, "No quiero responder, perdón");
+
+        esperarCola();
+        assertThat(modelo.pedidos()).isEmpty();
+        assertThat(propiedades(id)).containsEntry("intentosLugares", 1L).containsEntry("intentosPersonas", 1L)
+                .containsEntry("intentosAnio", 0L);
+    }
+
+    @Test
+    void conNoMeAcuerdoDosVecesElDatoSeAgotaYUnTerceroDa409() {
+        String id = recuerdoSinAnio(ESCUELA);
+
+        repreguntas.responder(persona.cuentaId(), id, ANIO, "No sé");
+        repreguntas.responder(persona.cuentaId(), id, ANIO, "Ni idea");
+
+        assertThatThrownBy(() -> repreguntas.responder(persona.cuentaId(), id, ANIO, "No sé"))
+                .isInstanceOf(ConflictoException.class);
+        assertThat(propiedades(id)).containsEntry("intentosAnio", 2L);
+        assertThat(modelo.pedidos()).isEmpty();
+    }
+
+    @Test
+    void unaRepreguntaQueMezclaNoMeAcuerdoConContenidoSiConsultaAlModelo() {
+        String id = recuerdoSinAnio(ESCUELA);
+        modelo.responde(json("1962", "null", "[]", "[]"));
+
+        responderYEsperar(id, ANIO, "No me acuerdo del día, pero fue en 1962");
+
+        assertThat(modelo.pedidos()).hasSize(1);
+        assertThat(propiedades(id)).containsEntry("anio", 1962L).containsEntry("intentosAnio", 1L);
+    }
+
+    @Test
+    void conRiesgoUnNoMeAcuerdoNoCuentaElIntentoNiConsultaAlModelo() {
+        String id = recuerdoSinAnio(ESCUELA);
+
+        var respuesta = repreguntas.responder(persona.cuentaId(), id, ANIO, "No me acuerdo, ya no quiero vivir");
+
+        assertThat(respuesta.estado().name()).isEqualTo("ALARMA");
+        assertThat(propiedades(id)).containsEntry("intentosAnio", 0L);
+        assertThat(modelo.pedidos()).isEmpty();
+    }
+
+    @Test
+    void siElModeloNoEstaDisponibleElRecuerdoNoCambiaYElIntentoSeDevuelve() {
         String id = recuerdoSinAnio(ESCUELA);
         modelo.falla();
 
         responderYEsperar(id, ANIO, "Fue en 1962");
 
         assertThat(propiedades(id)).containsEntry("anio", null).containsEntry("titulo", "Un recuerdo")
-                .containsEntry("intentosAnio", 1L);
+                .containsEntry("intentosAnio", 0L);
         assertThat(contar(neo4j, "MATCH (r:Recuerdo) WHERE (:PersonaMayor {idPersonaMayor: $p})-[:TIENE_RECUERDO]->(r) RETURN count(r) AS c",
                 "p", persona.personaId())).as("una repregunta no tiene respaldo: no se crea otro recuerdo").isEqualTo(1);
+        assertThat(siguiente().repregunta().dato()).as("el dato se vuelve a ofrecer").isEqualTo(ANIO);
+    }
+
+    @Test
+    void conDosErroresTransitoriosSeReintentaUnaVezYElIntentoSeDevuelve() {
+        String id = recuerdoSinAnio(ESCUELA);
+        modelo.fallaTransitoria().fallaTransitoria();
+
+        responderYEsperar(id, ANIO, "Fue en 1962");
+
+        assertThat(modelo.pedidos()).as("un pedido y un reintento").hasSize(2);
+        assertThat(propiedades(id)).containsEntry("anio", null).containsEntry("intentosAnio", 0L);
+    }
+
+    @Test
+    void unErrorTransitorioSeReintentaYSiElSegundoPedidoSirveSeCompletaElRecuerdoYElIntentoCuenta() {
+        String id = recuerdoSinAnio(ESCUELA);
+        modelo.fallaTransitoria().responde(json("1962", "null", "[]", "[]"));
+
+        responderYEsperar(id, ANIO, "Fue en 1962");
+
+        assertThat(modelo.pedidos()).hasSize(2);
+        assertThat(propiedades(id)).containsEntry("anio", 1962L).containsEntry("intentosAnio", 1L);
+    }
+
+    @Test
+    void siElModeloRespondeJsonInvalidoDosVecesElRecuerdoNoCambiaYElIntentoSigueContado() {
+        String id = recuerdoSinAnio(ESCUELA);
+        modelo.responde("no es json").responde("{ tampoco");
+
+        responderYEsperar(id, ANIO, "Fue en 1962");
+
+        assertThat(propiedades(id)).containsEntry("anio", null).containsEntry("intentosAnio", 1L);
+    }
+
+    @Test
+    void devolverUnIntentoNuncaDejaElContadorPorDebajoDeCero() {
+        String id = recuerdoSinAnio(ESCUELA);
+
+        escritura.devolverIntento(persona.personaId(), id, ANIO);
+        escritura.devolverIntento(persona.personaId(), id, ANIO);
+
+        assertThat(propiedades(id)).containsEntry("intentosAnio", 0L);
+    }
+
+    @Test
+    void devolverUnIntentoBajaSoloElContadorDeEseDatoDeEseRecuerdo() {
+        String id = recuerdo(persona, ESCUELA, "Uno", null, null, 2, 1, 1);
+        String otro = recuerdo(persona, ESCUELA, "Otro", null, null, 2, 1, 1);
+
+        escritura.devolverIntento(persona.personaId(), id, ANIO);
+
+        assertThat(propiedades(id)).containsEntry("intentosAnio", 1L).containsEntry("intentosLugares", 1L)
+                .containsEntry("intentosPersonas", 1L);
+        assertThat(propiedades(otro)).containsEntry("intentosAnio", 2L);
+    }
+
+    @Test
+    void devolverUnIntentoNoTocaUnRecuerdoDeOtraPersona() {
+        Persona otra = personas.crear(OTRO);
+        String ajeno = recuerdo(otra, ESCUELA, "Ajeno", null, null, 2, 0, 0);
+
+        escritura.devolverIntento(persona.personaId(), ajeno, ANIO);
+
+        assertThat(propiedades(ajeno)).containsEntry("intentosAnio", 2L);
     }
 
     @Test

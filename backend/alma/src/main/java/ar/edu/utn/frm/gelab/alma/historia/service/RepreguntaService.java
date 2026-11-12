@@ -4,6 +4,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import ar.edu.utn.frm.gelab.alma.chat.ConfiguracionChat;
 import ar.edu.utn.frm.gelab.alma.chat.guardrails.DetectorDeRiesgo;
 import ar.edu.utn.frm.gelab.alma.chat.guardrails.TipoDeRiesgo;
+import ar.edu.utn.frm.gelab.alma.common.MensajesError;
 import ar.edu.utn.frm.gelab.alma.common.exception.ConflictoException;
 import ar.edu.utn.frm.gelab.alma.common.exception.DatosInvalidosException;
 import ar.edu.utn.frm.gelab.alma.common.exception.RecursoNoEncontradoException;
@@ -67,22 +69,35 @@ public class RepreguntaService {
      * curso (se mira <b>antes</b> de leer el grafo: si se mirara después, podría ofrecer una repregunta justo
      * antes de que esa extracción la cambie). Si no, la candidata del recuerdo más antiguo (o del que surgió de
      * {@code preguntaId}) con su primer dato candidato, sin los datos de {@code excluir}. Un {@code preguntaId}
-     * que no existe o sin recuerdos da {@code NINGUNA}.
+     * que no existe o sin recuerdos da {@code NINGUNA}. Con {@code recuerdoId} (contrato del mapa de vida, 3.3), los
+     * candidatos son solo los de ese recuerdo; uno que no existe o es de otra persona también da {@code NINGUNA}.
+     * La repregunta {@code HAY} lleva el título del recuerdo.
      *
      * @throws RecursoNoEncontradoException 404: la cuenta no tiene persona mayor
+     * @throws DatosInvalidosException      400: se mandaron {@code preguntaId} y {@code recuerdoId} a la vez
      */
-    public RepreguntaSiguienteResponse siguiente(Long cuentaId, Integer preguntaId, List<DatoFaltante> excluir) {
+    public RepreguntaSiguienteResponse siguiente(Long cuentaId, Integer preguntaId, UUID recuerdoId,
+            List<DatoFaltante> excluir) {
         Long personaId = persona(cuentaId).getId();
+        if (preguntaId != null && recuerdoId != null) {
+            throw new DatosInvalidosException("recuerdoId", MensajesError.DATOS_INVALIDOS);
+        }
         if (cola.estaProcesando(personaId)) {
             return new RepreguntaSiguienteResponse(EstadoRepregunta.PROCESANDO, null);
         }
         Set<DatoFaltante> excluidos = excluir == null || excluir.isEmpty() ? EnumSet.noneOf(DatoFaltante.class)
                 : EnumSet.copyOf(excluir);
-        List<RecuerdoParaRepreguntar> recuerdos = lectura.recuerdosParaRepreguntar(personaId, preguntaId);
+        List<RecuerdoParaRepreguntar> recuerdos = lectura.recuerdosParaRepreguntar(personaId, preguntaId,
+                recuerdoId == null ? null : recuerdoId.toString());
         return SelectorDeRepregunta.siguiente(recuerdos, excluidos, configuracion.getIntentosMax())
                 .map(c -> new RepreguntaSiguienteResponse(EstadoRepregunta.HAY, new RepreguntaDto(c.recuerdoId(),
-                        c.dato(), MensajesHistoria.repregunta(c.dato()))))
+                        c.dato(), MensajesHistoria.repregunta(c.dato()), tituloDe(recuerdos, c.recuerdoId()))))
                 .orElseGet(() -> new RepreguntaSiguienteResponse(EstadoRepregunta.NINGUNA, null));
+    }
+
+    private static String tituloDe(List<RecuerdoParaRepreguntar> recuerdos, String recuerdoId) {
+        return recuerdos.stream().filter(r -> r.id().equals(recuerdoId)).map(RecuerdoParaRepreguntar::titulo)
+                .findFirst().orElse(null);
     }
 
     /**
@@ -106,6 +121,13 @@ public class RepreguntaService {
             return RespuestaDelGuionResponse.alarma(chat.getRespuestas().para(riesgo.get()));
         }
         registrarIntento(persona.getId(), recuerdoId, dato);
+        // Contrato del grafo, 5.7: "no me acuerdo" no aporta nada. El intento se cuenta igual, pero no se le pide
+        // nada al modelo (no hay pedido, ni espera ni riesgo de que invente).
+        if (DetectorDeNoRecuerdo.esSinContenido(texto)) {
+            log.info("Respuesta sin contenido de la persona {} a una repregunta: no se consulta al modelo",
+                    persona.getId());
+            return RespuestaDelGuionResponse.aceptada();
+        }
         encolarExtraccion(persona, recuerdoId, dato, texto);
         return RespuestaDelGuionResponse.aceptada();
     }

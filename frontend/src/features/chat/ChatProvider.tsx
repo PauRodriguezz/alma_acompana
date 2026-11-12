@@ -12,23 +12,42 @@ import {
   saltearPregunta,
   saltearRepregunta as saltearRepreguntaEnElBack,
   siguienteRepregunta,
+  type OrigenDeRepregunta,
 } from "@/features/historia/api"
-import { INVITACION_TEXTO, CIERRE_SIN_REPREGUNTA } from "@/features/historia/mensajes"
+import { aperturaDeRepregunta } from "@/features/historia/aperturaDeRepregunta"
+import {
+  CIERRE_SIN_REPREGUNTA,
+  CONTARTE_ALGO_MAS,
+  INVITACION_AHORA_NO,
+  INVITACION_SI,
+  INVITACION_TEXTO,
+  OTRA_PREGUNTA,
+  RESPUESTAS_AHORA_NO,
+  RESPUESTAS_CONTARTE_ALGO_MAS,
+  SALTEAR,
+  SEGUIR_MI_HISTORIA,
+  YA_RESPONDISTE_TODO,
+} from "@/features/historia/mensajes"
+import { pideSeguirConLaHistoria } from "@/features/historia/pideSeguirConLaHistoria"
+import { rotar } from "@/features/historia/rotar"
 import { RUTA_HISTORIA_DE_VIDA } from "@/features/historia/rutas"
 import type { DatoFaltante, PreguntaDelGuion, Repregunta } from "@/features/historia/tipos"
-import { clavesHistoria } from "@/features/historia/useHistoria"
+import { clavesHistoria, useEstadoDelGuion } from "@/features/historia/useHistoria"
 import { ApiError } from "@/lib/api"
 import { mensajeDeError } from "@/lib/errores"
 
 import { enviarMensaje } from "./api"
 import { ChatContexto, type ChatContextoValor } from "./contexto"
 import {
+  DURACION_ESPERA_INICIAL_MS,
+  INTERVALO_ESPERA_INICIAL_MS,
   INTERVALO_ESPERA_MS,
   LIMITE_TURNOS,
   TOPE_ESPERA_MS,
   type MensajeChat,
   type ObjetivoGuion,
   type ResultadoApertura,
+  type ResultadoCompletar,
   type TurnoChat,
 } from "./tipos"
 
@@ -57,13 +76,15 @@ function textoDelTurno(mensaje: MensajeChat): string {
  * La conversación que viaja con el mensaje nuevo (11.4, paso 3): la pregunta contextual de Alma
  * (solo si hay ánimo, el vigente en este momento) y los mensajes, sin el mensaje nuevo. Hasta los
  * últimos 10. No se mandan el saludo, la pregunta del widget ni la burbuja del ánimo, ni la
- * invitación y el cierre del guion (textos fijos del front que no generó el modelo).
+ * invitación, el cierre y el aviso de "sin pendientes" (textos fijos del front que no generó el modelo),
+ * ni las burbujas de los botones tocados (`origen: "ACCION"`, contrato del mapa de vida, 2.9).
  */
 function armarConversacion(animo: RegistroAnimo | null, mensajes: MensajeChat[]): TurnoChat[] {
   const turnos: TurnoChat[] = []
   if (animo) turnos.push({ rol: "ALMA", texto: animo.preguntaContextual })
   for (const mensaje of mensajes) {
-    if (mensaje.tipo === "INVITACION" || mensaje.tipo === "CIERRE") continue
+    if (mensaje.origen === "ACCION") continue
+    if (mensaje.tipo && mensaje.tipo !== "TEXTO" && mensaje.tipo !== "GUION") continue
     turnos.push({ rol: mensaje.rol, texto: textoDelTurno(mensaje) })
   }
   return turnos.slice(-LIMITE_TURNOS)
@@ -96,10 +117,21 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
   const [cierrePendiente, setCierrePendiente] = useState(false)
   const [invitacionPendiente, setInvitacionPendiente] = useState(false)
   const [ocupadoGuion, setOcupadoGuion] = useState(false)
+  // Hubo una alarma en esta visita: ni el botón fijo ni la invitación a pedido se ofrecen (contrato del mapa de vida, 2.8).
+  const [huboAlarma, setHuboAlarma] = useState(false)
+  // Cuántas preguntas quedan sin responder: lo pide la consulta compartida con Historia de vida y se refresca al
+  // invalidar tras responder o saltear.
+  const estadoGuion = useEstadoDelGuion()
 
   const objetivoRef = useRef<ObjetivoGuion | null>(null)
   /** La pregunta del guion que dio origen a la charla: hace falta para pedir la repregunta correcta (2.1). */
   const preguntaOrigenRef = useRef<number | null>(null)
+  /**
+   * El recuerdo que se está completando con "Seguir completando" (contrato del mapa de vida, 2.7). Excluyente con
+   * `preguntaOrigenRef`: la charla usa uno u otro, nunca los dos. Con este, las repreguntas siguientes se piden con
+   * `recuerdoId=` y `excluir=`.
+   */
+  const recuerdoEnCursoRef = useRef<string | null>(null)
   /**
    * El id del mensaje del guion (pregunta o repregunta) que espera respuesta. Hay uno en la lista si y solo
    * si hay un objetivo activo: así una pregunta nunca queda dos veces sin responder ni queda escrita sin botones.
@@ -107,8 +139,14 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
   const bloqueSinResponderRef = useRef<number | null>(null)
   /** Los datos ya preguntados del recuerdo de esta charla: viajan como `excluir` (2.4). */
   const datosPreguntadosRef = useRef<DatoFaltante[]>([])
-  /** Condiciones de la invitación (2.2): una sola vez por visita. */
-  const invitacionRef = useRef({ mostrada: false, rechazada: false, alarma: false, pendiente: false })
+  /** La invitación está en pantalla esperando un "Sí" o un "Ahora no". */
+  const invitacionRef = useRef({ pendiente: false })
+  const alarmaRef = useRef(false)
+  /** Recuerdos que ya tuvieron su apertura en esta charla (2.11) y cuántas aperturas se usaron (rota las tres frases). */
+  const recuerdosAbiertosRef = useRef(new Set<string>())
+  const aperturasUsadasRef = useRef(0)
+  /** Cuántas veces se usó cada respuesta fija de Alma a un botón (2.9): así rotan las variantes. */
+  const respuestasFijasUsadasRef = useRef({ contarAlgoMas: 0, ahoraNo: 0 })
   const accionDeReintentoRef = useRef<(() => void) | null>(null)
   const esperandoRef = useRef(false)
   const ocupadoRef = useRef(false)
@@ -169,6 +207,13 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
     void clienteConsultas.invalidateQueries({ queryKey: clavesHistoria.raiz(usuario?.id) })
   }
 
+  /** A qué apunta el pedido de la repregunta: el recuerdo en curso, la pregunta de origen o, sin ninguno, todos. */
+  function origenDeRepregunta(): OrigenDeRepregunta {
+    if (recuerdoEnCursoRef.current !== null) return { recuerdoId: recuerdoEnCursoRef.current }
+    if (preguntaOrigenRef.current !== null) return { preguntaId: preguntaOrigenRef.current }
+    return null
+  }
+
   /** Un error de un pedido del guion: si la pregunta ya no corresponde (404/409), se sale del modo guion y se refresca. */
   function errorDelGuion(e: unknown, reintento: () => void) {
     if (esConflicto(e)) {
@@ -194,40 +239,54 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
     }
   }
 
-  // ── Invitación (2.2) ──
+  // ── Invitación y burbujas de acciones (contrato del mapa de vida, 2.8 y 2.9) ──
 
-  function cerrarInvitacion(rechazada: boolean) {
+  function cerrarInvitacion() {
     invitacionRef.current.pendiente = false
-    if (rechazada) invitacionRef.current.rechazada = true
     setInvitacionPendiente(false)
   }
 
-  function puedeInvitar() {
-    const i = invitacionRef.current
-    return (
-      !i.mostrada &&
-      !i.rechazada &&
-      !i.alarma &&
-      objetivoRef.current === null &&
-      !enviando.current &&
-      !esperandoRef.current
-    )
+  function marcarAlarma() {
+    alarmaRef.current = true
+    setHuboAlarma(true)
+  }
+
+  /** Lo que toca la persona deja una burbuja suya. Es local: no viaja al modelo ni cuenta como "ya escribió". */
+  function agregarAccion(texto: string) {
+    agregar({ rol: "PERSONA", texto, origen: "ACCION" })
+  }
+
+  /** La respuesta de Alma a un botón, sin llamar al modelo: una de las variantes, rotando (contrato 2.9). */
+  function responderConTextoFijo(variantes: readonly string[], cual: "contarAlgoMas" | "ahoraNo") {
+    const veces = respuestasFijasUsadasRef.current[cual]++
+    agregar({ rol: "ALMA", tipo: "RESPUESTA_FIJA", texto: rotar(variantes, veces) })
+  }
+
+  function hayAlgoEnCurso() {
+    return ocupadoRef.current || enviando.current || esperandoRef.current
   }
 
   /**
-   * Después de una respuesta del chat. Solo se consulta /guion/estado (que hace un MERGE en el back)
-   * mientras la invitación todavía pueda mostrarse: una vez mostrada, rechazada, con una alarma o con un
-   * objetivo activo, no se vuelve a pedir.
+   * La persona escribió que quiere seguir con su historia y el chat ya respondió sin alarma (2.8 b). Se pide el
+   * estado fresco (no el de la caché) y se ofrece la invitación, o el aviso de que ya respondió todo. Se muestra
+   * aunque antes ya se hubiera mostrado o rechazado.
    */
-  async function intentarInvitar() {
-    if (!puedeInvitar()) return
+  async function invitarAPedido() {
     try {
-      const estado = await estadoDelGuion()
-      if (!vivoRef.current || !puedeInvitar() || estado.pendientes <= 0) return
-      invitacionRef.current.mostrada = true
-      invitacionRef.current.pendiente = true
-      setInvitacionPendiente(true)
-      agregar({ rol: "ALMA", tipo: "INVITACION", texto: INVITACION_TEXTO })
+      const estado = await clienteConsultas.fetchQuery({
+        queryKey: clavesHistoria.estado(usuario?.id),
+        queryFn: estadoDelGuion,
+        staleTime: 0,
+      })
+      if (!vivoRef.current || alarmaRef.current || objetivoRef.current !== null) return
+      if (estado.pendientes > 0) {
+        if (invitacionRef.current.pendiente) return
+        invitacionRef.current.pendiente = true
+        setInvitacionPendiente(true)
+        agregar({ rol: "ALMA", tipo: "INVITACION", texto: INVITACION_TEXTO })
+      } else {
+        agregar({ rol: "ALMA", tipo: "SIN_PENDIENTES", texto: YA_RESPONDISTE_TODO })
+      }
     } catch {
       // Sin invitación: es un extra, no un error para la persona.
     }
@@ -239,6 +298,8 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
     // Nunca dos bloques sin responder a la vez.
     retirarBloqueSinResponder()
     datosPreguntadosRef.current = []
+    recuerdosAbiertosRef.current.clear()
+    recuerdoEnCursoRef.current = null
     preguntaOrigenRef.current = pregunta.id
     fijarObjetivo({ tipo: "PREGUNTA", preguntaId: pregunta.id })
     setCierrePendiente(false)
@@ -259,7 +320,14 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
     datosPreguntadosRef.current = [...datosPreguntadosRef.current, repregunta.dato]
     retirarBloqueSinResponder()
     fijarObjetivo({ tipo: "REPREGUNTA", recuerdoId: repregunta.recuerdoId, dato: repregunta.dato })
-    bloqueSinResponderRef.current = agregar({ rol: "ALMA", tipo: "GUION", texto: repregunta.texto })
+    // Antes de la primera repregunta de cada recuerdo va una frase fija que lo nombra (2.11), en otro párrafo.
+    let texto = repregunta.texto
+    if (!recuerdosAbiertosRef.current.has(repregunta.recuerdoId)) {
+      recuerdosAbiertosRef.current.add(repregunta.recuerdoId)
+      const apertura = aperturaDeRepregunta(repregunta.tituloRecuerdo, aperturasUsadasRef.current++)
+      texto = `${apertura}\n\n${texto}`
+    }
+    bloqueSinResponderRef.current = agregar({ rol: "ALMA", tipo: "GUION", texto })
   }
 
   function mostrarCierre() {
@@ -285,17 +353,20 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
   }
 
   /**
-   * La espera de la extracción (2.3): consulta cada 2 s mientras el back dice PROCESANDO, hasta 60 s.
+   * La espera de la extracción (2.3 y 2.10): consulta cada 1 s durante los primeros 10 s y cada 2 s después mientras
+   * el back dice PROCESANDO, hasta 60 s.
    * Un error de red o 5xx se reintenta una vez; si vuelve a fallar, se sigue sin repregunta y se avisa.
    */
   async function esperarRepregunta() {
     const inicio = Date.now()
+    const intervalo = () =>
+      Date.now() - inicio < DURACION_ESPERA_INICIAL_MS ? INTERVALO_ESPERA_INICIAL_MS : INTERVALO_ESPERA_MS
     let fallos = 0
     try {
       while (vivoRef.current) {
         let respuesta
         try {
-          respuesta = await siguienteRepregunta(preguntaOrigenRef.current, datosPreguntadosRef.current)
+          respuesta = await siguienteRepregunta(origenDeRepregunta(), datosPreguntadosRef.current)
           fallos = 0
         } catch (e) {
           fallos++
@@ -309,7 +380,7 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
             mostrarCierre()
             return
           }
-          await dormir(INTERVALO_ESPERA_MS)
+          await dormir(intervalo())
           continue
         }
         if (!vivoRef.current) return
@@ -321,11 +392,65 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
           mostrarCierre()
           return
         }
-        await dormir(INTERVALO_ESPERA_MS)
+        await dormir(intervalo())
       }
     } finally {
       esperandoRef.current = false
       setEsperandoRepregunta(false)
+      // La extracción terminó: la etapa, el año y los datos pendientes de los recuerdos pueden haber cambiado.
+      invalidarHistoria()
+    }
+  }
+
+  /**
+   * "Seguir completando este recuerdo" (contrato del mapa de vida, 2.7), desde Historia de vida. Pide la repregunta de
+   * ese recuerdo; con PROCESANDO espera como en 2.10 (tope de 60 s, que se trata como NINGUNA). Con HAY empieza una
+   * charla nueva sobre el recuerdo: muestra la apertura y la repregunta y activa el objetivo REPREGUNTA, con
+   * `recuerdoEnCursoRef` en lugar de la pregunta de origen. No deja burbuja: la pantalla navega al chat. Si falla,
+   * lanza el error para que la pantalla lo muestre.
+   *
+   * Si el chat está ocupado (esperando la respuesta del modelo o la extracción de una respuesta anterior), espera a
+   * que se libere en lugar de rendirse: antes devolvía `YA_ACTIVA` enseguida, la pantalla navegaba al chat igual y no
+   * aparecía nada (ni la apertura ni la repregunta). Solo si pasa el tope de 60 s devuelve `YA_ACTIVA`, y la pantalla
+   * avisa en lugar de navegar.
+   */
+  async function seguirCompletando(recuerdoId: string): Promise<ResultadoCompletar> {
+    const esperaDelChat = Date.now()
+    while (hayAlgoEnCurso() && vivoRef.current && Date.now() - esperaDelChat < TOPE_ESPERA_MS) {
+      await dormir(INTERVALO_ESPERA_INICIAL_MS)
+    }
+    if (hayAlgoEnCurso()) return { resultado: "YA_ACTIVA" }
+    ocupadoRef.current = true
+    setOcupadoGuion(true)
+    try {
+      const inicio = Date.now()
+      while (vivoRef.current) {
+        const respuesta = await siguienteRepregunta({ recuerdoId }, [])
+        if (!vivoRef.current) break
+        if (respuesta.estado === "HAY" && respuesta.repregunta) {
+          limpiarError()
+          cerrarInvitacion()
+          datosPreguntadosRef.current = []
+          recuerdosAbiertosRef.current.clear()
+          preguntaOrigenRef.current = null
+          recuerdoEnCursoRef.current = recuerdoId
+          setCierrePendiente(false)
+          setYaEscribio(true)
+          setCambiandoAnimo(false)
+          mostrarRepregunta(respuesta.repregunta)
+          return { resultado: "ABIERTA" }
+        }
+        if (respuesta.estado === "NINGUNA" || Date.now() - inicio >= TOPE_ESPERA_MS) break
+        await dormir(
+          Date.now() - inicio < DURACION_ESPERA_INICIAL_MS ? INTERVALO_ESPERA_INICIAL_MS : INTERVALO_ESPERA_MS
+        )
+      }
+      // Los datos que faltaban ya no hacen falta o se agotaron los intentos: se refresca la lista.
+      invalidarHistoria()
+      return { resultado: "NINGUNA" }
+    } finally {
+      ocupadoRef.current = false
+      setOcupadoGuion(false)
     }
   }
 
@@ -348,7 +473,7 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
       agregar({ rol: "ALMA", texto: resultado.respuesta })
       fijarObjetivo(null)
       preguntaOrigenRef.current = null
-      invitacionRef.current.alarma = true
+      marcarAlarma()
       return
     }
     fijarObjetivo(null)
@@ -377,7 +502,8 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
     setCambiandoAnimo(false)
     setPendiente(true)
     // Escribir sin contestar la invitación cuenta como "Ahora no"; sin contestar el cierre, como "Contarte algo más".
-    if (invitacionRef.current.pendiente) cerrarInvitacion(true)
+    // (Sin burbuja: la persona no tocó ningún botón.)
+    if (invitacionRef.current.pendiente) cerrarInvitacion()
     setCierrePendiente(false)
 
     let respondioElChat = false
@@ -387,8 +513,8 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
       } else {
         const { respuesta, alarma } = await mutacion.mutateAsync({ mensaje: texto, conversacion })
         agregar({ rol: "ALMA", texto: respuesta })
-        // Una alarma del chat se trata igual que una del guion: en esta visita no se ofrece la invitación (2.2, condición 6).
-        if (alarma) invitacionRef.current.alarma = true
+        // Una alarma del chat se trata igual que una del guion: en esta visita no se ofrece seguir con la historia.
+        if (alarma) marcarAlarma()
         respondioElChat = true
       }
     } catch (e) {
@@ -401,7 +527,8 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
       setPendiente(false)
       enviando.current = false
     }
-    if (respondioElChat) void intentarInvitar()
+    // Invitación a pedido (2.8 b): el mensaje ya se mandó al chat como siempre; ahora se evalúa lo que escribió.
+    if (respondioElChat && pideSeguirConLaHistoria(texto)) void invitarAPedido()
   }
 
   function errorDelGuionOChat(e: unknown, enModoGuion: boolean, reintento: () => void) {
@@ -430,7 +557,7 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
         return { resultado: "SIN_PENDIENTES", mensajeFinal: proxima.mensajeFinal ?? "" }
       }
       limpiarError()
-      cerrarInvitacion(false)
+      cerrarInvitacion()
       mostrarPregunta(proxima.pregunta, proxima.introduccion)
       return { resultado: "ABIERTA" }
     } finally {
@@ -439,56 +566,88 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
     }
   }
 
+  /** "Otra pregunta" debajo de una pregunta: la saltea en el back y pide la siguiente. */
+  async function saltearYPasarALaSiguiente() {
+    const objetivo = objetivoRef.current
+    if (objetivo?.tipo !== "PREGUNTA") return
+    limpiarError()
+    try {
+      await saltearPregunta(objetivo.preguntaId)
+    } catch (e) {
+      errorDelGuion(e, () => void conBloqueo(saltearYPasarALaSiguiente))
+      return
+    }
+    bloqueSinResponderRef.current = null
+    fijarObjetivo(null)
+    invalidarHistoria()
+    await irAProxima()
+  }
+
   function otraPregunta() {
-    void conBloqueo(async () => {
-      const objetivo = objetivoRef.current
-      if (objetivo?.tipo !== "PREGUNTA") return
-      limpiarError()
-      try {
-        await saltearPregunta(objetivo.preguntaId)
-      } catch (e) {
-        errorDelGuion(e, otraPregunta)
-        return
-      }
-      bloqueSinResponderRef.current = null
-      fijarObjetivo(null)
-      invalidarHistoria()
-      await irAProxima()
-    })
+    if (objetivoRef.current?.tipo !== "PREGUNTA" || hayAlgoEnCurso()) return
+    agregarAccion(OTRA_PREGUNTA)
+    void conBloqueo(saltearYPasarALaSiguiente)
+  }
+
+  async function saltearLaRepregunta() {
+    const objetivo = objetivoRef.current
+    if (objetivo?.tipo !== "REPREGUNTA") return
+    limpiarError()
+    try {
+      await saltearRepreguntaEnElBack(objetivo.recuerdoId, objetivo.dato)
+    } catch (e) {
+      errorDelGuion(e, () => void conBloqueo(saltearLaRepregunta))
+      return
+    }
+    bloqueSinResponderRef.current = null
+    fijarObjetivo(null)
+    invalidarHistoria()
+    iniciarEspera()
   }
 
   function saltearRepregunta() {
-    void conBloqueo(async () => {
-      const objetivo = objetivoRef.current
-      if (objetivo?.tipo !== "REPREGUNTA") return
-      limpiarError()
-      try {
-        await saltearRepreguntaEnElBack(objetivo.recuerdoId, objetivo.dato)
-      } catch (e) {
-        errorDelGuion(e, saltearRepregunta)
-        return
-      }
-      bloqueSinResponderRef.current = null
-      fijarObjetivo(null)
-      invalidarHistoria()
-      iniciarEspera()
-    })
+    if (objetivoRef.current?.tipo !== "REPREGUNTA" || hayAlgoEnCurso()) return
+    agregarAccion(SALTEAR)
+    void conBloqueo(saltearLaRepregunta)
   }
 
   function otraPreguntaDespuesDelCierre() {
+    if (hayAlgoEnCurso()) return
     limpiarError()
+    agregarAccion(OTRA_PREGUNTA)
     setCierrePendiente(false)
     void conBloqueo(irAProxima)
   }
 
   function contarAlgoMas() {
+    agregarAccion(CONTARTE_ALGO_MAS)
+    responderConTextoFijo(RESPUESTAS_CONTARTE_ALGO_MAS, "contarAlgoMas")
     setCierrePendiente(false)
     preguntaOrigenRef.current = null
+    recuerdoEnCursoRef.current = null
   }
 
   function aceptarInvitacion() {
+    if (hayAlgoEnCurso()) return
     limpiarError()
-    cerrarInvitacion(false)
+    agregarAccion(INVITACION_SI)
+    cerrarInvitacion()
+    void conBloqueo(irAProxima)
+  }
+
+  function rechazarInvitacion() {
+    if (hayAlgoEnCurso()) return
+    agregarAccion(INVITACION_AHORA_NO)
+    responderConTextoFijo(RESPUESTAS_AHORA_NO, "ahoraNo")
+    cerrarInvitacion()
+  }
+
+  /** Botón fijo "Seguir mi historia de vida" (2.8 a): hace lo mismo que el "Sí" de la invitación. */
+  function seguirMiHistoria() {
+    if (objetivoRef.current !== null || hayAlgoEnCurso()) return
+    limpiarError()
+    agregarAccion(SEGUIR_MI_HISTORIA)
+    cerrarInvitacion()
     void conBloqueo(irAProxima)
   }
 
@@ -499,8 +658,12 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
     retirarBloqueSinResponder()
     fijarObjetivo(null)
     preguntaOrigenRef.current = null
+    recuerdoEnCursoRef.current = null
     datosPreguntadosRef.current = []
+    recuerdosAbiertosRef.current.clear()
     setCierrePendiente(false)
+    // Al volver se ven la etapa, el año y los datos pendientes actualizados (2.7, punto 6).
+    invalidarHistoria()
     navegar(RUTA_HISTORIA_DE_VIDA)
   }
 
@@ -531,8 +694,11 @@ function EstadoDelChat({ children }: { children: ReactNode }) {
     invitacionPendiente,
     ocupadoGuion,
     abrirPreguntaDelGuion,
+    seguirCompletando,
+    mostrarBotonSeguirHistoria: objetivoActivo === null && !huboAlarma && (estadoGuion.data?.pendientes ?? 0) > 0,
+    seguirMiHistoria,
     aceptarInvitacion,
-    rechazarInvitacion: () => cerrarInvitacion(true),
+    rechazarInvitacion,
     otraPregunta,
     otraPreguntaDespuesDelCierre,
     contarAlgoMas,

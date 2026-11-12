@@ -34,12 +34,17 @@ export function useRecuerdo(id: string | undefined) {
   })
 }
 
-/** Estado del guion: dice si hay una pregunta pendiente (5.4 y 2.2). */
+/** Cuánto vale el estado del guion sin pedirlo de nuevo: se refresca al invalidar tras responder o saltear. */
+const VIGENCIA_DEL_ESTADO_MS = 30 * 60 * 1000
+
+/** Estado del guion: dice si hay una pregunta pendiente (5.4 y botón fijo del chat, contrato del mapa de vida 2.8). */
 export function useEstadoDelGuion() {
   const { usuario } = useAuth()
   return useQuery({
     queryKey: clavesHistoria.estado(usuario?.id),
     queryFn: estadoDelGuion,
     enabled: usuario !== null,
+    staleTime: VIGENCIA_DEL_ESTADO_MS,
+    refetchOnWindowFocus: false,
   })
 }

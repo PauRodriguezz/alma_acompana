@@ -43,7 +43,7 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 
 - **Bases de datos** (desde la raíz): `docker compose up -d`, `docker compose ps`, `docker compose stop`. **Nunca `docker compose down -v`:** borra los datos y el inicio de sesión de Ollama.
 - **Back** (desde `backend/alma`): `./mvnw spring-boot:run`, `./mvnw clean compile`, `./mvnw test`.
-- **Front** (desde `frontend`): `pnpm install`, `pnpm dev` (puerto 5173), `pnpm build`, `pnpm lint`.
+- **Front** (desde `frontend`): `pnpm install`, `pnpm dev` (puerto 5173), `pnpm build`, `pnpm lint`, `pnpm test` (Vitest).
 
 ## Convenciones
 
@@ -59,7 +59,7 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 ### Front
 - Alias `@` apunta a `src/`.
 - Las llamadas al back pasan por `lib/api.ts`. En desarrollo el proxy de Vite manda `/api` al puerto 8080.
-- Los colores y tipografías vienen del Figma: no inventes otros. Hoy el front usa Inter (valor por defecto de shadcn); hay que reemplazarla por Poppins y Source Sans 3.
+- Los colores y tipografías vienen del Figma: no inventes otros (única excepción: Lora cursiva, `@fontsource/lora`, para el nombre en el título de la imagen descargable del mapa de vida). Hoy el front usa Inter (valor por defecto de shadcn); hay que reemplazarla por Poppins y Source Sans 3.
 - **El Figma es ilustrativo:** si difiere de los casos de uso o del diagrama de clases en funcionalidad, ganan los documentos.
 - Hay layout de celular y de escritorio.
 - **Accesibilidad primero** (el público son personas mayores): letra grande y legible, alto contraste, botones grandes (mínimo 44 px), etiquetas siempre visibles, todo usable con teclado y mensajes de error simples.
@@ -96,6 +96,8 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 - `docs/contrato-grafo.md`: contrato de la historia de vida (CU-03: grafo en Neo4j, guion y progreso, extractor, cola y repreguntas). Leelo antes de tocar `historia/` o el límite de pedidos de `ia/`.
 
 - `docs/contrato-microcapsulas.md`: contrato de la lectura de microcápsulas (CU-06). Leelo antes de tocar el listado, el detalle o las guardadas de la persona mayor.
+- `docs/contrato-historia-de-vida.md`: contrato de lo que la persona mayor ve y hace con su historia de vida (CU-02 criterio Nº 4, CU-03 y CU-04: guion y repreguntas en el chat, detalle del recuerdo, recuerdos en el prompt). Está en la v5: las secciones que reemplaza el mapa de vida llevan un aviso. Leelo antes de tocar `features/historia/`, el modo guion de `features/chat/` o `historia/`.
+- `docs/contrato-mapa-de-vida.md`: contrato del mapa de vida (v5 de la historia de vida: mapa por etapas con panel, lista para letra grande, imagen descargable, "Seguir completando este recuerdo", botón fijo e invitación a pedido, burbujas y respuestas fijas del chat). **Gana sobre el contrato de historia de vida** donde difieren. Las imágenes de `docs/referencias/` son parte del contrato. Leelo antes de tocar la pantalla Historia de vida, `features/historia/` o el modo guion del chat.
 
 ## Plan por etapas
 

@@ -157,7 +157,7 @@ public class GeminiModeloConversacional implements ModeloConversacional {
             registrarFalla(e, inicio, etiqueta);
             // No se pasa el mensaje original: el del SDK puede citar el cuerpo de la respuesta.
             throw new ModeloNoDisponibleException("Falló la llamada a Gemini: " + causaRaiz(e).getClass().getSimpleName(),
-                    e);
+                    e, ErroresTransitorios.deGemini(e));
         }
     }
 

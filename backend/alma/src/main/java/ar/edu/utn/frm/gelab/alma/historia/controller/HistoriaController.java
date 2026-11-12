@@ -1,6 +1,7 @@
 package ar.edu.utn.frm.gelab.alma.historia.controller;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -26,6 +27,7 @@ import ar.edu.utn.frm.gelab.alma.historia.service.ConsultaDeRecuerdos;
 import ar.edu.utn.frm.gelab.alma.historia.service.HistoriaDeVidaService;
 import ar.edu.utn.frm.gelab.alma.historia.service.RepreguntaService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -53,15 +55,16 @@ public class HistoriaController {
     @GetMapping("/recuerdos")
     @Operation(summary = "Ver los recuerdos (línea de tiempo)",
             description = "Los recuerdos de la persona de más antiguo a más reciente por año; los que no tienen "
-                    + "año van al final. Sin recuerdos, lista vacía.")
+                    + "año van al final. Cada uno trae faltantes: los datos que se pueden seguir completando "
+                    + "(ANIO, LUGARES, PERSONAS). Sin recuerdos, lista vacía.")
     public ListaDeRecuerdosResponse recuerdos(@AuthenticationPrincipal Jwt jwt) {
         return consultaDeRecuerdos.listar(cuentaId(jwt));
     }
 
     @GetMapping("/recuerdos/{recuerdoId}")
     @Operation(summary = "Ver el detalle de un recuerdo",
-            description = "Título, descripción, año, personas y lugares. Un recuerdo que no existe o es de otra "
-                    + "persona da 404.")
+            description = "Título, descripción, año, personas, lugares, faltantes y el texto de la pregunta de la "
+                    + "que surgió (preguntaTexto). Un recuerdo que no existe o es de otra persona da 404.")
     public RecuerdoDetalleResponse recuerdo(@AuthenticationPrincipal Jwt jwt, @PathVariable String recuerdoId) {
         return consultaDeRecuerdos.detalle(cuentaId(jwt), recuerdoId);
     }
@@ -106,13 +109,19 @@ public class HistoriaController {
     @GetMapping("/repreguntas/siguiente")
     @Operation(summary = "Ver si hay una repregunta",
             description = "PROCESANDO si hay una extracción en cola o en curso (volver a preguntar en unos "
-                    + "segundos), HAY con la repregunta (recuerdo, dato y texto) o NINGUNA. Sin preguntaId busca en "
-                    + "todos los recuerdos y devuelve el más antiguo con una candidata. excluir: datos separados por "
-                    + "coma (ANIO, LUGARES, PERSONAS) que ya se preguntaron en esta charla. Un valor inválido da 400.")
+                    + "segundos), HAY con la repregunta (recuerdo, dato, texto y título del recuerdo) o NINGUNA. "
+                    + "Sin preguntaId ni recuerdoId busca en todos los recuerdos y devuelve el más antiguo con una "
+                    + "candidata. Con recuerdoId busca solo en ese recuerdo (uno inexistente o ajeno da NINGUNA). "
+                    + "preguntaId y recuerdoId no se pueden mandar a la vez (400). excluir: datos separados por "
+                    + "coma (ANIO, LUGARES, PERSONAS) que ya se preguntaron en esta charla. Un valor inválido o un "
+                    + "recuerdoId mal formado da 400.")
     public RepreguntaSiguienteResponse siguienteRepregunta(@AuthenticationPrincipal Jwt jwt,
-            @RequestParam(required = false) Integer preguntaId,
+            @Parameter(description = "Solo los recuerdos que surgieron de esta pregunta del guion. Excluyente con "
+                    + "recuerdoId.") @RequestParam(required = false) Integer preguntaId,
+            @Parameter(description = "Solo este recuerdo (UUID). Excluyente con preguntaId.")
+            @RequestParam(required = false) UUID recuerdoId,
             @RequestParam(required = false) List<DatoFaltante> excluir) {
-        return repreguntaService.siguiente(cuentaId(jwt), preguntaId, excluir);
+        return repreguntaService.siguiente(cuentaId(jwt), preguntaId, recuerdoId, excluir);
     }
 
     @PostMapping("/repreguntas/{recuerdoId}/{dato}/respuesta")

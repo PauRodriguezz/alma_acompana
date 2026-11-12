@@ -54,6 +54,18 @@ class ModeloDePrueba implements ModeloConversacional {
         return this;
     }
 
+    /** Programa un error transitorio del proveedor (por ejemplo, un 503): el extractor lo reintenta una vez. */
+    ModeloDePrueba fallaTransitoria() {
+        return fallaTransitoria(0);
+    }
+
+    /** Un error transitorio que llega después de {@code demoraMs} (como el 503 tras ~12,8 s de la prueba manual). */
+    ModeloDePrueba fallaTransitoria(long demoraMs) {
+        guion.add(new Paso(null, new ModeloNoDisponibleException("Falla transitoria de prueba (503)", null, true),
+                demoraMs));
+        return this;
+    }
+
     void reiniciar() {
         guion.clear();
         pedidos.clear();

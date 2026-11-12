@@ -6,10 +6,10 @@ import type { DatoFaltante } from "@/features/historia/tipos"
 export type RolChat = "PERSONA" | "ALMA"
 
 /**
- * Qué es un mensaje de la conversación. `GUION`: una pregunta o repregunta del guion. `INVITACION` y
- * `CIERRE`: textos fijos del front, no los generó el modelo (no viajan como historial).
+ * Qué es un mensaje de la conversación. `GUION`: una pregunta o repregunta del guion. `INVITACION`, `CIERRE` y
+ * `SIN_PENDIENTES` y `RESPUESTA_FIJA` (la respuesta de Alma a un botón): textos fijos del front, no los generó el modelo (no viajan como historial).
  */
-export type TipoMensaje = "TEXTO" | "GUION" | "INVITACION" | "CIERRE"
+export type TipoMensaje = "TEXTO" | "GUION" | "INVITACION" | "CIERRE" | "SIN_PENDIENTES" | "RESPUESTA_FIJA"
 
 /** Un mensaje de la conversación que se ve en pantalla. El `id` es solo de este navegador. */
 export type MensajeChat = {
@@ -18,6 +18,11 @@ export type MensajeChat = {
   texto: string
   /** Por defecto `TEXTO`. */
   tipo?: TipoMensaje
+  /**
+   * `ACCION`: la burbuja de la persona que deja un botón tocado (contrato del mapa de vida, 2.9). Es local: no
+   * viaja al modelo ni cuenta como que la persona "ya escribió".
+   */
+  origen?: "ACCION"
   /** La pregunta del guion, destacada debajo de la introducción (Figma 29:399). */
   preguntaDestacada?: string
 }
@@ -51,6 +56,9 @@ export type ResultadoApertura =
   | { resultado: "ABIERTA" | "YA_ACTIVA" }
   | { resultado: "SIN_PENDIENTES"; mensajeFinal: string }
 
+/** Qué pasó al pedir "Seguir completando este recuerdo" (contrato del mapa de vida, 2.7). */
+export type ResultadoCompletar = { resultado: "ABIERTA" | "YA_ACTIVA" | "NINGUNA" }
+
 /** Largo máximo del mensaje (5.9): el campo lo corta en 500 caracteres. */
 export const LIMITE_MENSAJE = 500
 
@@ -63,7 +71,9 @@ export const LIMITE_TURNOS = 10
 /** El back espera hasta 10 s un turno y 30 s al modelo: el front espera un poco más (11.5). */
 export const TIEMPO_MAXIMO_ENVIO_MS = 45_000
 
-/** Cada cuánto se consulta si hay repregunta mientras el back procesa la respuesta (2.3). */
+/** Cada cuánto se consulta si hay repregunta mientras el back procesa la respuesta: 1 s al principio y 2 s después (2.10). */
+export const INTERVALO_ESPERA_INICIAL_MS = 1_000
+export const DURACION_ESPERA_INICIAL_MS = 10_000
 export const INTERVALO_ESPERA_MS = 2_000
 
 /** Tope de la espera de la extracción: pasado este tiempo se sigue sin repregunta (2.3). */

@@ -30,13 +30,29 @@ public final class SelectorDeRepregunta {
                 .sorted(Comparator.comparing(RecuerdoParaRepreguntar::fechaRegistro,
                         Comparator.nullsLast(Comparator.naturalOrder()))
                         .thenComparing(RecuerdoParaRepreguntar::id))
-                .map(recuerdo -> recuerdo.repreguntas().stream()
-                        .filter(dato -> !excluir.contains(dato))
-                        .filter(recuerdo::falta)
-                        .filter(dato -> recuerdo.intentos(dato) < maximo)
-                        .findFirst()
+                .map(recuerdo -> candidatos(recuerdo, excluir, maximo).stream().findFirst()
                         .map(dato -> new Candidata(recuerdo.id(), dato)))
                 .flatMap(Optional::stream)
                 .findFirst();
+    }
+
+    /**
+     * Los datos que se pueden seguir completando en un recuerdo (contrato del mapa de vida, 3.1 y 3.2): los
+     * candidatos de 5.7 sin considerar {@code excluir}, en el orden de la lista {@code repreguntas} de la pregunta de
+     * origen. Un recuerdo sin pregunta de origen (lista vacía) devuelve {@code []}.
+     */
+    public static List<DatoFaltante> faltantes(RecuerdoParaRepreguntar recuerdo, int maximo) {
+        return candidatos(recuerdo, Set.of(), maximo);
+    }
+
+    /** La única definición de "candidato" (5.7): está en la lista, falta y se preguntó menos de {@code maximo} veces. */
+    private static List<DatoFaltante> candidatos(RecuerdoParaRepreguntar recuerdo, Set<DatoFaltante> excluir,
+            int maximo) {
+        return recuerdo.repreguntas().stream()
+                .distinct()
+                .filter(dato -> !excluir.contains(dato))
+                .filter(recuerdo::falta)
+                .filter(dato -> recuerdo.intentos(dato) < maximo)
+                .toList();
     }
 }

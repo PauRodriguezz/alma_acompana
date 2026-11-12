@@ -29,10 +29,35 @@ public class ConfiguracionHistoria {
     private double extraccionTemperatura = 0.1;
 
     /** Tope de tokens de salida de la llamada de extracción (5.4). */
-    private int extraccionMaxTokens = 600;
+    private int extraccionMaxTokens = 800;
+
+    /** Espera, en milisegundos, antes de repetir un pedido que falló por un error transitorio del proveedor (5.4). */
+    private long extraccionReintentoEsperaMs = 1500;
+
+    /**
+     * Un error transitorio solo se reintenta si desde el primer pedido de la extracción pasaron como mucho estos
+     * milisegundos (5.4): cada llamada ya tiene su tope de 25 s, y así el total no se alarga sin límite.
+     */
+    private long extraccionReintentoHastaMs = 25000;
 
     /** Largo máximo del resumen de un recuerdo en el listado (contrato de historia de vida, 7.3). */
     private int resumenMax = 140;
+
+    public long getExtraccionReintentoEsperaMs() {
+        return extraccionReintentoEsperaMs;
+    }
+
+    public void setExtraccionReintentoEsperaMs(long extraccionReintentoEsperaMs) {
+        this.extraccionReintentoEsperaMs = extraccionReintentoEsperaMs;
+    }
+
+    public long getExtraccionReintentoHastaMs() {
+        return extraccionReintentoHastaMs;
+    }
+
+    public void setExtraccionReintentoHastaMs(long extraccionReintentoHastaMs) {
+        this.extraccionReintentoHastaMs = extraccionReintentoHastaMs;
+    }
 
     public int getResumenMax() {
         return resumenMax;

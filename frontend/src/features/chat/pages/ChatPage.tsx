@@ -13,6 +13,7 @@ import { AccionesDelGuion } from "../components/AccionesDelGuion"
 import { CampoMensaje } from "../components/CampoMensaje"
 import { MensajeGuion } from "../components/MensajeGuion"
 import { MensajePersona } from "../components/MensajePersona"
+import { MensajeSinPendientes } from "../components/MensajeSinPendientes"
 import { SaludoDeAlma } from "../components/SaludoDeAlma"
 import { ALMA_PENSANDO, CONVERSACION_CON_ALMA } from "../mensajes"
 import { useChat } from "../useChat"
@@ -85,6 +86,8 @@ export function ChatPage() {
         {chat.mensajes.map((mensaje) =>
           mensaje.rol === "PERSONA" ? (
             <MensajePersona key={mensaje.id} texto={mensaje.texto} />
+          ) : mensaje.tipo === "SIN_PENDIENTES" ? (
+            <MensajeSinPendientes key={mensaje.id} texto={mensaje.texto} />
           ) : mensaje.tipo === "GUION" ? (
             <MensajeGuion key={mensaje.id} texto={mensaje.texto} pregunta={mensaje.preguntaDestacada} />
           ) : (
@@ -115,6 +118,9 @@ export function ChatPage() {
           ) : null}
         </div>
       ) : null}
+
+      {/* En celular, el botón "Seguir mi historia de vida" flota arriba del campo: este espacio deja el último mensaje a la vista. */}
+      {chat.mostrarBotonSeguirHistoria ? <div aria-hidden="true" className="h-[calc(64rem/17)] shrink-0 lg:hidden" /> : null}
 
       {/* Detrás del campo fijo y de la navegación: el margen deja el último mensaje a la vista. */}
       <div

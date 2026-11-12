@@ -29,7 +29,7 @@ class SelectorDeRepreguntaTest {
         int il = intentos.length > 1 ? intentos[1] : 0;
         int ip = intentos.length > 2 ? intentos[2] : 0;
         return new RecuerdoParaRepreguntar(id, BASE.plusMinutes(minutos), lista, faltan.contains(ANIO),
-                faltan.contains(LUGARES), faltan.contains(PERSONAS), ia, il, ip);
+                faltan.contains(LUGARES), faltan.contains(PERSONAS), ia, il, ip, "Recuerdo " + id);
     }
 
     private static Candidata elegir(List<RecuerdoParaRepreguntar> recuerdos, Set<DatoFaltante> excluir) {
@@ -95,6 +95,48 @@ class SelectorDeRepreguntaTest {
         // Se pasan desordenados: el selector no depende del orden de entrada.
         assertThat(elegir(List.of(nuevo, medio, viejoSinCandidata), Set.of())).isEqualTo(new Candidata("medio", LUGARES));
         assertThat(elegir(List.of(nuevo, medio), Set.of(LUGARES))).isEqualTo(new Candidata("nuevo", ANIO));
+    }
+
+    // ---------- faltantes (contrato del mapa de vida, 3.1 y 3.2) ----------
+
+    private static List<DatoFaltante> faltantes(RecuerdoParaRepreguntar recuerdo) {
+        return SelectorDeRepregunta.faltantes(recuerdo, MAX);
+    }
+
+    @Test
+    void faltantesListaLosDatosQueFaltanEnElOrdenDeLaPregunta() {
+        assertThat(faltantes(recuerdo("r", 0, TODOS, FALTA_TODO))).containsExactly(ANIO, LUGARES, PERSONAS);
+        assertThat(faltantes(recuerdo("r", 0, List.of(PERSONAS, ANIO, LUGARES), FALTA_TODO)))
+                .containsExactly(PERSONAS, ANIO, LUGARES);
+    }
+
+    @Test
+    void faltantesSoloTraeLoQueFaltaHoy() {
+        // Sin año (o con año ESTIMADA) falta ANIO; sin lugares, LUGARES; sin personas, PERSONAS.
+        assertThat(faltantes(recuerdo("r", 0, TODOS, Set.of(ANIO)))).containsExactly(ANIO);
+        assertThat(faltantes(recuerdo("r", 0, TODOS, Set.of(LUGARES)))).containsExactly(LUGARES);
+        assertThat(faltantes(recuerdo("r", 0, TODOS, Set.of(PERSONAS)))).containsExactly(PERSONAS);
+        assertThat(faltantes(recuerdo("r", 0, TODOS, Set.of(ANIO, PERSONAS)))).containsExactly(ANIO, PERSONAS);
+        assertThat(faltantes(recuerdo("r", 0, TODOS, Set.of()))).isEmpty();
+    }
+
+    @Test
+    void faltantesSacaElDatoConElContadorEnElMaximo() {
+        assertThat(faltantes(recuerdo("r", 0, TODOS, FALTA_TODO, 2, 1, 0))).containsExactly(LUGARES, PERSONAS);
+        assertThat(faltantes(recuerdo("r", 0, TODOS, FALTA_TODO, 1, 1, 1))).containsExactly(ANIO, LUGARES, PERSONAS);
+        assertThat(faltantes(recuerdo("r", 0, TODOS, FALTA_TODO, 2, 2, 2))).isEmpty();
+    }
+
+    @Test
+    void faltantesSoloTraeLosDatosDeLaListaDeLaPreguntaDeOrigen() {
+        assertThat(faltantes(recuerdo("r", 0, List.of(LUGARES), FALTA_TODO))).containsExactly(LUGARES);
+        assertThat(faltantes(recuerdo("r", 0, List.of(), FALTA_TODO))).isEmpty();
+    }
+
+    @Test
+    void siguienteYFaltantesUsanLaMismaReglaDeCandidato() {
+        RecuerdoParaRepreguntar r = recuerdo("r", 0, TODOS, FALTA_TODO, 2, 0, 0);
+        assertThat(elegir(List.of(r), Set.of()).dato()).isEqualTo(faltantes(r).get(0));
     }
 
     @Test

@@ -32,7 +32,7 @@ public final class MensajesHistoria {
     // Textos fijos de las repreguntas (5.7).
     public static final String REPREGUNTA_ANIO = "¿Te acordás en qué año fue, o cuántos años tenías?";
     public static final String REPREGUNTA_LUGARES = "¿Dónde pasó esto?";
-    public static final String REPREGUNTA_PERSONAS = "¿Quién más estaba con vos en ese momento?";
+    public static final String REPREGUNTA_PERSONAS = "¿Quién más estaba con vos en ese momento? Si te acordás, contame también cómo se llamaban.";
 
     /** El texto fijo con el que se repregunta por un dato. */
     public static String repregunta(DatoFaltante dato) {

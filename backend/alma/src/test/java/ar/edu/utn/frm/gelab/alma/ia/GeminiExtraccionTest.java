@@ -57,6 +57,8 @@ class GeminiExtraccionTest {
     private final List<String> cuerpos = new CopyOnWriteArrayList<>();
     private volatile long demoraMs = 0;
     private volatile boolean rechazarTipoJson = false;
+    /** Si es mayor que 0, el servidor responde con ese código HTTP de error (por ejemplo, 503). */
+    private volatile int codigoDeError = 0;
     private volatile int tokensDeRazonamiento = 0;
 
     @BeforeEach
@@ -75,7 +77,11 @@ class GeminiExtraccionTest {
             }
             int estado = 200;
             String respuesta = RESPUESTA.formatted(JSON_DEL_RECUERDO, tokensDeRazonamiento);
-            if (rechazarTipoJson && cuerpo.contains("responseMimeType")) {
+            if (codigoDeError > 0) {
+                estado = codigoDeError;
+                respuesta = "{\"error\":{\"code\":" + codigoDeError + ",\"message\":\"error de prueba\","
+                        + "\"status\":\"UNAVAILABLE\"}}";
+            } else if (rechazarTipoJson && cuerpo.contains("responseMimeType")) {
                 estado = 400;
                 respuesta = "{\"error\":{\"code\":400,\"message\":\"response_mime_type is not supported by this model\","
                         + "\"status\":\"INVALID_ARGUMENT\"}}";
@@ -145,6 +151,56 @@ class GeminiExtraccionTest {
         assertEquals(0.6, configuracion.get("temperature").asDouble(), 0.001);
         assertEquals(400, configuracion.get("maxOutputTokens").asInt());
         assertFalse(cuerpos.get(0).contains("responseMimeType"), cuerpos.get(0));
+    }
+
+    // ---------- Errores transitorios (contrato del grafo, 5.4, paso 6) ----------
+
+    private ModeloNoDisponibleException falla(int codigoHttp) {
+        codigoDeError = codigoHttp;
+        return assertThrows(ModeloNoDisponibleException.class, () -> modelo().responder("P", TURNOS, OPCIONES));
+    }
+
+    @Test
+    void unaRespuestaConCodigoTransitorioDelProveedorSeMarcaComoTransitoria() {
+        for (int codigo : new int[] { 429, 500, 502, 503, 504 }) {
+            assertTrue(falla(codigo).esTransitorio(), "El " + codigo + " es transitorio");
+        }
+    }
+
+    @Test
+    void unaRespuestaConCodigoNoTransitorioNoSeMarcaComoTransitoria() {
+        for (int codigo : new int[] { 400, 401, 402, 403, 404 }) {
+            assertFalse(falla(codigo).esTransitorio(), "El " + codigo + " no es transitorio");
+        }
+    }
+
+    @Test
+    void elMensajeDelErrorTransitorioNoCitaLaRespuestaDelProveedor() {
+        ModeloNoDisponibleException error = falla(503);
+
+        assertFalse(error.getMessage().contains("error de prueba"), error.getMessage());
+    }
+
+    @Test
+    void unCortePorTiempoNoEsTransitorio() {
+        demoraMs = 3000;
+        GeminiModeloConversacional modelo = modelo(Duration.ofSeconds(5), Duration.ofMillis(500), Duration.ofSeconds(2));
+
+        ModeloNoDisponibleException error = assertThrows(ModeloNoDisponibleException.class,
+                () -> modelo.responder("P", TURNOS, OPCIONES));
+
+        assertFalse(error.esTransitorio());
+    }
+
+    @Test
+    void laClaveFaltanteNoEsTransitoria() {
+        GeminiModeloConversacional sinClave = new GeminiModeloConversacional(null, null, new LimitadorDePedidos(Duration.ofSeconds(1)),
+                MODELO, 0.6, 400, 1500);
+
+        ModeloNoDisponibleException error = assertThrows(ModeloNoDisponibleException.class,
+                () -> sinClave.responder("P", TURNOS, OPCIONES));
+
+        assertFalse(error.esTransitorio());
     }
 
     @Test

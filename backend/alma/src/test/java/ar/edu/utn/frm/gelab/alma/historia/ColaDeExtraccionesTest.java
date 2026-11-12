@@ -80,7 +80,11 @@ class ColaDeExtraccionesTest {
     }
 
     private ColaDeExtracciones crear(ModeloConversacional modelo) {
-        ExtractorDeRecuerdos extractor = new ExtractorDeRecuerdos(modelo, new ConfiguracionHistoria(),
+        return crear(modelo, new ConfiguracionHistoria());
+    }
+
+    private ColaDeExtracciones crear(ModeloConversacional modelo, ConfiguracionHistoria configuracion) {
+        ExtractorDeRecuerdos extractor = new ExtractorDeRecuerdos(modelo, configuracion,
                 Clock.systemDefaultZone(), JsonMapper.builder().build());
         cola = new ColaDeExtracciones(extractor, recuerdos);
         return cola;
@@ -267,6 +271,98 @@ class ColaDeExtraccionesTest {
         verify(recuerdos, never()).guardar(any(), any());
         verify(recuerdos, never()).completar(any(), any());
         assertThat(cola.estaProcesando(1L)).isFalse();
+    }
+
+    // ---------- Intento devuelto (5.7) ----------
+
+    @Test
+    void siElModeloNoEstaDisponibleEnUnaRepreguntaSeDevuelveElIntento() {
+        ColaDeExtracciones cola = crear((instrucciones, turnos) -> {
+            throw new ModeloNoDisponibleException("sin modelo");
+        });
+
+        cola.encolar(repregunta(1));
+
+        assertThat(cola.esperarQueSeVacie(Duration.ofSeconds(5))).isTrue();
+        verify(recuerdos, times(1)).devolverIntento(any());
+        verify(recuerdos, never()).completar(any(), any());
+        assertThat(cola.estaProcesando(1L)).isFalse();
+    }
+
+    @Test
+    void conDosErroresTransitoriosSeReintentaUnaVezYDespuesSeDevuelveElIntento() {
+        AtomicInteger llamadas = new AtomicInteger();
+        ColaDeExtracciones cola = crear((instrucciones, turnos) -> {
+            llamadas.incrementAndGet();
+            throw new ModeloNoDisponibleException("503", null, true);
+        }, configuracionSinEspera());
+
+        cola.encolar(repregunta(1));
+
+        assertThat(cola.esperarQueSeVacie(Duration.ofSeconds(5))).isTrue();
+        assertThat(llamadas.get()).as("un pedido y un reintento").isEqualTo(2);
+        verify(recuerdos, times(1)).devolverIntento(any());
+    }
+
+    @Test
+    void siElReintentoTransitorioSirveSeCompletaElRecuerdoYElIntentoQuedaContado() {
+        AtomicInteger llamadas = new AtomicInteger();
+        ColaDeExtracciones cola = crear((instrucciones, turnos) -> {
+            if (llamadas.incrementAndGet() == 1) {
+                throw new ModeloNoDisponibleException("503", null, true);
+            }
+            return ModeloDePrueba.JSON_GENERICO;
+        }, configuracionSinEspera());
+
+        cola.encolar(repregunta(1));
+
+        assertThat(cola.esperarQueSeVacie(Duration.ofSeconds(5))).isTrue();
+        verify(recuerdos).completar(any(), any());
+        verify(recuerdos, never()).devolverIntento(any());
+    }
+
+    @Test
+    void conElJsonInvalidoDosVecesElIntentoSigueContado() {
+        ColaDeExtracciones cola = crear((instrucciones, turnos) -> "no es json");
+
+        cola.encolar(repregunta(1));
+
+        assertThat(cola.esperarQueSeVacie(Duration.ofSeconds(5))).isTrue();
+        verify(recuerdos, never()).completar(any(), any());
+        verify(recuerdos, never()).devolverIntento(any());
+    }
+
+    @Test
+    void unaExtraccionDelGuionConElModeloCaidoNoDevuelveNingunIntento() {
+        ColaDeExtracciones cola = crear((instrucciones, turnos) -> {
+            throw new ModeloNoDisponibleException("sin modelo");
+        });
+
+        cola.encolar(new TrabajoDeExtraccion(1L, "Ana", "Pérez", LocalDate.of(1950, 5, 12), 7,
+                "¿Qué te acordás de tu escuela primaria?", 6, 12, "Me acuerdo de Elena"));
+
+        assertThat(cola.esperarQueSeVacie(Duration.ofSeconds(5))).isTrue();
+        verify(recuerdos).guardar(any(), any());
+        verify(recuerdos, never()).devolverIntento(any());
+    }
+
+    @Test
+    void siFallaDevolverElIntentoLaPersonaDejaDeEstarProcesando() {
+        doThrow(new IllegalStateException("falló el grafo")).when(recuerdos).devolverIntento(any());
+        ColaDeExtracciones cola = crear((instrucciones, turnos) -> {
+            throw new ModeloNoDisponibleException("sin modelo");
+        });
+
+        cola.encolar(repregunta(1));
+
+        assertThat(cola.esperarQueSeVacie(Duration.ofSeconds(5))).isTrue();
+        assertThat(cola.estaProcesando(1L)).isFalse();
+    }
+
+    private static ConfiguracionHistoria configuracionSinEspera() {
+        ConfiguracionHistoria configuracion = new ConfiguracionHistoria();
+        configuracion.setExtraccionReintentoEsperaMs(0);
+        return configuracion;
     }
 
     @Test

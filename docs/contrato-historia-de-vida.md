@@ -1,12 +1,31 @@
 # Contrato de historia de vida (rama B): línea de tiempo, guion en el chat y recuerdos en el prompt
 
-**Versión:** 4
+**Versión:** 5 (12/11/2026)
 **Rama:** `feature/historia-de-vida` (back y front)
 **Parte de:** `feature/grafo` (ver 2.12 y 15)
-**Complementa a:** `docs/contrato-grafo.md` (grafo, guion, extracción y repreguntas, endpoints 7.1 a 7.7) y `docs/contrato-chat.md` (chat).
+**Complementa a:** `docs/contrato-grafo.md` (grafo, guion, extracción y repreguntas, endpoints 7.1 a 7.7), `docs/contrato-chat.md` (chat) y, desde la v5, `docs/contrato-mapa-de-vida.md` (mapa por etapas, descarga y mejoras del chat).
 **Casos de uso:** CU-02 (criterio de aceptación Nº 4), CU-03 (caminos A y B) y CU-04, en `docs/casos-de-uso.md`. Este contrato los sigue tal como están escritos: no hace falta modificarlos.
+**Versión 5:** el contrato del mapa de vida (`docs/contrato-mapa-de-vida.md`) reemplaza o amplía partes de este. Cada sección afectada lleva un aviso **«v5»** al principio con un puntero al texto vigente; el texto de la v4 que queda debajo de un aviso «reemplazada» es solo histórico. **Si algo de acá contradice al contrato del mapa de vida, gana el del mapa de vida.**
 
 Este contrato cierra la última funcionalidad: lo que la persona mayor **ve y hace** con la historia de vida. El grafo, el guion, la extracción de recuerdos y las repreguntas ya existen en el back (rama `feature/grafo`). Acá se agregan: la línea de tiempo y el detalle de un recuerdo (back y front), el guion y las repreguntas dentro del chat (front), la tarjeta de pregunta pendiente, y los recuerdos y el progreso dentro del prompt del chat (back).
+
+---
+
+### Qué cambió en la v5
+
+| Sección de este contrato | Estado en la v5 | Dónde está lo vigente |
+|---|---|---|
+| 2.1 Objetivo activo y `preguntaOrigenId` | **Ampliada**: suma el `recuerdoEnCursoId` | 2.7 del mapa de vida |
+| 2.2 Invitación con texto fijo | **Reemplazada**: ya no es automática | 2.8 del mapa de vida |
+| 2.3 Espera y repregunta | **Ajustada**: consulta más seguido y la repregunta lleva una apertura | 2.10 y 2.11 |
+| 2.5 Botones del modo guion | **Ajustada**: burbujas de lo que se toca y respuestas fijas de Alma | 2.9 |
+| 2.6 Línea de tiempo: camino de paradas | **Reemplazada** por el mapa por etapas | 2.1 a 2.4 |
+| 2.6.1 Cómo se muestra el año | **Se mantiene** | 2.2 |
+| 2.7 Detalle del recuerdo | **Ampliada**: "Respondiste a…" y "Seguir completando" | 2.6 y 2.7 |
+| 5.4 Pregunta pendiente (B3) | **Se mantiene**; la tarjeta pasa arriba del mapa | 2.1 |
+| 6 Textos | **Ampliada** (y se dejan de usar "Ver recuerdos anteriores (N)" y "Sin fecha") | sección 4 |
+| 7.3 y 7.4 | **Ampliados**: `faltantes` y `preguntaTexto` (ya integrados abajo) | 3.1 y 3.2 |
+| 11.2, 11.4, 11.7 y 11.8 | **Reemplazadas** (resumen vigente abajo) | sección 5 |
 
 ---
 
@@ -19,7 +38,7 @@ Este contrato cierra la última funcionalidad: lo que la persona mayor **ve y ha
 | **B1. Línea de tiempo** | Pantalla `/historia-de-vida` con los recuerdos como camino de paradas en orden cronológico y la sección "Sin fecha". Dos endpoints nuevos de lectura. |
 | **B2. Detalle del recuerdo** | Pantalla `/historia-de-vida/:recuerdoId` con título, descripción, fecha, personas y lugares. |
 | **B3. Pregunta pendiente** | Tarjeta "Próxima parada" al final del camino. Al tocarla se abre el chat con la pregunta como mensaje de Alma (CU-03, camino básico B). |
-| **B4. Guion en el chat** | "Modo guion" en el chat: la invitación (CU-02, criterio Nº 4), las respuestas, los botones "Otra pregunta" y "Volver a Historia de vida", la espera de la extracción y las repreguntas, todo en la conversación. |
+| **B4. Guion en el chat** | "Modo guion" en el chat: la invitación (CU-02, criterio Nº 4; desde la v5, a pedido y con un botón fijo), las respuestas, los botones "Otra pregunta" y "Volver a Historia de vida", la espera de la extracción y las repreguntas, todo en la conversación. |
 | **B5. Recuerdos en el prompt** | `{progreso}` y `{recuerdos}` del prompt del chat dejan de decir "No hay información." cuando hay datos. |
 | **B6. Alarmas en el guion** | Las respuestas del guion pasan por el detector de riesgo del chat antes de extraer (ver 2.9). Ajusta 7.3 y 7.6 del contrato del grafo. |
 | **B7. Cierre** | Accesibilidad, pruebas, actualización de documentos (ver 14). |
@@ -44,11 +63,13 @@ El chat es la pantalla donde la persona conversa; el guion se responde ahí. Per
   - `{ tipo: "PREGUNTA", preguntaId }` cuando Alma hizo una pregunta del guion.
   - `{ tipo: "REPREGUNTA", recuerdoId, dato }` cuando Alma hizo una repregunta (`dato` es `ANIO`, `LUGARES` o `PERSONAS`).
   - `null` cuando se conversa normal.
-- Además guarda el **`preguntaOrigenId`**: el id de la pregunta del guion que dio origen a la charla actual. Hace falta para pedir la siguiente repregunta (`GET /repreguntas/siguiente?preguntaId=`): sin ese id, el back busca en todos los recuerdos y puede devolver uno de otra pregunta. Se fija al mostrar una pregunta del guion y se mantiene mientras dure la charla (preguntas y repreguntas de ese recuerdo).
+- Además guarda el **`preguntaOrigenId`**: el id de la pregunta del guion que dio origen a la charla actual. Hace falta para pedir la siguiente repregunta (`GET /repreguntas/siguiente?preguntaId=`): sin ese id, el back busca en todos los recuerdos y puede devolver uno de otra pregunta. Se fija al mostrar una pregunta del guion y se mantiene mientras dure la charla (preguntas y repreguntas de ese recuerdo). **v5:** cuando la charla empieza desde "Seguir completando este recuerdo" no hay pregunta de origen: se guarda en su lugar el **`recuerdoEnCursoId`** y las repreguntas se piden con `recuerdoId=` (el chat usa uno u otro, nunca los dos; ver 2.7 del mapa de vida).
 - Con un objetivo activo, el campo de texto envía a `/api/historia/...` (7.1 o 7.2) en lugar de `/api/chat/mensajes`.
 - El estado vive solo en memoria del `ChatProvider` (igual que los mensajes del chat): si se recarga la página, se pierde y el chat vuelve a modo normal. La pregunta no se pierde en el back: sigue pendiente y vuelve a ofrecerse.
 
 ### 2.2 La invitación es un mensaje de Alma con texto fijo
+
+> **v5: reemplazada** por 2.8 del contrato del mapa de vida. La invitación automática (después de la primera respuesta de Alma) **ya no existe**: aparecía en medio de la conversación. Ahora hay un **botón fijo** "Seguir mi historia de vida" (compacto en celular) y la invitación solo se muestra **a pedido**, cuando la persona escribe que quiere seguir con su historia. El texto de la invitación y sus botones "Sí" y "Ahora no" no cambian. Lo que sigue es el texto de la v4, solo como referencia histórica.
 
 CU-02 (9.3 y camino alterno Nº 4) pide que Alma ofrezca continuar con la historia de vida cuando hay preguntas pendientes, y da un ejemplo de texto. Para que sea predecible y no gaste una llamada al modelo, la invitación **no la genera el modelo**: el front la muestra como un mensaje de Alma **a continuación de su respuesta**, con botones.
 
@@ -65,21 +86,25 @@ La invitación aparece **una sola vez por visita** (una visita = mientras el `Ch
 
 ### 2.3 Qué pasa después de responder (espera y repregunta)
 
+> **v5: ajustada** por 2.10 y 2.11 del contrato del mapa de vida (se integra abajo): la consulta es más ágil y la primera repregunta de cada recuerdo lleva una frase de apertura.
+
 Al responder una pregunta (7.1) el back devuelve enseguida y la extracción corre en segundo plano (ver 5.4 del contrato del grafo). El front:
 
 1. Muestra el indicador de espera existente ("Alma está pensando…", `ALMA_PENSANDO`). No dice nada del grafo ni de la extracción: es la misma espera de cualquier respuesta de Alma.
-2. Consulta `GET /api/historia/repreguntas/siguiente?preguntaId=<preguntaOrigenId>` **cada 2 segundos** mientras la respuesta sea `PROCESANDO`.
-3. Si responde `HAY`: muestra la repregunta como mensaje de Alma y activa el objetivo `REPREGUNTA`.
+2. Consulta `GET /api/historia/repreguntas/siguiente?preguntaId=<preguntaOrigenId>` **cada 1 segundo durante los primeros 10 segundos y cada 2 segundos después** (v5) mientras la respuesta sea `PROCESANDO`.
+3. Si responde `HAY`: muestra la repregunta como mensaje de Alma y activa el objetivo `REPREGUNTA`. **v5:** antes de la **primera** repregunta de cada recuerdo en la charla va una frase de apertura fija que nombra el recuerdo (`repregunta.tituloRecuerdo`; si el título está vacío o parece una pregunta no se cita), en un párrafo aparte del mismo mensaje (2.11 del mapa de vida).
 4. Si responde `NINGUNA`: muestra el texto de cierre (ver 6) y desactiva el objetivo. La persona elige "Contarte algo más" (vuelve a conversar normal) u "Otra pregunta" (se pide `/guion/proxima`).
 5. Tope de espera: **60 segundos**. La extracción puede hacer hasta 2 llamadas al modelo de 25 s cada una, y comparte el modelo con el chat, así que el peor caso ronda los 50 s. Si se cumple el tope sin salir de `PROCESANDO`, se sigue como si fuera `NINGUNA` (sin repregunta). El recuerdo igual se guarda en el back cuando la extracción termina.
 
-Los valores de 2 s y 60 s son constantes del front (ver 11.4) y se ajustan en las pruebas.
+Los valores son constantes del front (v5: `INTERVALO_ESPERA_INICIAL_MS = 1000`, `DURACION_ESPERA_INICIAL_MS = 10000`, `INTERVALO_ESPERA_MS = 2000` y `TOPE_ESPERA_MS = 60000`; ver 11.4) y se ajustan en las pruebas.
 
 ### 2.4 "Una repregunta por charla" lo resuelve el front
 
 Igual que en 5.7 del contrato del grafo: el front manda `excluir` con los datos ya preguntados para ese recuerdo en la charla actual. Después de responder o saltear una repregunta, se vuelve a esperar y a pedir la siguiente, **una vez por dato**, hasta que el back responda `NINGUNA`. No se agregan reglas nuevas en el back.
 
 ### 2.5 Botones del modo guion (siguen el Figma)
+
+> **v5: ajustada** por 2.9 del contrato del mapa de vida (se integra al final de esta sección). Los botones y sus textos no cambian.
 
 Con una **pregunta** del guion en pantalla, debajo del mensaje de Alma aparecen dos botones grandes con texto:
 
@@ -92,7 +117,15 @@ Encima de los botones va el texto de ayuda del Figma: "Contame con calma. Si hoy
 
 Si no quedan preguntas (`quedanPendientes: false` en `/guion/proxima`), se muestra el `mensajeFinal` del back y se desactiva el objetivo.
 
+**Botones de la invitación y del cierre.** La **invitación** ("¿Seguimos completando tu historia de vida?") lleva **Sí** y **Ahora no**. El **cierre** (cuando no hay más repreguntas: "¿Querés contarme algo más sobre esto o te hago otra pregunta?") lleva **Contarte algo más** (vuelve a conversar normal) y **Otra pregunta** (pide `/guion/proxima`, sin salteo: la pregunta anterior ya está respondida). Son botones grandes con texto, como los demás.
+
+**v5: lo que se toca deja constancia y Alma contesta.**
+- Cada botón tocado deja una **burbuja local de la persona** con el texto del botón (`origen: "ACCION"`): "Sí", "Ahora no", "Otra pregunta" (debajo de una pregunta o en el cierre), "Saltear", "Contarte algo más" y, del botón fijo, "Seguir mi historia de vida". Esas burbujas **no viajan al modelo** (ni en `conversacion` ni a `/api/historia`) y **no cuentan** como que la persona "ya escribió" (`yaEscribio`). Al tocar un botón, los botones de ese mensaje se retiran. "Volver a Historia de vida" y "Ver mi historia de vida" **navegan** y no dejan burbuja.
+- Después de "Contarte algo más" y de "Ahora no", **Alma responde con un mensaje fijo, sin llamar al modelo**, que rota entre tres variantes (textos en la sección 4 del mapa de vida). Los demás botones no lo necesitan: ya reciben una pregunta, una repregunta o el indicador de espera. Escribir sin contestar la invitación (el "Ahora no" implícito) no tiene respuesta fija: contesta el modelo.
+
 ### 2.6 Línea de tiempo: camino de paradas (sigue el Figma)
+
+> **v5: reemplazada** por 2.1 a 2.4 del contrato del mapa de vida: la pantalla es un **mapa por etapas de la vida** (infancia, adolescencia, juventud, adultez, vejez y "Otros momentos") con un panel para ver los recuerdos de cada etapa, una lista para letra Grande o Muy grande y una imagen descargable (2.5). **Se dejan de usar** las paradas numeradas por recuerdo, "Ver recuerdos anteriores (N)" y la sección "Sin fecha". El texto que sigue es el de la v4 y queda solo como referencia histórica. El Figma de esta pantalla ya no es la referencia (ver 8 del mapa de vida).
 
 Los datos son una lista plana cronológica; el Figma la dibuja como un camino con paradas numeradas.
 
@@ -106,6 +139,8 @@ Los datos son una lista plana cronológica; el Figma la dibuja como un camino co
 
 ### 2.6.1 Cómo se muestra el año
 
+> **v5: se mantiene** (`formatearAnio`); se usa en el panel de la etapa y en el detalle (2.2 del mapa de vida).
+
 Según la `precision` del recuerdo:
 
 | Precisión | Se muestra |
@@ -114,13 +149,17 @@ Según la `precision` del recuerdo:
 | `CALCULADA_POR_EDAD` | `1957` |
 | `APROXIMADA` | `Alrededor de 1957` |
 | `ESTIMADA` | `Alrededor de 1957` |
-| (sin año) | Sección "Sin fecha"; no se muestra año |
+| (sin año) | No se muestra año (v5: el recuerdo va a su etapa o, si no tiene etapa, a "Otros momentos"; ya no existe la sección "Sin fecha") |
 
 (`CALCULADA_POR_EDAD` se muestra como año simple porque sale de una cuenta con la fecha de nacimiento y la edad que dijo la persona.)
 
 ### 2.7 Detalle del recuerdo: ruta propia
 
+> **v5: ampliada** por 2.6 y 2.7 del contrato del mapa de vida (se integra al final de esta sección).
+
 El detalle es la ruta `/historia-de-vida/:recuerdoId`, con botón "Volver" (`EnlaceVolver`). El id es un UUID (String), no numérico: hace falta un hook de ruta nuevo (ver 11.3), porque `useIdDeRuta` solo acepta números.
+
+**v5.** El detalle agrega, debajo del título y en tono secundario, **"Respondiste a: «{preguntaTexto}»"** (solo si `preguntaTexto` no es nulo) y, si `faltantes` no está vacío, el botón **"Seguir completando este recuerdo"**, que también está en cada fila del panel de la etapa. El botón no edita el recuerdo (CU-04 sigue sin permitir editar): lleva a la conversación con Alma, que es donde se contestan las repreguntas. Pide `GET /repreguntas/siguiente?recuerdoId=`, espera si hay una extracción en curso o si el chat está ocupado, y con `HAY` navega al chat con la apertura y la repregunta; con `NINGUNA` avisa en la misma pantalla "Por ahora no tengo más para preguntarte de este recuerdo.".
 
 ### 2.8 Dos endpoints de lectura nuevos
 
@@ -216,6 +255,8 @@ Si P10 no devuelve ningún recuerdo (P11 no se implementa: una consulta más par
 
 ### 5.4 Pregunta pendiente (B3)
 
+> **v5: se mantiene**, pero la tarjeta "Próxima parada" va **arriba del mapa**, debajo del título y en formato compacto, en lugar de al final del camino (2.1 del mapa de vida). Su comportamiento no cambia.
+
 La tarjeta "Próxima parada" aparece al final del camino cuando `GET /api/historia/guion/estado` informa preguntas pendientes. No muestra el texto de la pregunta (como en el Figma). Al tocar "Seguir escribiendo":
 
 1. Se pide `GET /api/historia/guion/proxima`.
@@ -304,11 +345,13 @@ El campo del chat corta en 500 caracteres (`LIMITE_MENSAJE`). En modo guion el c
 
 ## 6. Textos
 
+> **v5: ampliada** por la sección 4 del contrato del mapa de vida (mapa, panel, descarga, botón fijo, respuestas fijas de Alma y aperturas de repregunta). Se **dejan de usar** "Ver recuerdos anteriores (N)" y "Sin fecha".
+
 ### Del front (fijos)
 
 | Dónde | Texto |
 |---|---|
-| Invitación en el chat | "¿Seguimos completando tu historia de vida?" |
+| Invitación en el chat (v5: solo a pedido) | "¿Seguimos completando tu historia de vida?" |
 | Botón de la invitación (acepta) | "Sí" |
 | Botón de la invitación (rechaza) | "Ahora no" |
 | Introducción y pregunta del guion | Las del back (`introduccion` y `pregunta.texto` de `/guion/proxima`) |
@@ -321,8 +364,8 @@ El campo del chat corta en 500 caracteres (`LIMITE_MENSAJE`). En modo guion el c
 | Botones del cierre | "Contarte algo más" / "Otra pregunta" |
 | Cuando ya no quedan preguntas | El `mensajeFinal` del back |
 | Título de la pantalla | "Historia de vida" |
-| Botón de recuerdos ocultos (móvil) | "Ver recuerdos anteriores (N)" |
-| Sección sin año | "Sin fecha" |
+| ~~Botón de recuerdos ocultos (móvil)~~ | ~~"Ver recuerdos anteriores (N)"~~ (ya no se usa, v5) |
+| ~~Sección sin año~~ | ~~"Sin fecha"~~ (ya no se usa, v5: "Otros momentos") |
 | Prefijo de año aproximado | "Alrededor de" |
 | Estado vacío de la línea de tiempo | "Todavía no tenemos recuerdos. Respondé las preguntas de Alma y van a aparecer acá." |
 | Tarjeta de pregunta pendiente | "Próxima parada" / "Alma tiene una pregunta" / botón "Seguir escribiendo" |
@@ -350,7 +393,7 @@ Base: `/api/historia`. Todos requieren rol `PERSONA_MAYOR`.
 
 Antes: `202 Accepted` sin cuerpo. Ahora, con cuerpo:
 
-- `202 Accepted`: la respuesta se guardó y la extracción quedó encolada. El front empieza la espera (2.3).
+- `202 Accepted`: la respuesta se guardó y la extracción quedó encolada. El front empieza la espera (2.3). **Excepción (contrato del grafo, v19):** si la respuesta solo dice que la persona no recuerda, no sabe o no quiere contar ("No me acuerdo"), no se crea ningún recuerdo: la pregunta queda **salteada** y no se encola nada, pero la respuesta es la misma `202 ACEPTADA`. El front no hace nada distinto: la espera (2.3) da `NINGUNA` al primer intento y sigue el cierre de siempre. Las repreguntas (7.2) con ese tipo de respuesta cuentan el intento y no consultan al modelo.
 
 ```json
 { "estado": "ACEPTADA" }
@@ -389,7 +432,8 @@ Listado para la línea de tiempo. Ordenado según 5.1.
       "anio": 1957,
       "precision": "APROXIMADA",
       "etapaDeVida": "INFANCIA",
-      "resumen": "Su maestra de primer grado, que le enseñó a leer."
+      "resumen": "Su maestra de primer grado, que le enseñó a leer.",
+      "faltantes": ["ANIO", "LUGARES"]
     },
     {
       "id": "…",
@@ -397,13 +441,15 @@ Listado para la línea de tiempo. Ordenado según 5.1.
       "anio": null,
       "precision": null,
       "etapaDeVida": null,
-      "resumen": "…"
+      "resumen": "…",
+      "faltantes": []
     }
   ]
 }
 ```
 
 - `resumen` es la `descripcion` cortada a 140 caracteres (con "…" si se cortó).
+- `faltantes` (v5, `docs/contrato-mapa-de-vida.md`, 3.1): los datos que se pueden seguir completando en ese recuerdo (`"ANIO"`, `"LUGARES"`, `"PERSONAS"`), en el orden de la lista `repreguntas` de su pregunta de origen. Un dato figura cuando es candidato según 5.7 del contrato del grafo (sin considerar `excluir`): está en esa lista, falta y se preguntó menos de 2 veces. Si no hay ninguno, o el recuerdo no tiene pregunta de origen, `[]`. Se arma en la misma lectura de la lista, sin consultas por recuerdo.
 - Lista vacía → `{ "recuerdos": [] }` con 200.
 - El back ya los devuelve en el orden correcto; el front separa los que tienen `anio` (camino) de los que no (sección "Sin fecha").
 
@@ -422,11 +468,15 @@ Listado para la línea de tiempo. Ordenado según 5.1.
   ],
   "lugares": [
     { "id": "…", "nombre": "Escuela N° 12" }
-  ]
+  ],
+  "faltantes": ["ANIO"],
+  "preguntaTexto": "¿Qué te acordás de tu escuela primaria?"
 }
 ```
 
 - `personas` y `lugares`: listas, vacías si no hay.
+- `faltantes` (v5, `docs/contrato-mapa-de-vida.md`, 3.2): igual que en 7.3.
+- `preguntaTexto` (v5): el texto de la pregunta del guion de la que surgió el recuerdo (relación `SURGIO_DE`); `null` si no se encuentra.
 - `vinculo`: puede ser `null`.
 - 404 si el recuerdo no existe o no es de la persona (5.2).
 
@@ -533,17 +583,18 @@ Se sigue el patrón de `features/lecturas/` y el modelo de `features/entretenimi
 
 ### 11.2 Pantallas
 
-**`HistoriaDeVidaPage`** (`/historia-de-vida`, reemplaza a `PaginaProvisoria`):
+> **v5: reemplazada** por 5.1 y 5.2 del contrato del mapa de vida. Lo vigente:
 
-1. Título "Historia de vida".
-2. En móvil (por debajo de `lg`, ver 2.6), botón "Ver recuerdos anteriores (N)" si hay más de 3 recuerdos con año.
-3. `CaminoDeRecuerdos`: una `ParadaDeRecuerdo` numerada por cada recuerdo con año, en orden (2.6), y al final `TarjetaProximaParada` si hay pregunta pendiente (5.4).
-4. `SeccionSinFecha` debajo, si hay recuerdos sin año.
-5. Estado vacío (6) si no hay recuerdos.
+**`HistoriaDeVidaPage`** (`/historia-de-vida`), de arriba hacia abajo:
+
+1. Cabecera: título "Historia de vida", subtítulo "Tu camino, etapa por etapa" y, a la derecha, el botón "Descargar" (imagen cuadrada, 2.5 del mapa de vida).
+2. La tarjeta compacta `TarjetaProximaParada` si hay pregunta pendiente (5.4).
+3. El estado vacío (6) si no hay recuerdos; el mapa se muestra igual, con las etapas vacías.
+4. Con letra **Normal**, `MapaDeVida` (camino con una bandera por etapa); con letra **Grande o Muy grande**, `ListaDeEtapas`. Cada parada es un único botón.
+5. `PanelDeEtapa` con los recuerdos de la etapa elegida: hoja inferior en celular (`role="dialog"`) y columna fija en escritorio (desde `lg`). Cada fila lleva al detalle y, si hay `faltantes`, suma "Seguir completando este recuerdo".
 6. Estados de carga y de error con las constantes existentes (`ESTADO_CARGANDO`, `ACCION_PROBAR_DE_NUEVO`).
-7. Cada parada es un enlace a `/historia-de-vida/:recuerdoId`.
 
-**`RecuerdoDetallePage`** (`/historia-de-vida/:recuerdoId`): `EnlaceVolver`, título, año (con `formatearAnio`), descripción, "Con quién" y "Dónde" (solo si hay). 404 → `MENSAJE_NO_ENCONTRADO`.
+**`RecuerdoDetallePage`** (`/historia-de-vida/:recuerdoId`): `EnlaceVolver`, título, "Respondiste a: «…»" (si hay), año (con `formatearAnio`), descripción, "Seguir completando este recuerdo" (si hay `faltantes`), "Con quién" y "Dónde" (solo si hay). 404 → `MENSAJE_NO_ENCONTRADO`.
 
 ### 11.3 Hook de id de ruta
 
@@ -551,18 +602,18 @@ Se sigue el patrón de `features/lecturas/` y el modelo de `features/entretenimi
 
 ### 11.4 Chat: modo guion
 
-Cambios en `features/chat`:
+> **v5: reemplazada** por 5.2 del contrato del mapa de vida (el `ChatProvider` y `ChatPage`). Lo vigente en `features/chat`:
 
-- `contexto.ts` / `ChatProvider`: agregar al estado el **objetivo activo** y el `preguntaOrigenId` (2.1), `invitacionMostrada`, `invitacionRechazada`, `huboAlarma` y el estado de espera (`esperandoRepregunta`). Exponer: `objetivoActivo`, `responderGuion(texto)`, `otraPregunta()`, `saltearRepregunta()`, `volverAHistoria()`, `abrirPreguntaDelGuion()` (la usa la tarjeta de la pantalla de historia), `aceptarInvitacion()`, `rechazarInvitacion()`.
-- `enviar(texto)`: si hay objetivo activo, llama a 7.1 o 7.2 en lugar de `/chat/mensajes`; si no, igual que hoy.
-- Si la respuesta es `ALARMA` (200): se muestra `respuesta` como mensaje de Alma, se limpia el objetivo y se marca `huboAlarma`.
-- Si es `ACEPTADA` (202): se muestra el mensaje de la persona y se arranca la espera (2.3) con constantes `INTERVALO_ESPERA_MS = 2000` y `TOPE_ESPERA_MS = 60000`.
-- `CampoMensaje`: en modo guion `maxLength` es 1000 (5.9) y un envío vacío muestra el texto de 5.8.
-- `ChatPage`: en modo guion muestra, debajo del mensaje de Alma, los botones de 2.5. La pregunta del guion se muestra como mensaje de Alma con la introducción y la pregunta destacada, como en el Figma.
-- `InvitacionHistoria`: se muestra según 2.2.
-- Se mantiene el límite de 45 s de `enviarMensaje` solo para el chat; la espera de la extracción tiene su propio tope.
+- **Estado del `ChatProvider`** (en memoria): el **objetivo activo** (`PREGUNTA` o `REPREGUNTA`), la pregunta de origen (`preguntaOrigenId`) **o** el `recuerdoEnCursoId` (nunca los dos), `invitacionPendiente`, `cierrePendiente`, `huboAlarma`, `esperandoRepregunta` y `ocupadoGuion`. Las banderas `invitacionMostrada` e `invitacionRechazada` de la v4 **ya no deciden** si la invitación se ofrece (2.2).
+- **Expuesto al resto de la app:** `objetivoActivo`, `mostrarBotonSeguirHistoria`, `seguirMiHistoria()` (el botón fijo), `seguirCompletando(recuerdoId)`, `abrirPreguntaDelGuion()` (la tarjeta "Próxima parada"), `aceptarInvitacion()`, `rechazarInvitacion()`, `otraPregunta()`, `otraPreguntaDespuesDelCierre()`, `contarAlgoMas()`, `saltearRepregunta()` y `volverAHistoria()`.
+- `enviar(texto)`: con objetivo activo llama a 7.1 o 7.2 en lugar de `/chat/mensajes`; si no, igual que hoy (el detector de riesgo del back sigue funcionando). Si el chat responde **sin alarma** y el texto cumple `pideSeguirConLaHistoria` (función pura de `features/historia`), se pide `/guion/estado` **fresco** y se agrega la **invitación a pedido** (con pendientes) o el aviso "Ya respondiste todas las preguntas de tu historia…" con el botón "Ver mi historia de vida" (sin pendientes). Con una alarma en la visita no se ofrece nada.
+- Si la respuesta del guion es `ALARMA` (200): se muestra `respuesta` como mensaje de Alma, se limpia el objetivo y se marca `huboAlarma`. Si es `ACEPTADA` (202): empieza la espera (2.3) con las cuatro constantes de 2.3.
+- Las **burbujas de acciones** y las **respuestas fijas** de Alma (2.5) son mensajes locales: no viajan en `conversacion` (ni los mensajes `INVITACION`, `CIERRE`, `SIN_PENDIENTES` y `RESPUESTA_FIJA`).
+- Se **invalida** la consulta de historia (TanStack Query) al terminar cada espera de extracción y al volver a Historia de vida, para que el mapa muestre la etapa, el año y los datos pendientes actualizados.
+- `BotonSeguirHistoria` (botón fijo, 2.8 a): desde `lg`, botón de texto sobre el campo; por debajo de `lg`, un círculo de 56 px con el ícono de Historia de vida que flota arriba del campo y, al tocarlo, despliega el botón completo; se oculta con el teclado abierto.
+- `CampoMensaje`: en modo guion `maxLength` es 1000 (5.9) y un envío vacío muestra el texto de 5.8. Se mantiene el límite de 45 s de `enviarMensaje` solo para el chat; la espera de la extracción tiene su propio tope.
 
-Los mensajes del modo guion se agregan a la misma lista de mensajes del chat, con el mismo formato (`MensajeAlma` para Alma).
+Los mensajes del modo guion se agregan a la misma lista de mensajes del chat (`MensajeAlma` para Alma, `MensajePersona` para la persona y para sus burbujas de acciones).
 
 ### 11.5 `lib/api.ts`
 
@@ -577,21 +628,24 @@ No se toca. 7.1 y 7.2 devuelven siempre cuerpo (`202` o `200`) y los salteos dev
 
 ### 11.7 Accesibilidad
 
-- Botones grandes y con texto (nada de solo íconos) en "Sí", "Ahora no", "Otra pregunta", "Volver a Historia de vida", "Saltear" y las opciones de cierre.
-- Las paradas del camino se navegan con teclado y tienen nombre accesible (título + año). El número de la parada y la línea punteada son decorativos.
-- El indicador "Alma está pensando…" se anuncia a lectores de pantalla (`aria-live="polite"`).
-- Los mensajes nuevos de Alma (invitación, repregunta, cierre) se anuncian igual que los del chat.
+> **v5: reemplazada** por 2.4 del contrato del mapa de vida. Lo vigente:
+
+- Botones grandes y con texto en "Sí", "Ahora no", "Otra pregunta", "Volver a Historia de vida", "Saltear", las opciones de cierre, "Ver mi historia de vida" y "Seguir completando este recuerdo" (de al menos 44 px). **Única excepción:** el botón fijo compacto del celular es un círculo con ícono, pero su nombre accesible es el completo ("Seguir mi historia de vida"), tiene `aria-expanded` y se despliega en el botón de texto.
+- Las paradas del mapa son **botones reales** con nombre accesible ("Infancia, 3 recuerdos" / "Infancia, sin recuerdos"), se recorren con Tab y se activan con Enter o espacio. El dibujo (camino, ilustraciones, mástiles) es decorativo y los lectores de pantalla lo ignoran; los nombres y títulos son texto real, en `rem`.
+- Con letra Grande o Muy grande el mapa pasa a una lista; con alto contraste cambian los colores y la etapa nunca se reconoce solo por el color.
+- La hoja del panel es un diálogo (`role="dialog"`, `aria-modal`, `aria-labelledby`): el foco pasa al título, queda adentro y vuelve a la parada; se cierra con el botón, Escape o tocando fuera.
+- Las animaciones (aviso "Tocá una bandera…" y puntos que laten) respetan `prefers-reduced-motion`.
+- El indicador "Alma está pensando…" se anuncia a lectores de pantalla (`aria-live="polite"`) y los mensajes nuevos de Alma (invitación, repregunta, cierre, respuestas fijas) se anuncian igual que los del chat.
 
 ### 11.8 Diferencias con el Figma
 
-El contrato sigue el Figma en la línea de tiempo (camino con paradas, "Ver recuerdos anteriores", parada "?"), en la tarjeta de pregunta pendiente y en los botones del chat. Estas son las únicas diferencias:
+> **v5: reemplazada.** **El Figma ya no es la referencia de la pantalla de Historia de vida** (mapa por etapas, panel, lista para letra grande, imagen descargable, botón fijo y burbujas del chat): lo son el contrato del mapa de vida y las imágenes de `docs/referencias/`. El Figma se actualiza al final (sección 8 del mapa de vida). Lo que sigue valiendo de la v4:
 
 | Figma | Contrato | Por qué |
 |---|---|---|
 | El chat con pregunta abre con "Seguimos con tu historia, Laura. Me quedé pensando en una cosa." | Se usa la introducción fija del back (primera vez, "Está bien, pasemos a otra." o una de tres frases) | CU-03 define esas introducciones como texto fijo sin consultar al modelo. |
-| No hay lugar para recuerdos sin año | Sección "Sin fecha" debajo del camino | El back puede devolver recuerdos sin año. |
 
-Pantallas y estados que **no están en el Figma** y se resuelven con los componentes existentes del chat y de la app: detalle de un recuerdo, estado vacío de la línea de tiempo, invitación del chat, indicador de espera de la repregunta, repreguntas (con su botón "Saltear") y cierre ("¿Querés contarme algo más…?").
+Pantallas y estados que **no están en el Figma** y se resuelven con los componentes existentes: detalle de un recuerdo, estado vacío del mapa, invitación a pedido, indicador de espera de la repregunta, repreguntas (con su botón "Saltear"), cierre ("¿Querés contarme algo más…?") y respuestas fijas de Alma.
 
 ---
 
@@ -634,6 +688,8 @@ Pantallas y estados que **no están en el Figma** y se resuelven con los compone
 
 ### Front (manual, como en los otros módulos)
 
+> **v5:** los puntos 1, 2 y 5 de esta lista quedan **reemplazados** por la checklist de la sección 6 del contrato del mapa de vida (mapa por etapas, panel, accesibilidad, descarga, botón fijo, invitación a pedido, burbujas, espera y repreguntas, "Seguir completando"). El resto sigue valiendo.
+
 1. Línea de tiempo con recuerdos con y sin año; "Alrededor de" solo en aproximada y estimada; numeración de las paradas.
 2. Móvil: solo las 3 últimas paradas y "Ver recuerdos anteriores (N)" despliega el resto; escritorio: todas.
 3. Estado vacío.
@@ -666,13 +722,15 @@ Pantallas y estados que **no están en el Figma** y se resuelven con los compone
 - `CLAUDE.md`: enlazar este contrato.
 - Este contrato: pasar a "implementado" con la versión final.
 
+**Estado (v5, 12/11/2026):** los puntos anteriores están hechos (`contrato-grafo.md` ya tiene 5.9, 7.3, 7.5 y 7.6 al día hasta su v17; `casos-de-uso.md` tiene el estado del front de CU-02, CU-03 y CU-04; `CLAUDE.md` enlaza este contrato y el del mapa de vida) y este contrato queda en la **versión 5**. Lo que falta de la v5 está en el contrato del mapa de vida: la prueba manual completa contra el back real y el Figma (sección 8).
+
 ---
 
 ## 15. Límites conocidos y riesgos
 
 1. **Base `feature/grafo`.** Si la revisión de esa rama cambia el back de historia, este contrato se reabre (2.12).
-2. **Estado en memoria.** El objetivo activo, el `preguntaOrigenId`, la invitación y la espera viven en el `ChatProvider`; recargar la página los pierde (la pregunta sigue pendiente en el back).
-3. **Extracción lenta.** Si el modelo tarda más de 60 s, la repregunta se pierde para esa charla (el recuerdo sí se guarda). Los 2 s y 60 s son ajustables.
+2. **Estado en memoria.** El objetivo activo, el `preguntaOrigenId` (o el `recuerdoEnCursoId`), la invitación y la espera viven en el `ChatProvider`; recargar la página los pierde (la pregunta sigue pendiente en el back).
+3. **Extracción lenta.** Si el modelo tarda más de 60 s, la repregunta se pierde para esa charla (el recuerdo sí se guarda). Los intervalos (1 s los primeros 10 s y 2 s después) y el tope de 60 s son ajustables.
 4. **Detección de recuerdos por nombre.** Puede no encontrar un recuerdo si la persona no dice el nombre tal cual lo guardó el extractor ("la seño" vs "Elena"), o traer uno que no es el pedido si el nombre es común. Es un límite aceptado de no usar el modelo (2.10).
 5. **Alarma por palabras clave.** `DetectorDeRiesgo` usa listas de frases: puede no detectar formulaciones raras. Es el mismo límite que ya tiene el chat.
 6. **Una sola extracción a la vez.** La cola de extracción es en memoria y de un solo hilo (como en el grafo): si el back se reinicia, las extracciones encoladas se pierden y la pregunta queda como respondida sin recuerdo.
@@ -684,6 +742,8 @@ Pantallas y estados que **no están en el Figma** y se resuelven con los compone
 12. **El primer mensaje tras un rato inactivo puede salir sin recuerdos.** Con el pool de conexiones del driver frío (primera conexión, o una conexión vencida), la primera lectura puede tardar más de 2 s y pasar el tope: ese mensaje va con `No hay información.` en `{progreso}` y `{recuerdos}`, aunque la persona tenga historia. Los siguientes ya van con datos. El tope es ajustable (10.5). **Mitigación (v4):** al arrancar, `CalentamientoDeNeo4j` abre el pool y ejecuta las dos lecturas del chat con un id de persona inexistente (solo `MATCH`/`RETURN`, no escribe ni crea nada), en un hilo aparte y sin romper el arranque; se apaga con `alma.historia.calentar-neo4j=false`. Cubre el primer mensaje después de arrancar, no el que sigue a una pausa larga.
 13. **Sin cortacircuitos (decisión v4).** Con Neo4j caído o con la red descartando paquetes, cada mensaje del chat pierde hasta el tope de 2 s antes de seguir sin recuerdos. No se salta el grafo durante un tiempo tras una falla, porque eso haría perder los recuerdos del prompt aunque Neo4j ya hubiera vuelto. Si hiciera falta (por ejemplo, con un Neo4j inestable en producción), se agrega un enfriamiento de unos 30 s solo ante `ServiceUnavailable` o timeout.
 
+14. **Límites nuevos de la v5.** Datos agotados, recuerdos de respaldo, año estimado, una ilustración por etapa, la frase de la regla 7 junto a la invitación, la detección de la frase, las descripciones más largas y la privacidad de la imagen están en la sección 9 del contrato del mapa de vida.
+
 ---
 
 ## Historial
@@ -694,27 +754,33 @@ Pantallas y estados que **no están en el Figma** y se resuelven con los compone
 | 2 | Correcciones tras la revisión contra el código, los casos de uso y el Figma. **Código:** el chat está en `/`; el `preguntaOrigenId` se guarda para pedir la repregunta correcta; el mensaje de Alma lleva la introducción del back y el cierre sin preguntas usa el `mensajeFinal` del back; la respuesta aceptada sigue siendo 202 (ahora con cuerpo) y solo la alarma devuelve 200; `RecuerdosParaElChat` recibe `cuentaId`; el tope de espera pasa a 60 s; nombre y mensaje se normalizan con la misma función; texto de respuesta vacía en modo guion; tope de 1000 caracteres en modo guion; se quitó un 409 que no existe. **Casos de uso:** la invitación usa el texto del CU-02 y se muestra como mensaje de Alma a continuación de su respuesta; no se reofrece tras una alarma. **Figma:** camino de paradas con "Ver recuerdos anteriores", tarjeta "Próxima parada", botones "Otra pregunta" y "Volver a Historia de vida" (reemplazan al "Saltear" junto al campo), sección 11.8. **Privacidad:** decisión explícita en 2.13 (aclarando que lo que la persona cuenta viaja al modelo, en el chat y en la extracción). **Otros:** referencia cruzada del encabezado corregida, punto de corte móvil/escritorio definido (`lg`) y nota sobre los dos botones "Otra pregunta". Se quitó la sección "Cómo usar con Claude Code". |
 | 3 | Ajustes para que el contrato refleje lo que hizo el código al armar el back (sin cambiar el comportamiento pedido). **P11 no se implementa:** el estado vacío sale de P10 (secciones 2.8, 4, 5.3 y 10.2). **5.5:** el progreso se lee en solo lectura con `estadoDeTodas`, sin pasar por `/guion/estado`; una persona sin nodo queda en `No hay información.` sin que se le cree el nodo; formato de la línea del recuerdo (`En <lugar>` con lugar y sin personas, separadores `, `, persona sin nombre solo con el vínculo, sin punto doble, saltos de línea a espacios). **5.5.2:** corte a N más "…"; progreso y recuerdos fallan por separado; tope de 2 s y ejecutor de 4 hilos sin cola con rechazo inmediato; una lectura cancelada deja de ejecutar consultas al ser interrumpida; precisión y etapa tolerantes (`null` si el valor del grafo no es válido). **5.6, 6, 7.1, 7.2 y 9:** con riesgo detectado no se valida que la pregunta o el recuerdo existan ni que estén sin responder (`200 ALARMA`, la seguridad va primero; el `400` por largo va antes) y el texto sale de `ConfiguracionChat.Respuestas.para(TipoDeRiesgo)`. **10.5:** tope de 2000 ms y 4 hilos. **12:** `ConfiguracionChat` y `ChatService`, `RecuerdosDePrueba`, `HistoriaGuionIntegrationTests`, `RepreguntaEndpointsIntegrationTests` (la aserción de OpenAPI pasó a exigir el `200`) y que `ChatIntegrationTests` no se tocó. **13:** convención de nombres de pruebas y dónde viven las del prompt. **15:** límites nuevos (9 a 12). |
 | 4 | Lectura del grafo para el chat: una lectura cancelada por el tope se detecta con una bandera propia y no se registra como ERROR (5.5.2); calentamiento de Neo4j al arrancar (límite 12); sin cortacircuitos, anotado como límite 13. |
+| 5 | Mapa de vida (12/11/2026, `docs/contrato-mapa-de-vida.md`). **Back:** 7.3 (`GET /recuerdos`) agrega `faltantes` a cada recuerdo y 7.4 (`GET /recuerdos/{id}`) agrega `faltantes` y `preguntaTexto`; `GET /repreguntas/siguiente` (contrato del grafo, 7.5) acepta `recuerdoId` y devuelve `repregunta.tituloRecuerdo`; el extractor escribe descripciones de dos a cuatro oraciones. **Front:** mapa por etapas con panel, lista para letra grande y alto contraste (reemplaza al camino de paradas, 2.6); imagen descargable; "Seguir completando este recuerdo" y detalle ampliado (2.7); botón fijo (compacto en celular) e invitación **a pedido** en lugar de la automática (2.2); burbujas de lo que se toca y respuestas fijas de Alma (2.5); espera de 1 s y repreguntas con apertura (2.3). Se marcan las secciones reemplazadas (2.2, 2.6, 11.2, 11.4, 11.7 y 11.8) y ampliadas (2.1, 2.3, 2.5, 2.6.1, 2.7, 5.4 y 6) con un puntero al contrato del mapa de vida. |
 
 ---
 
 ## Anexo A. Flujo del modo guion en el chat
 
 ```
-Persona entra al chat (/)
-  └─ Alma responde (primera respuesta de la visita)
-       └─ estado.pendientes > 0, sin "Ahora no" y sin alarma  →  Invitación (Sí / Ahora no)
-            └─ Sí → GET /guion/proxima → introducción + pregunta → objetivo = PREGUNTA, preguntaOrigenId = id
+(v5) Persona entra al chat (/)
+  ├─ Botón fijo "Seguir mi historia de vida" (con pendientes, sin alarma y sin objetivo activo): mismo camino que "Sí"
+  └─ Escribe que quiere seguir con su historia → Alma responde → GET /guion/estado (fresco) → Invitación a pedido (Sí / Ahora no)
+            └─ Sí → (burbuja "Sí") GET /guion/proxima → introducción + pregunta → objetivo = PREGUNTA, preguntaOrigenId = id
                  ├─ Otra pregunta → POST .../salteo (204) → GET /guion/proxima (introducción de salteo)
                  ├─ Volver a Historia de vida → navega a /historia-de-vida (objetivo = null)
                  └─ Persona responde → POST .../respuesta
                       ├─ 200 ALARMA   → texto predefinido, objetivo = null (pregunta sigue pendiente)
-                      └─ 202 ACEPTADA → "Alma está pensando…" → GET /repreguntas/siguiente?preguntaId=<origen> cada 2 s (tope 60 s)
+                      └─ 202 ACEPTADA → "Alma está pensando…" → GET /repreguntas/siguiente?preguntaId=<origen> (1 s los primeros 10 s, 2 s después; tope 60 s)
                            ├─ HAY     → repregunta → objetivo = REPREGUNTA
                            │            ├─ Saltear → POST .../salteo → siguiente
                            │            └─ Responde → POST .../respuesta → espera → siguiente (una por dato)
                            └─ NINGUNA / tope → "¿Querés contarme algo más sobre esto o te hago otra pregunta?"
-                                ├─ Contarte algo más → chat normal
+                                ├─ Contarte algo más → burbuja + respuesta fija de Alma → chat normal
                                 └─ Otra pregunta → GET /guion/proxima (o mensajeFinal si no quedan)
+
+(v5) Desde Historia de vida: "Seguir completando este recuerdo" → GET /repreguntas/siguiente?recuerdoId=<id>
+  (espera si hay una extracción en curso o si el chat está ocupado)
+       ├─ HAY     → navega al chat: apertura + repregunta, objetivo = REPREGUNTA, recuerdoEnCursoId = id
+       └─ NINGUNA → aviso "Por ahora no tengo más para preguntarte de este recuerdo." en la misma pantalla
 ```
 
 ## Anexo B. Ejemplo de prompt con datos

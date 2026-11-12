@@ -1,0 +1,18 @@
+/* Animaciones del mapa de vida (contrato del mapa de vida, 2.1). Solo con movimiento permitido:
+   con "reducir movimiento" la pastilla queda fija y los puntos quietos. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes mapa-latido {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+  }
+  @keyframes mapa-flotar {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-0.3rem); }
+  }
+  .mapa-latido {
+    animation: mapa-latido 1.8s ease-in-out infinite;
+  }
+  .mapa-flotar {
+    animation: mapa-flotar 2s ease-in-out infinite;
+  }
+}

@@ -54,6 +54,26 @@ final class RecuerdosDePrueba {
         return id;
     }
 
+    /**
+     * Un recuerdo sin pregunta de origen (sin la relación {@code SURGIO_DE}), como uno cargado a mano en el grafo.
+     * Sin lugares ni personas, y con los tres contadores en 0.
+     */
+    String crearSinPreguntaDeOrigen(long personaId, String titulo, int minutos) {
+        String id = UUID.randomUUID().toString();
+        Map<String, Object> parametros = new HashMap<>();
+        parametros.put("persona", personaId);
+        parametros.put("id", id);
+        parametros.put("titulo", titulo);
+        parametros.put("fecha", ZonedDateTime.now().minusHours(1).plusMinutes(minutos));
+        neo4j.query("""
+                MERGE (p:PersonaMayor {idPersonaMayor: $persona})
+                CREATE (r:Recuerdo {idRecuerdo: $id, titulo: $titulo, descripcion: 'Descripción original.',
+                        fechaRegistro: $fecha, intentosAnio: 0, intentosLugares: 0, intentosPersonas: 0})
+                CREATE (p)-[:TIENE_RECUERDO]->(r)
+                """).bindAll(parametros).run();
+        return id;
+    }
+
     void agregarLugar(String recuerdoId, String nombre) {
         neo4j.query("""
                 MATCH (r:Recuerdo {idRecuerdo: $recuerdo})

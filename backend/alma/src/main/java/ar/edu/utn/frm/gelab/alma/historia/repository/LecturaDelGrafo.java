@@ -60,37 +60,56 @@ public class LecturaDelGrafo {
      * Los recuerdos de la persona con lo necesario para elegir una repregunta (contrato, 5.7 y 7.5): la lista
      * {@code repreguntas} de su pregunta de origen, qué datos faltan hoy y cuántas veces se preguntó por cada
      * uno. Del más antiguo al más nuevo ({@code fechaRegistro}). Con {@code preguntaId}, solo los que surgieron de
-     * esa pregunta. Toda la consulta parte del nodo de la persona.
+     * esa pregunta, y con {@code recuerdoId}, solo ese recuerdo (contrato del mapa de vida, 3.3: el servicio no manda
+     * los dos a la vez). Toda la consulta parte del nodo de la persona.
      */
-    public List<RecuerdoParaRepreguntar> recuerdosParaRepreguntar(Long personaId, Integer preguntaId) {
+    public List<RecuerdoParaRepreguntar> recuerdosParaRepreguntar(Long personaId, Integer preguntaId,
+            String recuerdoId) {
         Map<String, Object> parametros = new HashMap<>();
         parametros.put("persona", personaId);
         parametros.put("pregunta", preguntaId);
+        parametros.put("recuerdo", recuerdoId);
         return neo4jClient.query("""
                 MATCH (:PersonaMayor {idPersonaMayor: $persona})-[:TIENE_RECUERDO]->(r:Recuerdo)-[:SURGIO_DE]->(q:PreguntaGuion)
-                WHERE $pregunta IS NULL OR q.idPreguntaGuion = $pregunta
-                RETURN r.idRecuerdo AS id, r.fechaRegistro AS fecha, q.repreguntas AS repreguntas,
-                       %s AS faltaAnio, %s AS faltaLugares, %s AS faltaPersonas,
-                       coalesce(r.intentosAnio, 0) AS intentosAnio,
-                       coalesce(r.intentosLugares, 0) AS intentosLugares,
-                       coalesce(r.intentosPersonas, 0) AS intentosPersonas
+                WHERE ($pregunta IS NULL OR q.idPreguntaGuion = $pregunta)
+                  AND ($recuerdo IS NULL OR r.idRecuerdo = $recuerdo)
+                RETURN r.idRecuerdo AS id, r.titulo AS titulo, r.fechaRegistro AS fecha, %s
                 ORDER BY r.fechaRegistro, r.idRecuerdo
-                """.formatted(CypherRepreguntas.condicionFalta(DatoFaltante.ANIO),
-                CypherRepreguntas.condicionFalta(DatoFaltante.LUGARES),
-                CypherRepreguntas.condicionFalta(DatoFaltante.PERSONAS)))
+                """.formatted(COLUMNAS_PARA_REPREGUNTAR))
                 .bindAll(parametros)
                 .fetchAs(RecuerdoParaRepreguntar.class)
-                .mappedBy((tipos, fila) -> new RecuerdoParaRepreguntar(
-                        fila.get("id").asString(),
-                        fila.get("fecha").isNull() ? null : fila.get("fecha").asZonedDateTime(),
-                        fila.get("repreguntas").isNull() ? List.<DatoFaltante>of()
-                                : fila.get("repreguntas").asList(Value::asString).stream()
-                                        .map(LecturaDelGrafo::dato).filter(Objects::nonNull).toList(),
-                        fila.get("faltaAnio").asBoolean(), fila.get("faltaLugares").asBoolean(),
-                        fila.get("faltaPersonas").asBoolean(),
-                        fila.get("intentosAnio").asInt(), fila.get("intentosLugares").asInt(),
-                        fila.get("intentosPersonas").asInt()))
+                .mappedBy((tipos, fila) -> aParaRepreguntar(fila))
                 .all().stream().toList();
+    }
+
+    /**
+     * Las columnas que alimentan a {@link RecuerdoParaRepreguntar} (contrato del grafo, 5.7), escritas una sola vez
+     * para la repregunta, la lista y el detalle. Requieren {@code r} (el recuerdo) y {@code q} (su pregunta de origen,
+     * que puede ser {@code null} con un {@code OPTIONAL MATCH}: entonces no hay datos candidatos).
+     */
+    private static final String COLUMNAS_PARA_REPREGUNTAR = """
+            q.repreguntas AS repreguntas,
+            %s AS faltaAnio, %s AS faltaLugares, %s AS faltaPersonas,
+            coalesce(r.intentosAnio, 0) AS intentosAnio,
+            coalesce(r.intentosLugares, 0) AS intentosLugares,
+            coalesce(r.intentosPersonas, 0) AS intentosPersonas""".formatted(
+            CypherRepreguntas.condicionFalta(DatoFaltante.ANIO),
+            CypherRepreguntas.condicionFalta(DatoFaltante.LUGARES),
+            CypherRepreguntas.condicionFalta(DatoFaltante.PERSONAS));
+
+    /** Lee {@link RecuerdoParaRepreguntar} de una fila con {@code id}, {@code titulo}, {@code fecha} y las columnas de arriba. */
+    private static RecuerdoParaRepreguntar aParaRepreguntar(org.neo4j.driver.Record fila) {
+        return new RecuerdoParaRepreguntar(
+                fila.get("id").asString(),
+                fila.get("fecha").isNull() ? null : fila.get("fecha").asZonedDateTime(),
+                fila.get("repreguntas").isNull() ? List.<DatoFaltante>of()
+                        : fila.get("repreguntas").asList(Value::asString).stream()
+                                .map(LecturaDelGrafo::dato).filter(Objects::nonNull).toList(),
+                fila.get("faltaAnio").asBoolean(), fila.get("faltaLugares").asBoolean(),
+                fila.get("faltaPersonas").asBoolean(),
+                fila.get("intentosAnio").asInt(), fila.get("intentosLugares").asInt(),
+                fila.get("intentosPersonas").asInt(),
+                texto(fila.get("titulo")));
     }
 
     private static final String COLUMNAS_DE_PREGUNTA = """
@@ -149,9 +168,10 @@ public class LecturaDelGrafo {
     public List<RecuerdoLeido> recuerdosEnOrden(Long personaId) {
         return neo4jClient.query("""
                 MATCH (:PersonaMayor {idPersonaMayor: $persona})-[:TIENE_RECUERDO]->(r:Recuerdo)
-                RETURN %s
+                OPTIONAL MATCH (r)-[:SURGIO_DE]->(q:PreguntaGuion)
+                RETURN %s, %s
                 ORDER BY r.anio IS NULL, r.anio, r.fechaRegistro, r.idRecuerdo
-                """.formatted(COLUMNAS_DE_RECUERDO))
+                """.formatted(COLUMNAS_DE_RECUERDO, COLUMNAS_PARA_REPREGUNTAR))
                 .bindAll(Map.of("persona", personaId))
                 .fetchAs(RecuerdoLeido.class)
                 .mappedBy((tipos, fila) -> aRecuerdo(fila))
@@ -165,14 +185,16 @@ public class LecturaDelGrafo {
     public Optional<DetalleDeRecuerdo> detalleDeRecuerdo(Long personaId, String recuerdoId) {
         return neo4jClient.query("""
                 MATCH (p:PersonaMayor {idPersonaMayor: $persona})-[:TIENE_RECUERDO]->(r:Recuerdo {idRecuerdo: $recuerdo})
-                RETURN %s,
+                OPTIONAL MATCH (r)-[:SURGIO_DE]->(q:PreguntaGuion)
+                RETURN %s, %s,
+                       q.texto AS preguntaTexto,
                        [(pe:Persona)-[:PARTICIPA_EN]->(r) | {id: pe.idPersona, nombre: pe.nombre,
                            vinculo: head([(p)-[c:CONOCE]->(pe) | c.vinculo])}] AS personas,
                        [(r)-[:OCURRIO_EN]->(l:Lugar) | {id: l.idLugar, nombre: l.nombre}] AS lugares
-                """.formatted(COLUMNAS_DE_RECUERDO))
+                """.formatted(COLUMNAS_DE_RECUERDO, COLUMNAS_PARA_REPREGUNTAR))
                 .bindAll(Map.of("persona", personaId, "recuerdo", recuerdoId))
                 .fetchAs(DetalleDeRecuerdo.class)
-                .mappedBy((tipos, fila) -> new DetalleDeRecuerdo(aRecuerdo(fila),
+                .mappedBy((tipos, fila) -> new DetalleDeRecuerdo(aRecuerdo(fila), texto(fila.get("preguntaTexto")),
                         fila.get("personas").asList(v -> new DetalleDeRecuerdo.PersonaLeida(
                                 v.get("id").asString(), texto(v.get("nombre")), texto(v.get("vinculo")))),
                         fila.get("lugares").asList(v -> new DetalleDeRecuerdo.LugarLeido(
@@ -267,7 +289,8 @@ public class LecturaDelGrafo {
                 fila.get("anio").isNull() ? null : fila.get("anio").asInt(),
                 texto(fila.get("precision")),
                 texto(fila.get("etapa")),
-                fila.get("fecha").isNull() ? null : fila.get("fecha").asZonedDateTime());
+                fila.get("fecha").isNull() ? null : fila.get("fecha").asZonedDateTime(),
+                aParaRepreguntar(fila));
     }
 
     private static String texto(Value valor) {

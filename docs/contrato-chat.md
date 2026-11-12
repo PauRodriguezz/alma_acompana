@@ -287,10 +287,12 @@ Manda un mensaje a Alma y devuelve su respuesta completa (5.2).
 
 **200 OK**
 ```json
-{ "respuesta": "Qué rico desayuno. ¿Lo compartiste con alguien?" }
+{ "respuesta": "Qué rico desayuno. ¿Lo compartiste con alguien?", "alarma": false }
 ```
 
-La respuesta es la misma forma si fue generada por el modelo o es una respuesta predefinida (5.2): el front no distingue.
+La respuesta tiene la misma forma si la generó el modelo o es una respuesta predefinida (5.2). El campo **`alarma`** (booleano) dice cuál fue: `true` si respondió el detector de riesgo (urgencia médica o malestar emocional grave) con el texto predefinido, `false` si respondió el modelo. La pantalla del chat muestra `respuesta` igual en los dos casos; el front usa `alarma` solo para **no ofrecer seguir con la historia de vida** en esa visita después de una alarma (`docs/contrato-mapa-de-vida.md`, 2.8). Las respuestas de alarma del guion (`/api/historia/...`) usan los mismos textos.
+
+**Swagger** (`/swagger-ui.html` y `/v3/api-docs`): el esquema `RespuestaChatResponse` documenta los dos campos, `respuesta` y `alarma`, y la operación "Mandar un mensaje a Alma" explica que ante una urgencia médica o un malestar grave responde un texto predefinido sin consultar al modelo, que si el modelo falla responde `503` y que la conversación no se guarda.
 
 **Errores:** `400` por validación (5.9); `401`, `403` y `404` como en el resto de `/api`; `503` si el modelo falla (5.7):
 ```json
@@ -423,8 +425,8 @@ El proveedor envuelve al `LayoutPersona` (en `App.tsx`) y se vuelve a crear cuan
 |---|---|
 | `animo` | El `RegistroAnimo` elegido (con su `id` y la pregunta contextual), o nada |
 | `cambiandoAnimo` | Si la persona tocó "Cambiar cómo me siento" y está eligiendo de nuevo |
-| `yaEscribio` | Pasa a `true` en el momento en que la persona manda su primer mensaje y ya no vuelve a `false` |
-| `mensajes` | La lista de mensajes de la conversación: `{ id, rol, texto }` |
+| `yaEscribio` | Pasa a `true` en el momento en que la persona manda su primer mensaje y ya no vuelve a `false`. **Desde la historia de vida** también pasa a `true` cuando se abre una pregunta o repregunta del guion en el chat (botón fijo, invitación, tarjeta "Próxima parada" o "Seguir completando"): cuenta como que la conversación ya empezó. **No** lo activan las burbujas de lo que se toca (`origen: "ACCION"`) ni los mensajes fijos de Alma (`docs/contrato-mapa-de-vida.md`, 2.9) |
+| `mensajes` | La lista de mensajes de la conversación: `{ id, rol, texto }`, más `tipo`, `origen` y `preguntaDestacada` (opcionales) para el modo guion y sus mensajes fijos (`docs/contrato-historia-de-vida.md`, 2.5 y 11.4) |
 | `pendiente` | Si se está esperando la respuesta de Alma |
 | `error` | El texto del error del último envío, o nada |
 | `ultimoMensaje` | El texto del último mensaje enviado, para que "Probar de nuevo" lo reenvíe aunque el campo ya tenga otra cosa |
@@ -466,7 +468,7 @@ Al aparecer un mensaje nuevo, la pantalla se desplaza para dejarlo a la vista (s
 **Mandar un mensaje**
 1. La persona escribe y toca "Enviar" (o Enter).
 2. Se agrega su mensaje a la conversación, se limpia el campo, `yaEscribio` pasa a `true` y `pendiente` a `true`.
-3. Se llama a `POST /api/chat/mensajes` con el texto y la `conversacion`: hasta los últimos 10 de estos, en orden, tomados **antes** de agregar el mensaje nuevo: la pregunta contextual de Alma (solo si se registró un ánimo) y los mensajes de `mensajes`. **No** se mandan el saludo, la pregunta del widget ni la burbuja del ánimo.
+3. Se llama a `POST /api/chat/mensajes` con el texto y la `conversacion`: hasta los últimos 10 de estos, en orden, tomados **antes** de agregar el mensaje nuevo: la pregunta contextual de Alma (solo si se registró un ánimo) y los mensajes de `mensajes`. **No** se mandan el saludo, la pregunta del widget ni la burbuja del ánimo. Tampoco las burbujas de lo que toca la persona ni los mensajes fijos de Alma del modo guion (invitación, cierre, "ya respondiste todo" y respuestas fijas): no los generó el modelo.
 4. Con la respuesta, se agrega como mensaje de Alma y `pendiente` pasa a `false`.
 5. Si falla, se quita el mensaje de la persona de la conversación, `pendiente` pasa a `false` y se muestra el error con "Probar de nuevo". El texto vuelve al campo **solo si el campo está vacío** (si la persona ya escribió otra cosa mientras esperaba, no se pisa); "Probar de nuevo" reenvía `ultimoMensaje`. Con 503 el texto es el del back; con otro fallo, `mensajeDeError`. `yaEscribio` **no** vuelve a `false`.
 
@@ -562,6 +564,7 @@ Con `docker compose up -d`, `ollama signin` hecho y el back corriendo, se mandan
 - **v3 (05/11/2026):** el modelo recibe también las citas médicas de los próximos 14 días (`{citas_proximas}`, hasta 10) y, en las citas, el médico y el lugar (las indicaciones previas siguen afuera). Se ajustan la regla 2 del prompt y la línea de citas (anexo A), la sección 5.4, los datos, las pruebas y se agregan los casos T17 y T18. La tarjeta tocable hacia la cita queda como mejora futura.
 - **v4 (11/11/2026):** el proveedor del modelo (Gemini u Ollama) se elige con `IA_PROVEEDOR`; ver `docs/contrato-ia.md` (decisión "Modelo y razonamiento", 5.6 y la lista de `ia/`). Se actualizan los textos que daban por hecho que la historia de vida no existía (`{progreso}` y `{recuerdos}`, la invitación). Además, en la prueba real con Gemini, tras "podríamos seguir escribiendo historia de vida" y "bueno dale", el modelo improvisó una pregunta del pasado que no es del guion y no se guarda. Se agrega al prompt (anexo A) la regla 7 y un ejemplo: las preguntas del guion las hace la aplicación; si la persona pide seguir o retomar su historia de vida, Alma le indica que la retome desde la sección Historia de vida, sin formular ni proponer preguntas del guion; si la persona cuenta un recuerdo por su cuenta, Alma conversa con naturalidad, con preguntas de seguimiento incluidas. El resto del contrato no cambia. Prueba manual nueva: decir "podríamos seguir con mi historia de vida" y después "bueno dale"; Alma no debe hacer ninguna pregunta del pasado y debe mandar a la sección Historia de vida. Los tests automáticos protegen el archivo (`SystemPromptDelChatTest`).
 - **v5 (11/11/2026):** en una prueba real, Alma ofreció "¿Te gustaría que le mandemos un mensaje para ver cuándo pueden verse?", y la app no puede mandar mensajes; además, ante "extraño a Mateo" comentó el recuerdo sin reconocer lo que la persona sentía. Se agregan al prompt (anexo A) la regla 8 (Alma solo conversa y no ofrece ni promete acciones que la app no tiene; Recordatorios sirve solo para medicación y citas médicas, los dos `TipoRecordatorio` que existen) y la regla 9 (reflejar la emoción dicha con claridad, sin explicarla ni calificarla; no cambia la regla 3) y dos ejemplos. Se agregan los casos T19 y T20 al anexo B. El resto del contrato no cambia.
+- **v6 (12/11/2026):** se cierran pendientes de la historia de vida: **7.2** documenta el campo `alarma` de la respuesta (y qué muestra Swagger) y **11.1 y 11.4** aclaran qué cuenta para `yaEscribio` y qué no viaja al modelo en `conversacion` (burbujas de acciones y mensajes fijos). Sin cambios de comportamiento en el chat. Ver `docs/contrato-historia-de-vida.md` (v5) y `docs/contrato-mapa-de-vida.md`.
 
 ---
 

@@ -283,6 +283,23 @@ public class EscrituraDelGrafo {
     }
 
     /**
+     * Devuelve un intento (contrato, 5.7): cuando la extracción de una repregunta falla porque el modelo no estaba
+     * disponible, el dato no se gastó. Resta 1 al contador de ese dato y nunca lo deja por debajo de 0. Una
+     * transacción, con el nodo de la persona bloqueado (igual que {@link #registrarIntento}). Un recuerdo que ya no
+     * existe o no es de la persona no cambia nada.
+     */
+    @Transactional(MANEJADOR_NEO4J)
+    public void devolverIntento(Long personaId, String recuerdoId, DatoFaltante dato) {
+        bloquearPersona(personaId);
+        String contador = CypherRepreguntas.propiedadIntentos(dato);
+        ejecutar("""
+                MATCH (:PersonaMayor {idPersonaMayor: $persona})-[:TIENE_RECUERDO]->(r:Recuerdo {idRecuerdo: $recuerdo})
+                WHERE coalesce(r.%1$s, 0) > 0
+                SET r.%1$s = r.%1$s - 1
+                """.formatted(contador), parametros("persona", personaId, "recuerdo", recuerdoId));
+    }
+
+    /**
      * Aplica la respuesta de una repregunta a un recuerdo ya creado (contrato, 5.7), en una transacción y con el
      * nodo de la persona bloqueado. Solo toca lo del dato preguntado y nunca el título ni la descripción:
      * <ul>

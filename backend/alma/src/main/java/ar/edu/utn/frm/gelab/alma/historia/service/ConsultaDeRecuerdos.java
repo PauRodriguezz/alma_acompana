@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import ar.edu.utn.frm.gelab.alma.common.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frm.gelab.alma.historia.config.ConfiguracionHistoria;
+import ar.edu.utn.frm.gelab.alma.historia.domain.DatoFaltante;
 import ar.edu.utn.frm.gelab.alma.historia.domain.EtapaDeVida;
 import ar.edu.utn.frm.gelab.alma.historia.domain.PrecisionAnio;
 import ar.edu.utn.frm.gelab.alma.historia.domain.TextoCortado;
@@ -62,12 +63,18 @@ public class ConsultaDeRecuerdos {
                 etapa(r),
                 detalle.personas().stream()
                         .map(p -> new PersonaDeRecuerdoResponse(p.id(), p.nombre(), p.vinculo())).toList(),
-                detalle.lugares().stream().map(l -> new LugarDeRecuerdoResponse(l.id(), l.nombre())).toList());
+                detalle.lugares().stream().map(l -> new LugarDeRecuerdoResponse(l.id(), l.nombre())).toList(),
+                faltantes(r), detalle.preguntaTexto());
     }
 
     private RecuerdoResumenResponse resumen(RecuerdoLeido r) {
         return new RecuerdoResumenResponse(r.id(), r.titulo(), r.anio(), precision(r), etapa(r),
-                TextoCortado.cortar(r.descripcion(), configuracion.getResumenMax()));
+                TextoCortado.cortar(r.descripcion(), configuracion.getResumenMax()), faltantes(r));
+    }
+
+    /** Los datos que se pueden seguir completando (contrato del mapa de vida, 3.1): la misma regla de las repreguntas. */
+    private List<DatoFaltante> faltantes(RecuerdoLeido r) {
+        return SelectorDeRepregunta.faltantes(r.paraRepreguntar(), configuracion.getIntentosMax());
     }
 
     /** La precisión del recuerdo, o {@code null} si no tiene o el valor guardado en el grafo no es válido. */

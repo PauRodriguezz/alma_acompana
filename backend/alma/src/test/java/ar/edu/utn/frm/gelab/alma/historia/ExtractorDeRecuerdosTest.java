@@ -77,7 +77,7 @@ class ExtractorDeRecuerdosTest {
         assertThat(pedido.instrucciones()).contains("Devolvés SOLO un objeto JSON", "No asumas el género");
         assertThat(pedido.mensaje()).contains(PREGUNTA).contains(RESPUESTA);
         assertThat(pedido.opciones().temperatura()).isEqualTo(0.1);
-        assertThat(pedido.opciones().maxTokens()).isEqualTo(600);
+        assertThat(pedido.opciones().maxTokens()).isEqualTo(800);
     }
 
     @Test
@@ -254,6 +254,136 @@ class ExtractorDeRecuerdosTest {
 
         assertThat(r.respaldo()).isTrue();
         assertThat(r.pedidos()).isEqualTo(2);
+    }
+
+    // ---------- Error transitorio del proveedor (5.4, paso 6) ----------
+
+    /** Un extractor con la espera y el límite de tiempo del reintento indicados. */
+    private ExtractorDeRecuerdos conReintento(long esperaMs, long hastaMs) {
+        ConfiguracionHistoria configuracion = new ConfiguracionHistoria();
+        configuracion.setExtraccionReintentoEsperaMs(esperaMs);
+        configuracion.setExtraccionReintentoHastaMs(hastaMs);
+        Clock reloj = Clock.fixed(Instant.parse("2026-11-09T15:00:00Z"), ZoneId.of("America/Argentina/Buenos_Aires"));
+        return new ExtractorDeRecuerdos(modelo, configuracion, reloj, JsonMapper.builder().build());
+    }
+
+    @Test
+    void unErrorTransitorioSeReintentaUnaVezYSiElSegundoPedidoSirveNoHayRespaldo() {
+        modelo.fallaTransitoria().responde(VALIDO);
+
+        ResultadoDeExtraccion r = conReintento(0, 25_000).extraer(trabajo(RESPUESTA));
+
+        assertThat(r.respaldo()).isFalse();
+        assertThat(r.motivo()).isEqualTo(ResultadoDeExtraccion.MotivoDeRespaldo.NINGUNO);
+        assertThat(r.pedidos()).isEqualTo(2);
+        assertThat(r.respuesta().titulo()).isEqualTo("Mi maestra Elena");
+        // El reintento repite el mismo pedido: no le pasa al modelo ningún "error anterior".
+        assertThat(modelo.pedidos().get(1).mensaje()).isEqualTo(modelo.pedidos().get(0).mensaje())
+                .doesNotContain("Tu respuesta anterior");
+    }
+
+    @Test
+    void dosErroresTransitoriosVanAlRespaldoConDosPedidosYMotivoModeloNoDisponible() {
+        modelo.fallaTransitoria().fallaTransitoria();
+
+        ResultadoDeExtraccion r = conReintento(0, 25_000).extraer(trabajo(RESPUESTA));
+
+        assertThat(r.respaldo()).isTrue();
+        assertThat(r.pedidos()).isEqualTo(2);
+        assertThat(r.porModeloNoDisponible()).isTrue();
+    }
+
+    @Test
+    void unErrorQueNoEsTransitorioNoSeReintenta() {
+        modelo.falla().responde(VALIDO);
+
+        ResultadoDeExtraccion r = conReintento(0, 25_000).extraer(trabajo(RESPUESTA));
+
+        assertThat(r.respaldo()).isTrue();
+        assertThat(r.pedidos()).isEqualTo(1);
+        assertThat(r.porModeloNoDisponible()).isTrue();
+        assertThat(modelo.pedidos()).hasSize(1);
+    }
+
+    @Test
+    void elReintentoComparteLosDosPedidosConElDelJsonInvalido() {
+        // El primer pedido devuelve un JSON roto y el segundo falla con un 503: no hay un tercer pedido.
+        modelo.responde("{ roto").fallaTransitoria().responde(VALIDO);
+
+        ResultadoDeExtraccion r = conReintento(0, 25_000).extraer(trabajo(RESPUESTA));
+
+        assertThat(r.respaldo()).isTrue();
+        assertThat(r.pedidos()).isEqualTo(2);
+        assertThat(modelo.pedidos()).hasSize(2);
+        assertThat(r.porModeloNoDisponible()).isTrue();
+    }
+
+    @Test
+    void conElJsonInvalidoDosVecesElMotivoNoEsModeloNoDisponible() {
+        ResultadoDeExtraccion r = extractor.extraer(conRespuestas("no es json", "{ tampoco"));
+
+        assertThat(r.respaldo()).isTrue();
+        assertThat(r.porModeloNoDisponible()).isFalse();
+        assertThat(r.motivo()).isEqualTo(ResultadoDeExtraccion.MotivoDeRespaldo.OTRO);
+    }
+
+    @Test
+    void siYaPasoElLimiteDeTiempoDesdeElPrimerPedidoNoSeReintenta() {
+        // El 503 llega a los 80 ms y el límite es de 20 ms.
+        modelo.fallaTransitoria(80).responde(VALIDO);
+
+        ResultadoDeExtraccion r = conReintento(0, 20).extraer(trabajo(RESPUESTA));
+
+        assertThat(r.respaldo()).isTrue();
+        assertThat(r.pedidos()).isEqualTo(1);
+        assertThat(r.porModeloNoDisponible()).isTrue();
+    }
+
+    @Test
+    void siElErrorLlegaDentroDelLimiteDeTiempoSiSeReintenta() {
+        modelo.fallaTransitoria(20).responde(VALIDO);
+
+        ResultadoDeExtraccion r = conReintento(0, 5_000).extraer(trabajo(RESPUESTA));
+
+        assertThat(r.respaldo()).isFalse();
+        assertThat(r.pedidos()).isEqualTo(2);
+    }
+
+    @Test
+    void elReintentoEsperaLaEsperaConfigurada() {
+        modelo.fallaTransitoria().responde(VALIDO);
+
+        long antes = System.nanoTime();
+        ResultadoDeExtraccion r = conReintento(300, 25_000).extraer(trabajo(RESPUESTA));
+        long ms = (System.nanoTime() - antes) / 1_000_000;
+
+        assertThat(r.respaldo()).isFalse();
+        assertThat(ms).as("esperó antes de repetir").isGreaterThanOrEqualTo(280);
+    }
+
+    @Test
+    void siSeInterrumpeLaEsperaNoSeReintentaYElHiloQuedaInterrumpido() {
+        modelo.fallaTransitoria().responde(VALIDO);
+        Thread.currentThread().interrupt();
+        try {
+            ResultadoDeExtraccion r = conReintento(5_000, 25_000).extraer(trabajo(RESPUESTA));
+
+            assertThat(r.respaldo()).isTrue();
+            assertThat(r.pedidos()).isEqualTo(1);
+            assertThat(Thread.currentThread().isInterrupted()).as("se conserva la interrupción").isTrue();
+        } finally {
+            Thread.interrupted();
+        }
+    }
+
+    @Test
+    void elLogDelReintentoNoTraeElTextoDeLaPersona(CapturedOutput salida) {
+        String secreto = "SECRETO_DEL_REINTENTO";
+        modelo.fallaTransitoria().responde(VALIDO);
+
+        conReintento(0, 25_000).extraer(trabajo(secreto));
+
+        assertThat(salida.getAll()).contains("error transitorio del proveedor").doesNotContain(secreto);
     }
 
     @Test

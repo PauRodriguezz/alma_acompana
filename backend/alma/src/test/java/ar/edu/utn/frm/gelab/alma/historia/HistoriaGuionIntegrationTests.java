@@ -360,6 +360,115 @@ class HistoriaGuionIntegrationTests {
         assertThat(relaciones(personaA, 2)).isEqualTo(1);
     }
 
+    // ---------- Respuestas sin contenido: "no me acuerdo" es un salteo (contrato del grafo, 5.1) ----------
+
+    private long relacionesDeTipo(Persona persona, int preguntaId, String tipo) {
+        return contar(neo4j, "MATCH (:PersonaMayor {idPersonaMayor: $p})-[r:" + tipo
+                + "]->(:PreguntaGuion {idPreguntaGuion: $q}) RETURN count(r) AS c", "p", persona.personaId(), "q",
+                preguntaId);
+    }
+
+    @Test
+    void noMeAcuerdoDevuelve202ACEPTADAPeroQuedaSalteadaSinRecuerdoNiPedidoAlModelo() throws Exception {
+        mockMvc.perform(pedir(post("/api/historia/guion/10/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo("No me acuerdo.")))
+                .andExpect(status().isAccepted())
+                .andExpect(content().json("{\"estado\":\"ACEPTADA\"}", true));
+        esperarCola();
+
+        assertThat(relacionesDeTipo(personaA, 10, "SALTEO")).isEqualTo(1);
+        assertThat(relacionesDeTipo(personaA, 10, "RESPONDIO")).isZero();
+        assertThat(recuerdosDe(personaA)).as("no se creó ningún recuerdo").isZero();
+        assertThat(modelo.pedidos()).as("no se le pidió nada al modelo").isEmpty();
+        mockMvc.perform(pedir(get(ESTADO), tokenA))
+                .andExpect(jsonPath("$.respondidas").value(0))
+                .andExpect(jsonPath("$.salteadas").value(1))
+                .andExpect(jsonPath("$.preguntas[9].estado").value("SALTEADA"));
+    }
+
+    @Test
+    void laPreguntaNoSeVuelveAOfrecerYLaSiguienteLlevaLaIntroduccionDeDespuesDeUnSalteo() throws Exception {
+        responder(tokenA, 1, "No me acuerdo");
+        esperarCola();
+
+        mockMvc.perform(pedir(get(PROXIMA), tokenA))
+                .andExpect(jsonPath("$.pregunta.id").value(2))
+                .andExpect(jsonPath("$.introduccion").value(DESPUES_DE_SALTEO));
+        // Una vez salteada, responderla de nuevo da 409, igual que un salteo.
+        mockMvc.perform(pedir(post("/api/historia/guion/1/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo("Nací en un pueblo.")))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void variasFormasDeNoRecordarNoCreanRecuerdo() throws Exception {
+        String[] respuestas = { "No sé", "Ni idea", "La verdad, no me acuerdo de nada", "No quiero contar",
+                "No quiero responder", "Prefiero no hablar de eso" };
+        for (int i = 0; i < respuestas.length; i++) {
+            responder(tokenA, i + 1, respuestas[i]);
+        }
+        esperarCola();
+
+        assertThat(recuerdosDe(personaA)).isZero();
+        assertThat(modelo.pedidos()).isEmpty();
+        for (int i = 1; i <= respuestas.length; i++) {
+            assertThat(relacionesDeTipo(personaA, i, "SALTEO")).as("pregunta " + i).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void unaRespuestaQueMezclaNoMeAcuerdoConContenidoSiCreaElRecuerdo() throws Exception {
+        modelo.responde("""
+                {"titulo":"Los tiempos con Marta","descripcion":"Pasaba el tiempo con Marta.","anio":null,\
+                "anioAproximado":false,"edadMencionada":null,"personas":[{"nombre":"Marta","vinculo":null}],\
+                "lugares":[]}""");
+
+        responder(tokenA, 10, "No me acuerdo del año, pero iba con Marta.");
+        esperarCola();
+
+        assertThat(relacionesDeTipo(personaA, 10, "RESPONDIO")).isEqualTo(1);
+        assertThat(relacionesDeTipo(personaA, 10, "SALTEO")).isZero();
+        assertThat(recuerdosDe(personaA)).isEqualTo(1);
+        assertThat(modelo.pedidos()).hasSize(1);
+        assertThat(modelo.pedidos().get(0).mensaje()).contains("No me acuerdo del año, pero iba con Marta.");
+    }
+
+    @Test
+    void conRiesgoGanaLaAlarmaAunqueTambienDigaQueNoSeAcuerda() throws Exception {
+        mockMvc.perform(pedir(post("/api/historia/guion/10/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo("No me acuerdo, ya no quiero vivir")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("ALARMA"));
+        esperarCola();
+
+        assertThat(relaciones(personaA, 10)).as("la pregunta sigue pendiente").isZero();
+        assertThat(recuerdosDe(personaA)).isZero();
+    }
+
+    @Test
+    void noMeAcuerdoEnUnaPreguntaInexistenteDa404YEnUnaYaRegistradaDa409() throws Exception {
+        mockMvc.perform(pedir(post("/api/historia/guion/9999/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo("No me acuerdo")))
+                .andExpect(status().isNotFound());
+        responder(tokenA, 1, "Nací en un pueblo.");
+        esperarCola();
+
+        mockMvc.perform(pedir(post("/api/historia/guion/1/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpo("No me acuerdo")))
+                .andExpect(status().isConflict());
+        assertThat(relacionesDeTipo(personaA, 1, "RESPONDIO")).isEqualTo(1);
+        assertThat(relacionesDeTipo(personaA, 1, "SALTEO")).isZero();
+    }
+
+    @Test
+    void elLogDeUnaRespuestaSinContenidoNoTraeElTexto(CapturedOutput salida) throws Exception {
+        responder(tokenA, 1, "La verdad, no me acuerdo de nada");
+        esperarCola();
+
+        assertThat(salida.getAll()).contains("Respuesta sin contenido").doesNotContain("no me acuerdo de nada")
+                .doesNotContain("La verdad");
+    }
+
     // ---------- Alarmas en las respuestas del guion (contrato de historia de vida, 2.9, 5.6 y 7.1) ----------
 
     private static final String URGENCIA = "Lo que me contás puede ser urgente. Por favor, llamá ahora al 911 o "

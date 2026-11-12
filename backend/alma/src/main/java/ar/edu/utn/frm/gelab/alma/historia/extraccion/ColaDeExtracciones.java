@@ -140,6 +140,10 @@ public class ColaDeExtracciones {
                 // Una repregunta no tiene respaldo (5.4): el recuerdo ya existe y simplemente no cambia.
                 log.info("La repregunta de la persona {} no se pudo extraer: el recuerdo no cambia",
                         trabajo.personaId());
+                if (resultado.porModeloNoDisponible()) {
+                    // Contrato del grafo, 5.7: si el modelo no estaba disponible, el intento no se gasta.
+                    devolverIntento(trabajo);
+                }
             } else {
                 recuerdos.completar(trabajo, resultado.respuesta());
             }
@@ -149,6 +153,18 @@ public class ColaDeExtracciones {
                     e.getClass().getSimpleName());
         } finally {
             restar(trabajo.personaId());
+        }
+    }
+
+    /** Devuelve el intento del dato. Si falla, solo se registra (sin texto): no debe dejar a la persona "procesando". */
+    private void devolverIntento(TrabajoDeExtraccion trabajo) {
+        try {
+            recuerdos.devolverIntento(trabajo);
+            log.info("Se devolvió el intento del dato de la persona {}: el modelo no estaba disponible",
+                    trabajo.personaId());
+        } catch (RuntimeException e) {
+            log.error("No se pudo devolver el intento de la persona {} ({})", trabajo.personaId(),
+                    e.getClass().getSimpleName());
         }
     }
 

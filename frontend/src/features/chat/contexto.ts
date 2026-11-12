@@ -2,7 +2,7 @@ import { createContext, type RefObject } from "react"
 
 import type { RegistroAnimo } from "@/features/bienestar"
 
-import type { MensajeChat, ObjetivoGuion, ResultadoApertura } from "./tipos"
+import type { MensajeChat, ObjetivoGuion, ResultadoApertura, ResultadoCompletar } from "./tipos"
 
 /** Todo lo que la pantalla del chat lee y puede hacer (contrato, 11.1). Vive en memoria. */
 export type ChatContextoValor = {
@@ -43,6 +43,15 @@ export type ChatContextoValor = {
   ocupadoGuion: boolean
   /** Pide la próxima pregunta y la deja en el chat. La usa la tarjeta "Próxima parada". Lanza si el pedido falla. */
   abrirPreguntaDelGuion: () => Promise<ResultadoApertura>
+  /**
+   * "Seguir completando este recuerdo": pide la repregunta de ese recuerdo (espera si hay una extracción en curso) y,
+   * con una, la deja en el chat. Con `NINGUNA` no hay nada más para preguntar. Lanza si el pedido falla.
+   */
+  seguirCompletando: (recuerdoId: string) => Promise<ResultadoCompletar>
+  /** Se ve el botón fijo "Seguir mi historia de vida": sin objetivo activo, sin alarma en la visita y con preguntas pendientes. */
+  mostrarBotonSeguirHistoria: boolean
+  /** El botón fijo: pide la próxima pregunta y la deja en el chat (deja una burbuja de la persona). */
+  seguirMiHistoria: () => void
   aceptarInvitacion: () => void
   rechazarInvitacion: () => void
   /** Con una pregunta en pantalla: la saltea y pide la siguiente. */

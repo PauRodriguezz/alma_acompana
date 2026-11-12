@@ -218,7 +218,7 @@ class RepreguntaEndpointsIntegrationTests {
                 .andExpect(jsonPath("$.repregunta.texto").value("¿Dónde pasó esto?"));
         mockMvc.perform(con(get(SIGUIENTE).param("excluir", "ANIO,LUGARES"), tokenA))
                 .andExpect(jsonPath("$.repregunta.dato").value("PERSONAS"))
-                .andExpect(jsonPath("$.repregunta.texto").value("¿Quién más estaba con vos en ese momento?"));
+                .andExpect(jsonPath("$.repregunta.texto").value("¿Quién más estaba con vos en ese momento? Si te acordás, contame también cómo se llamaban."));
         mockMvc.perform(con(get(SIGUIENTE).param("excluir", "ANIO,LUGARES,PERSONAS"), tokenA))
                 .andExpect(jsonPath("$.estado").value("NINGUNA"));
         mockMvc.perform(con(get(SIGUIENTE).param("excluir", ""), tokenA))
@@ -255,6 +255,114 @@ class RepreguntaEndpointsIntegrationTests {
         mockMvc.perform(con(get(SIGUIENTE).param("preguntaId", "9999"), tokenA))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado").value("NINGUNA"));
+    }
+
+    // ---------- Contrato del mapa de vida, 3.3: recuerdoId y tituloRecuerdo ----------
+
+    @Test
+    void conRecuerdoIdBuscaSoloEnEseRecuerdoYTraeSuTitulo() throws Exception {
+        String viejo = recuerdos.crear(personaA.personaId(), ESCUELA, "El más viejo", null, null, 0, 0, 0, 0);
+        String nuevo = recuerdos.crear(personaA.personaId(), ESCUELA, "La escuela de mi infancia", null, null, 0, 0, 0, 1);
+
+        // Sin recuerdoId gana el más antiguo; con recuerdoId, el pedido.
+        mockMvc.perform(con(get(SIGUIENTE), tokenA))
+                .andExpect(jsonPath("$.repregunta.recuerdoId").value(viejo))
+                .andExpect(jsonPath("$.repregunta.tituloRecuerdo").value("El más viejo"));
+        mockMvc.perform(con(get(SIGUIENTE).param("recuerdoId", nuevo), tokenA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("HAY"))
+                .andExpect(jsonPath("$.repregunta.recuerdoId").value(nuevo))
+                .andExpect(jsonPath("$.repregunta.dato").value("ANIO"))
+                .andExpect(jsonPath("$.repregunta.texto").value("¿Te acordás en qué año fue, o cuántos años tenías?"))
+                .andExpect(jsonPath("$.repregunta.tituloRecuerdo").value("La escuela de mi infancia"));
+    }
+
+    @Test
+    void tituloRecuerdoTambienVieneConPreguntaId() throws Exception {
+        recuerdos.crear(personaA.personaId(), 2, "La casa de mi infancia", null, null, 0, 0, 0, 0);
+
+        mockMvc.perform(con(get(SIGUIENTE).param("preguntaId", "2"), tokenA))
+                .andExpect(jsonPath("$.repregunta.tituloRecuerdo").value("La casa de mi infancia"));
+    }
+
+    @Test
+    void conRecuerdoIdSinCandidatosDevuelveNinguna() throws Exception {
+        String sinRepreguntas = recuerdoSinAnio(personaA, SIN_REPREGUNTAS);
+        String agotado = recuerdos.crear(personaA.personaId(), ESCUELA, "Agotado", null, null, 2, 2, 2, 5);
+        String completo = recuerdos.crear(personaA.personaId(), ESCUELA, "Completo", 1960, "EXACTA", 0, 0, 0, 6);
+        recuerdos.agregarLugar(completo, "Allen");
+        recuerdos.agregarPersona(personaA.personaId(), completo, "Elena", "maestra");
+
+        for (String id : List.of(sinRepreguntas, agotado, completo)) {
+            mockMvc.perform(con(get(SIGUIENTE).param("recuerdoId", id), tokenA))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.estado").value("NINGUNA"))
+                    .andExpect(jsonPath("$.repregunta").value(nullValue()));
+        }
+    }
+
+    @Test
+    void conRecuerdoIdAjenoOInexistenteDevuelveNingunaSinFiltrarNadaDeLaOtraPersona() throws Exception {
+        String deB = recuerdos.crear(personaB.personaId(), ESCUELA, "Secreto de B", null, null, 0, 0, 0, 0);
+        recuerdoSinAnio(personaA, ESCUELA);
+
+        String ajeno = mockMvc.perform(con(get(SIGUIENTE).param("recuerdoId", deB), tokenA))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("NINGUNA"))
+                .andReturn().getResponse().getContentAsString();
+        String inexistente = mockMvc.perform(con(get(SIGUIENTE).param("recuerdoId", UUID.randomUUID().toString()), tokenA))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.estado").value("NINGUNA"))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(ajeno).doesNotContain("Secreto de B").isEqualTo(inexistente);
+        // Y B sí ve su repregunta, con su título; A nunca ve el título de B en su propia búsqueda.
+        mockMvc.perform(con(get(SIGUIENTE), tokenB))
+                .andExpect(jsonPath("$.repregunta.tituloRecuerdo").value("Secreto de B"));
+        mockMvc.perform(con(get(SIGUIENTE), tokenA))
+                .andExpect(jsonPath("$.repregunta.tituloRecuerdo").value("Un recuerdo"));
+    }
+
+    @Test
+    void unRecuerdoIdMalFormadoDa400() throws Exception {
+        recuerdoSinAnio(personaA, ESCUELA);
+
+        for (String malo : List.of("abc", "123", "5f1c", "no-es-un-uuid")) {
+            mockMvc.perform(con(get(SIGUIENTE).param("recuerdoId", malo), tokenA))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.detail").value(DATOS_INVALIDOS));
+        }
+    }
+
+    @Test
+    void preguntaIdYRecuerdoIdJuntosDan400() throws Exception {
+        String id = recuerdoSinAnio(personaA, ESCUELA);
+
+        mockMvc.perform(con(get(SIGUIENTE).param("preguntaId", String.valueOf(ESCUELA)).param("recuerdoId", id), tokenA))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value(DATOS_INVALIDOS));
+    }
+
+    @Test
+    void conRecuerdoIdTambienFuncionaExcluir() throws Exception {
+        String id = recuerdoSinAnio(personaA, ESCUELA);
+
+        mockMvc.perform(con(get(SIGUIENTE).param("recuerdoId", id).param("excluir", "ANIO"), tokenA))
+                .andExpect(jsonPath("$.repregunta.dato").value("LUGARES"));
+        mockMvc.perform(con(get(SIGUIENTE).param("recuerdoId", id).param("excluir", "ANIO,LUGARES,PERSONAS"), tokenA))
+                .andExpect(jsonPath("$.estado").value("NINGUNA"));
+    }
+
+    @Test
+    void conRecuerdoIdMientrasHayUnaExtraccionEnCursoDevuelvePROCESANDO() throws Exception {
+        String id = recuerdoSinAnio(personaA, ESCUELA);
+        modelo.respondeConDemora(ModeloDePrueba.JSON_GENERICO, 600);
+        mockMvc.perform(con(responder(id, "ANIO", cuerpo("Fue en 1962")), tokenA)).andExpect(status().isAccepted());
+
+        mockMvc.perform(con(get(SIGUIENTE).param("recuerdoId", id), tokenA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("PROCESANDO"))
+                .andExpect(jsonPath("$.repregunta").value(nullValue()));
     }
 
     @Test
@@ -519,7 +627,7 @@ class RepreguntaEndpointsIntegrationTests {
         JsonNode siguiente = rutas.get("/api/historia/repreguntas/siguiente").get("get");
         assertThat(siguiente).isNotNull();
         List<String> parametros = siguiente.get("parameters").valueStream().map(p -> p.get("name").asString()).toList();
-        assertThat(parametros).containsExactlyInAnyOrder("preguntaId", "excluir");
+        assertThat(parametros).containsExactlyInAnyOrder("preguntaId", "recuerdoId", "excluir");
         siguiente.get("parameters").forEach(p -> assertThat(p.get("required") == null || !p.get("required").asBoolean())
                 .as("opcional: " + p.get("name")).isTrue());
         String respuesta = siguiente.get("responses").get("200").get("content").get("*/*").get("schema").get("$ref")
@@ -529,6 +637,11 @@ class RepreguntaEndpointsIntegrationTests {
                 .containsExactlyInAnyOrder("PROCESANDO", "HAY", "NINGUNA");
         assertThat(valores(esquemas.get("RepreguntaDto").get("properties").get("dato")))
                 .containsExactlyInAnyOrder("ANIO", "LUGARES", "PERSONAS");
+        // Contrato del mapa de vida (3.1 a 3.3): los campos nuevos están documentados.
+        assertThat(esquemas.get("RepreguntaDto").get("properties").has("tituloRecuerdo")).isTrue();
+        assertThat(esquemas.get("RecuerdoResumenResponse").get("properties").has("faltantes")).isTrue();
+        assertThat(esquemas.get("RecuerdoDetalleResponse").get("properties").has("faltantes")).isTrue();
+        assertThat(esquemas.get("RecuerdoDetalleResponse").get("properties").has("preguntaTexto")).isTrue();
 
         // 7.6: el cuerpo es el de texto de historia, no el de juegos.
         JsonNode responder = rutas.get("/api/historia/repreguntas/{recuerdoId}/{dato}/respuesta").get("post");

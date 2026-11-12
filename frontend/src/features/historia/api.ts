@@ -65,15 +65,20 @@ export function saltearRepregunta(recuerdoId: string, dato: DatoFaltante): Promi
 }
 
 /**
- * Contrato del grafo, 7.5. `preguntaId` es el de la pregunta que dio origen a la charla (si no, el back
- * busca en todos los recuerdos). `excluir` son los datos ya preguntados en esta charla.
+ * Contrato del grafo, 7.5, y del mapa de vida, 3.3. Con `preguntaId` (la pregunta que dio origen a la charla) se
+ * repregunta solo sobre los recuerdos de esa pregunta; con `recuerdoId` (seguir completando un recuerdo), solo sobre
+ * ese recuerdo; sin ninguno, el back busca en todos. No se mandan los dos a la vez (400). `excluir` son los datos ya
+ * preguntados en esta charla.
  */
+export type OrigenDeRepregunta = { preguntaId: number } | { recuerdoId: string } | null
+
 export function siguienteRepregunta(
-  preguntaId: number | null,
+  origen: OrigenDeRepregunta,
   excluir: DatoFaltante[]
 ): Promise<RepreguntaSiguiente> {
   const parametros = new URLSearchParams()
-  if (preguntaId !== null) parametros.set("preguntaId", String(preguntaId))
+  if (origen && "preguntaId" in origen) parametros.set("preguntaId", String(origen.preguntaId))
+  if (origen && "recuerdoId" in origen) parametros.set("recuerdoId", origen.recuerdoId)
   if (excluir.length > 0) parametros.set("excluir", excluir.join(","))
   const consulta = parametros.toString()
   return api<RepreguntaSiguiente>(`${BASE}/repreguntas/siguiente${consulta ? `?${consulta}` : ""}`)

@@ -93,7 +93,8 @@ public class OllamaModeloConversacional implements ModeloConversacional {
         } catch (RuntimeException e) {
             registrarFalla(e, inicio);
             // No se pasa el mensaje original: podría citar el pedido.
-            throw new ModeloNoDisponibleException("Falló la llamada al modelo: " + e.getClass().getSimpleName(), e);
+            throw new ModeloNoDisponibleException("Falló la llamada al modelo: " + e.getClass().getSimpleName(), e,
+                    ErroresTransitorios.deOllama(e));
         }
     }
 
