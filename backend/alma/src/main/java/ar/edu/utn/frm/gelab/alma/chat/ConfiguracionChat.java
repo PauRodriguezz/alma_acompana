@@ -7,6 +7,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
+import ar.edu.utn.frm.gelab.alma.chat.guardrails.TipoDeRiesgo;
+
 /**
  * Propiedades de {@code chat/chat.properties} (contrato de chat, sección 2): respuestas predefinidas,
  * listas de expresiones y límites. El archivo se lee como UTF-8. Las propiedades {@code alma.ia.*} del
@@ -42,6 +44,14 @@ public class ConfiguracionChat {
 
         private String urgencia;
         private String malestarGrave;
+
+        /** El texto predefinido para un riesgo detectado (lo usan el chat y las respuestas del guion). */
+        public String para(TipoDeRiesgo riesgo) {
+            return switch (riesgo) {
+                case MALESTAR_GRAVE -> malestarGrave;
+                case URGENCIA_MEDICA -> urgencia;
+            };
+        }
 
         public String getUrgencia() {
             return urgencia;

@@ -1,6 +1,5 @@
 package ar.edu.utn.frm.gelab.alma.persona;
 
-import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -31,9 +30,6 @@ import com.jayway.jsonpath.JsonPath;
 import ar.edu.utn.frm.gelab.alma.auth.domain.Cuenta;
 import ar.edu.utn.frm.gelab.alma.auth.domain.Rol;
 import ar.edu.utn.frm.gelab.alma.auth.repository.CuentaRepository;
-import ar.edu.utn.frm.gelab.alma.persona.domain.PersonaMayor;
-import ar.edu.utn.frm.gelab.alma.persona.domain.PreferenciaAccesibilidad;
-import ar.edu.utn.frm.gelab.alma.persona.domain.TamanioLetra;
 import ar.edu.utn.frm.gelab.alma.persona.repository.PersonaMayorRepository;
 
 /**
@@ -47,7 +43,6 @@ class PerfilIntegrationTests {
 
     private static final String PERFIL = "/api/perfil";
     private static final String CONTRASENIA = "Alma2026!";
-    private static final String SIN_FECHA = "test_perfil_sin_fecha";
     private static final String SIN_PERSONA = "test_perfil_sin_persona";
 
     @Autowired
@@ -64,7 +59,7 @@ class PerfilIntegrationTests {
     @BeforeEach
     @AfterEach
     void borrarCuentasTemporales() {
-        for (String nombreUsuario : List.of(SIN_FECHA, SIN_PERSONA)) {
+        for (String nombreUsuario : List.of(SIN_PERSONA)) {
             cuentaRepository.findByNombreUsuario(nombreUsuario).ifPresent(cuenta -> {
                 personaMayorRepository.findByCuentaId(cuenta.getId()).ifPresent(personaMayorRepository::delete);
                 cuentaRepository.delete(cuenta);
@@ -83,18 +78,6 @@ class PerfilIntegrationTests {
                 .andExpect(jsonPath("$.id").doesNotExist())
                 .andExpect(jsonPath("$.rol").doesNotExist())
                 .andExpect(jsonPath("$.contrasenia").doesNotExist());
-    }
-
-    @Test
-    void sinFechaDeNacimientoDevuelveNull() throws Exception {
-        Cuenta cuenta = crearCuenta(SIN_FECHA);
-        crearPersona(cuenta, "Sin", "Fecha");
-
-        mockMvc.perform(get(PERFIL).header(HttpHeaders.AUTHORIZATION, bearer(tokenDe(cuenta.getId(), "PERSONA_MAYOR"))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nombre").value("Sin"))
-                .andExpect(jsonPath("$.fechaNacimiento", nullValue()))
-                .andExpect(jsonPath("$.nombreUsuario").value(SIN_FECHA));
     }
 
     @Test
@@ -128,18 +111,6 @@ class PerfilIntegrationTests {
         cuenta.setRol(Rol.PERSONA_MAYOR);
         cuenta.setFechaAlta(LocalDate.now());
         return cuentaRepository.save(cuenta);
-    }
-
-    private void crearPersona(Cuenta cuenta, String nombre, String apellido) {
-        PreferenciaAccesibilidad preferencia = new PreferenciaAccesibilidad();
-        preferencia.setTamanioLetra(TamanioLetra.NORMAL);
-        preferencia.setAltoContraste(false);
-        PersonaMayor persona = new PersonaMayor();
-        persona.setNombre(nombre);
-        persona.setApellido(apellido);
-        persona.setCuenta(cuenta);
-        persona.setPreferenciaAccesibilidad(preferencia);
-        personaMayorRepository.save(persona);
     }
 
     private String tokenDeLogin(String nombreUsuario) throws Exception {

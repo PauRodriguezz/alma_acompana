@@ -1,7 +1,8 @@
-import { useEffect, useRef, type ReactNode } from "react"
+import type { ReactNode } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 
 import { EnlaceVolver } from "@/components/alma/enlace-volver"
+import { TituloConFoco } from "@/components/alma/titulo-con-foco"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"
@@ -119,17 +120,4 @@ function parrafos(texto: string): string[] {
     .split(/\n\s*\n/)
     .map((parrafo) => parrafo.trim())
     .filter((parrafo) => parrafo !== "")
-}
-
-/** El h1 de la pantalla, que recibe el foco al aparecer (contrato, 10.4). */
-function TituloConFoco({ children }: { children: ReactNode }) {
-  const ref = useRef<HTMLHeadingElement>(null)
-  useEffect(() => {
-    ref.current?.focus({ preventScroll: true })
-  }, [])
-  return (
-    <h1 ref={ref} tabIndex={-1} className="wrap-break-word outline-none lg:text-h1-desktop">
-      {children}
-    </h1>
-  )
 }

@@ -69,6 +69,10 @@
 			<artifactId>spring-ai-starter-model-ollama</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-starter-model-google-genai</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
 			<scope>runtime</scope>
@@ -179,8 +183,11 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<!-- Igual que TimeZone.setDefault en AlmaApplication.main(): los tests no pasan por main()
-					     y PostgreSQL 17 rechaza la zona por defecto de Java en Windows. -->
-					<argLine>-Duser.timezone=America/Argentina/Buenos_Aires</argLine>
+					     y PostgreSQL 17 rechaza la zona por defecto de Java en Windows.
+					     El pool de conexiones de los tests es de 5 (el de Hikari es de 10): Spring cachea cada contexto de
+					     prueba con su propio pool y PostgreSQL admite 100 conexiones, así que con diez contextos o más la
+					     suite fallaba con "too many clients already". -->
+					<argLine>-Duser.timezone=America/Argentina/Buenos_Aires -Dspring.datasource.hikari.maximum-pool-size=5</argLine>
 				</configuration>
 			</plugin>
 		</plugins>

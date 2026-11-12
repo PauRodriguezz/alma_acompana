@@ -9,8 +9,11 @@ import { mensajeDeError } from "@/lib/errores"
 import { ACCION_PROBAR_DE_NUEVO } from "@/lib/mensajes"
 import { useAhora } from "@/lib/useAhora"
 
+import { AccionesDelGuion } from "../components/AccionesDelGuion"
 import { CampoMensaje } from "../components/CampoMensaje"
+import { MensajeGuion } from "../components/MensajeGuion"
 import { MensajePersona } from "../components/MensajePersona"
+import { MensajeSinPendientes } from "../components/MensajeSinPendientes"
 import { SaludoDeAlma } from "../components/SaludoDeAlma"
 import { ALMA_PENSANDO, CONVERSACION_CON_ALMA } from "../mensajes"
 import { useChat } from "../useChat"
@@ -32,7 +35,7 @@ export function ChatPage() {
   // No se desplaza al entrar: solo cuando algo cambia.
   const finDeLaConversacion = useRef<HTMLDivElement>(null)
   // La huella cambia con cada mensaje nuevo, con el indicador de espera y con el error.
-  const huella = `${chat.mensajes.length}-${chat.pendiente}-${chat.error !== null}`
+  const huella = `${chat.mensajes.length}-${chat.pendiente}-${chat.error !== null}-${chat.objetivoActivo?.tipo}-${chat.cierrePendiente}-${chat.invitacionPendiente}`
   const huellaAnterior = useRef(huella)
   useEffect(() => {
     if (huella === huellaAnterior.current) return
@@ -83,6 +86,10 @@ export function ChatPage() {
         {chat.mensajes.map((mensaje) =>
           mensaje.rol === "PERSONA" ? (
             <MensajePersona key={mensaje.id} texto={mensaje.texto} />
+          ) : mensaje.tipo === "SIN_PENDIENTES" ? (
+            <MensajeSinPendientes key={mensaje.id} texto={mensaje.texto} />
+          ) : mensaje.tipo === "GUION" ? (
+            <MensajeGuion key={mensaje.id} texto={mensaje.texto} pregunta={mensaje.preguntaDestacada} />
           ) : (
             <MensajeAlma key={mensaje.id}>
               <p className="break-words whitespace-pre-line">{mensaje.texto}</p>
@@ -90,6 +97,8 @@ export function ChatPage() {
           )
         )}
       </div>
+
+      <AccionesDelGuion />
 
       {chat.pendiente ? (
         <MensajeAlma role="status">
@@ -102,11 +111,16 @@ export function ChatPage() {
           <Alert variant="error" className="w-full">
             {chat.error}
           </Alert>
-          <Button variant="outline" onClick={chat.reintentar} aria-disabled={chat.pendiente}>
-            {ACCION_PROBAR_DE_NUEVO}
-          </Button>
+          {chat.errorReintentable ? (
+            <Button variant="outline" onClick={chat.reintentar} aria-disabled={chat.pendiente}>
+              {ACCION_PROBAR_DE_NUEVO}
+            </Button>
+          ) : null}
         </div>
       ) : null}
+
+      {/* En celular, el botón "Seguir mi historia de vida" flota arriba del campo: este espacio deja el último mensaje a la vista. */}
+      {chat.mostrarBotonSeguirHistoria ? <div aria-hidden="true" className="h-[calc(64rem/17)] shrink-0 lg:hidden" /> : null}
 
       {/* Detrás del campo fijo y de la navegación: el margen deja el último mensaje a la vista. */}
       <div

@@ -14,7 +14,10 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 /**
@@ -26,21 +29,31 @@ import org.springframework.stereotype.Service;
  * mensajes ni de las respuestas, ni el mensaje de las excepciones (que podría citarlos).
  */
 @Service
+@ConditionalOnProperty(name = "alma.ia.proveedor", havingValue = "ollama")
 public class OllamaModeloConversacional implements ModeloConversacional {
 
     private static final Logger log = LoggerFactory.getLogger(OllamaModeloConversacional.class);
 
     private final OllamaChatModel chatModel;
+    private final OllamaChatModel chatModelExtraccion;
     private final LimitadorDePedidos limitador;
     private final String modelo;
     private final double temperatura;
     private final int maxTokens;
 
-    public OllamaModeloConversacional(OllamaChatModel chatModel, LimitadorDePedidos limitador,
-            @Value("${spring.ai.ollama.chat.options.model}") String modelo,
-            @Value("${alma.ia.temperatura}") double temperatura,
-            @Value("${alma.ia.max-tokens}") int maxTokens) {
+    /** El de siempre: la extracción usa el mismo cliente que el chat. */
+    public OllamaModeloConversacional(OllamaChatModel chatModel, LimitadorDePedidos limitador, String modelo,
+            double temperatura, int maxTokens) {
+        this(chatModel, chatModel, limitador, modelo, temperatura, maxTokens);
+    }
+
+    @Autowired
+    public OllamaModeloConversacional(OllamaChatModel chatModel,
+            @Qualifier(ConfiguracionIa.CHAT_MODEL_EXTRACCION) OllamaChatModel chatModelExtraccion,
+            LimitadorDePedidos limitador, @Value("${spring.ai.ollama.chat.options.model}") String modelo,
+            @Value("${alma.ia.temperatura}") double temperatura, @Value("${alma.ia.max-tokens}") int maxTokens) {
         this.chatModel = chatModel;
+        this.chatModelExtraccion = chatModelExtraccion;
         this.limitador = limitador;
         this.modelo = modelo;
         this.temperatura = temperatura;
@@ -49,10 +62,25 @@ public class OllamaModeloConversacional implements ModeloConversacional {
 
     @Override
     public String responder(String instrucciones, List<TurnoConversacion> turnos) {
-        Prompt prompt = armarPrompt(instrucciones, turnos);
+        return llamar(chatModel, armarPrompt(instrucciones, turnos, temperatura, maxTokens), false);
+    }
+
+    @Override
+    public String responder(String instrucciones, List<TurnoConversacion> turnos, OpcionesDeLlamada opciones) {
+        return llamar(chatModelExtraccion,
+                armarPrompt(instrucciones, turnos, opciones.temperatura(), opciones.maxTokens()), true);
+    }
+
+    /**
+     * @param segundoPlano {@code true} para la extracción: espera su turno sin tope y detrás de los chats
+     *                     ({@link LimitadorDePedidos#ejecutarEnSegundoPlano}); {@code false} para el chat.
+     */
+    private String llamar(OllamaChatModel cliente, Prompt prompt, boolean segundoPlano) {
         long inicio = System.nanoTime();
         try {
-            ChatResponse respuesta = limitador.ejecutar(() -> chatModel.call(prompt));
+            ChatResponse respuesta = segundoPlano
+                    ? limitador.ejecutarEnSegundoPlano(() -> cliente.call(prompt))
+                    : limitador.ejecutar(() -> cliente.call(prompt));
             registrarConsumo(respuesta, inicio);
             String texto = textoDe(respuesta);
             if (texto.isEmpty()) {
@@ -65,11 +93,13 @@ public class OllamaModeloConversacional implements ModeloConversacional {
         } catch (RuntimeException e) {
             registrarFalla(e, inicio);
             // No se pasa el mensaje original: podría citar el pedido.
-            throw new ModeloNoDisponibleException("Falló la llamada al modelo: " + e.getClass().getSimpleName(), e);
+            throw new ModeloNoDisponibleException("Falló la llamada al modelo: " + e.getClass().getSimpleName(), e,
+                    ErroresTransitorios.deOllama(e));
         }
     }
 
-    private Prompt armarPrompt(String instrucciones, List<TurnoConversacion> turnos) {
+    private Prompt armarPrompt(String instrucciones, List<TurnoConversacion> turnos, double temperatura,
+            int maxTokens) {
         List<Message> mensajes = new ArrayList<>();
         mensajes.add(new SystemMessage(instrucciones));
         for (TurnoConversacion turno : turnos) {

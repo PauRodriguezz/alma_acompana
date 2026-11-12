@@ -48,7 +48,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+
 
 import com.jayway.jsonpath.JsonPath;
 
@@ -286,7 +286,8 @@ class ChatIntegrationTests {
     void mensajeNormalDevuelveLaRespuestaDelModeloYLeLlegaElPromptCompleto() throws Exception {
         enviar("{\"mensaje\":\"Hoy desayuné mate con tortas fritas\"}", tokenA)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.respuesta").value("Respuesta del modelo falso."));
+                .andExpect(jsonPath("$.respuesta").value("Respuesta del modelo falso."))
+                .andExpect(jsonPath("$.alarma").value(false));
 
         assertEquals(1, modelo.instrucciones.size());
         String prompt = modelo.ultimasInstrucciones();
@@ -321,9 +322,11 @@ class ChatIntegrationTests {
     void urgenciaMedicaDevuelveElTextoPredefinidoSinLlamarAlModelo() throws Exception {
         enviar("{\"mensaje\":\"Tengo un dolor fuerte en el pecho y me falta el aire\"}", tokenA)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.respuesta").value(URGENCIA));
+                .andExpect(jsonPath("$.respuesta").value(URGENCIA))
+                .andExpect(jsonPath("$.alarma").value(true));
         enviar("{\"mensaje\":\"Me tomé dos pastillas de más, ¿pasa algo?\"}", tokenA)
-                .andExpect(jsonPath("$.respuesta").value(URGENCIA));
+                .andExpect(jsonPath("$.respuesta").value(URGENCIA))
+                .andExpect(jsonPath("$.alarma").value(true));
 
         assertTrue(modelo.instrucciones.isEmpty(), "El modelo no debía ser llamado");
     }
@@ -332,10 +335,12 @@ class ChatIntegrationTests {
     void malestarGraveDevuelveElTextoPredefinidoSinLlamarAlModelo() throws Exception {
         enviar("{\"mensaje\":\"Ya no quiero vivir\"}", tokenA)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.respuesta").value(MALESTAR));
+                .andExpect(jsonPath("$.respuesta").value(MALESTAR))
+                .andExpect(jsonPath("$.alarma").value(true));
         // Si coinciden las dos listas, gana malestar grave.
         enviar("{\"mensaje\":\"Me duele el pecho y quiero morirme\"}", tokenA)
-                .andExpect(jsonPath("$.respuesta").value(MALESTAR));
+                .andExpect(jsonPath("$.respuesta").value(MALESTAR))
+                .andExpect(jsonPath("$.alarma").value(true));
 
         assertTrue(modelo.instrucciones.isEmpty(), "El modelo no debía ser llamado");
     }
@@ -345,7 +350,8 @@ class ChatIntegrationTests {
         enviar("""
                 {"mensaje":"Sí, gracias","conversacion":[{"rol":"PERSONA","texto":"Me duele el pecho"}]}""", tokenA)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.respuesta").value("Respuesta del modelo falso."));
+                .andExpect(jsonPath("$.respuesta").value("Respuesta del modelo falso."))
+                .andExpect(jsonPath("$.alarma").value(false));
         assertEquals(1, modelo.instrucciones.size());
     }
 
@@ -621,7 +627,8 @@ class ChatIntegrationTests {
         modelo.respuesta = "<think>La persona saluda, debo ser cálida.</think>\n\n  Hola, ¿cómo estás?  ";
         enviar("{\"mensaje\":\"Hola\"}", tokenA)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.respuesta").value("Hola, ¿cómo estás?"));
+                .andExpect(jsonPath("$.respuesta").value("Hola, ¿cómo estás?"))
+                .andExpect(jsonPath("$.alarma").value(false));
     }
 
     @Test
@@ -759,6 +766,7 @@ class ChatIntegrationTests {
             PersonaMayor persona = new PersonaMayor();
             persona.setNombre(nombre);
             persona.setApellido(apellido);
+            persona.setFechaNacimiento(LocalDate.of(1950, 5, 12));
             persona.setCuenta(cuenta);
             persona.setPreferenciaAccesibilidad(preferencia);
             personaMayorRepository.save(persona);

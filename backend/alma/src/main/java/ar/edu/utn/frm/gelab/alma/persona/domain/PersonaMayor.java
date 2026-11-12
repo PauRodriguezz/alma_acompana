@@ -34,6 +34,7 @@ public class PersonaMayor {
     @Column(nullable = false)
     private String apellido;
 
+    @Column(nullable = false)
     private LocalDate fechaNacimiento;
 
     @OneToOne(optional = false)

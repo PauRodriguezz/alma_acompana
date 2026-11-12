@@ -4,8 +4,8 @@ import { api } from "@/lib/api"
 export type Perfil = {
   nombre: string
   apellido: string
-  /** yyyy-MM-dd, o null si la persona no la tiene cargada. */
-  fechaNacimiento: string | null
+  /** yyyy-MM-dd. Siempre viene cargada. */
+  fechaNacimiento: string
   nombreUsuario: string
 }
 

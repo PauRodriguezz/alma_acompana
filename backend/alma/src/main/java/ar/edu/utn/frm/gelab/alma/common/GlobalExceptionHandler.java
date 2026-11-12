@@ -22,6 +22,7 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import ar.edu.utn.frm.gelab.alma.common.exception.ConflictoException;
 import ar.edu.utn.frm.gelab.alma.common.exception.CredencialesInvalidasException;
 import ar.edu.utn.frm.gelab.alma.common.exception.DatosInvalidosException;
 import ar.edu.utn.frm.gelab.alma.common.exception.RecursoNoEncontradoException;
@@ -58,6 +59,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ProblemDetail noEncontrado(RecursoNoEncontradoException ex, HttpServletRequest request) {
         return problema(HttpStatus.NOT_FOUND, MensajesError.TITULO_NO_ENCONTRADO,
                 MensajesError.NO_ENCONTRADO, request);
+    }
+
+    /** 409: el detail es el mensaje de la excepción, propio de cada caso de uso (por ejemplo, "ya fue respondida"). */
+    @ExceptionHandler(ConflictoException.class)
+    public ProblemDetail conflicto(ConflictoException ex, HttpServletRequest request) {
+        return problema(HttpStatus.CONFLICT, MensajesError.TITULO_CONFLICTO, ex.getMessage(), request);
     }
 
     /**
@@ -126,6 +133,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             case 403 -> textos(problema, MensajesError.TITULO_SIN_PERMISO, MensajesError.SIN_PERMISO);
             case 404 -> textos(problema, MensajesError.TITULO_NO_ENCONTRADO, MensajesError.NO_ENCONTRADO);
             case 500 -> textos(problema, MensajesError.TITULO_ERROR_INTERNO, MensajesError.ERROR_INTERNO);
+            // Un 409 que genere Spring no tiene un texto general: solo se traduce el título.
+            case 409 -> problema.setTitle(MensajesError.TITULO_CONFLICTO);
             default -> {
                 // Otros códigos (405, 415, ...) quedan con el texto de Spring.
             }
