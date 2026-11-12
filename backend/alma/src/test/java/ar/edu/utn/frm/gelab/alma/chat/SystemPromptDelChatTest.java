@@ -35,9 +35,9 @@ class SystemPromptDelChatTest {
     /** Texto de la regla 7: desde "7. " hasta el título EJEMPLOS, en una sola línea. */
     private static String regla7() {
         int desde = prompt.indexOf("\n7. ");
-        int hasta = prompt.indexOf("\nEJEMPLOS");
+        int hasta = prompt.indexOf("\n8. ");
         assertThat(desde).as("existe la regla 7").isPositive();
-        assertThat(hasta).as("la regla 7 está antes de EJEMPLOS").isGreaterThan(desde);
+        assertThat(hasta).as("la regla 7 está antes de la 8").isGreaterThan(desde);
         return prompt.substring(desde, hasta).replaceAll("\\s+", " ").strip();
     }
 
@@ -64,15 +64,71 @@ class SystemPromptDelChatTest {
     }
 
     @Test
-    void lasReglasVanDeLaUnaALaSieteEnOrden() {
+    void lasReglasVanDeLaUnaALaNueveEnOrden() {
         int anterior = prompt.indexOf("REGLAS");
         assertThat(anterior).isPositive();
-        for (int numero = 1; numero <= 7; numero++) {
+        for (int numero = 1; numero <= 9; numero++) {
             int posicion = prompt.indexOf("\n" + numero + ". ", anterior);
             assertThat(posicion).as("regla " + numero + " después de la anterior").isGreaterThan(anterior);
             anterior = posicion;
         }
-        assertThat(prompt).doesNotContain("\n8. ");
+        assertThat(prompt).doesNotContain("\n10. ");
+    }
+
+    /** Texto de una regla (8 o 9): desde "N. " hasta la regla siguiente o el título EJEMPLOS. */
+    private static String regla(int numero) {
+        int desde = prompt.indexOf("\n" + numero + ". ");
+        int hasta = prompt.indexOf(numero == 9 ? "\nEJEMPLOS" : "\n" + (numero + 1) + ". ", desde);
+        assertThat(desde).as("existe la regla " + numero).isPositive();
+        assertThat(hasta).isGreaterThan(desde);
+        return prompt.substring(desde, hasta).replaceAll("\\s+", " ").strip();
+    }
+
+    // --- Reglas 8 y 9 ---
+
+    @Test
+    void laRegla8DiceQueAlmaSoloConversaYNoOfreceAccionesQueLaAppNoTiene() {
+        assertThat(regla(8))
+                .contains("Solo podés conversar")
+                .contains("No podés mandar mensajes ni hacer llamadas, no avisás a nadie")
+                .contains("No ofrezcas ni prometas nada de eso");
+    }
+
+    @Test
+    void laRegla8DiceParaQueSirveRecordatoriosYNombraLasSeccionesQueExisten() {
+        assertThat(regla(8))
+                .contains("Recordatorios sirve solo para dos cosas: la medicación, con su horario, y las citas médicas")
+                .contains("no sirve para encuentros, tareas ni otros pendientes")
+                .contains("Historia de vida")
+                .contains("Entretenimiento")
+                .contains("la animás a llamarlas o escribirles ella y a fijar un día");
+    }
+
+    @Test
+    void laRegla9PideReflejarLaEmocionSinExplicarlaNiCalificarlaYNoCambiaLaRegla3() {
+        assertThat(regla(9))
+                .contains("empezás reflejando lo que dijo en una frase corta y cálida")
+                .contains("no explicás ni calificás la emoción")
+                .contains("no decís que la sentís vos")
+                .contains("Esta regla no cambia la 3");
+    }
+
+    @Test
+    void losEjemplosDeLasReglas8Y9SeAjustanAEllas() {
+        int hasta = prompt.indexOf("INFORMACIÓN DE LA PERSONA");
+        int hermana = prompt.indexOf("Persona: Hace mucho que no veo a mi hermana.");
+        int mateo = prompt.indexOf("Persona: Extraño a Mateo.");
+        assertThat(hermana).isPositive();
+        assertThat(mateo).isGreaterThan(hermana);
+        assertThat(hasta).isGreaterThan(mateo);
+
+        String ejemploHermana = prompt.substring(hermana, mateo).replaceAll("\\s+", " ").strip();
+        assertThat(ejemploHermana).contains("llamala o escribile vos y fijen un día")
+                .doesNotContain("recordatorio").doesNotContain("mandemos").doesNotContain("te lo voy a recordar");
+
+        String ejemploMateo = prompt.substring(mateo, hasta).replaceAll("\\s+", " ").strip();
+        assertThat(ejemploMateo).contains("Alma: Se nota cuánto lo querés. ¿Querés contarme algo de él?")
+                .doesNotContain("duele").doesNotContain("Me alegra");
     }
 
     // --- La regla 7 ---
@@ -125,7 +181,7 @@ class SystemPromptDelChatTest {
     void tieneElEjemploDeRetomarLaHistoriaDeVidaYAlmaNoPreguntaNada() {
         assertThat(prompt).contains("Persona: Bueno, dale, sigamos con mi historia de vida.");
         int desde = prompt.indexOf("Persona: Bueno, dale, sigamos con mi historia de vida.");
-        int hasta = prompt.indexOf("INFORMACIÓN DE LA PERSONA");
+        int hasta = prompt.indexOf("Persona: Hace mucho que no veo a mi hermana.");
         assertThat(hasta).isGreaterThan(desde);
         String respuesta = prompt.substring(desde, hasta).replaceAll("\\s+", " ").strip();
         assertThat(respuesta).contains("Alma: Con gusto. Podés retomarla desde la sección Historia de vida")
