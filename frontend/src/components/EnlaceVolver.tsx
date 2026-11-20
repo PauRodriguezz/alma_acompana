@@ -9,7 +9,7 @@ export function EnlaceVolver({ to, texto }: { to: string; texto: string }) {
   return (
     <Link
       to={to}
-      className="inline-flex min-h-[calc(44rem/17)] items-center gap-1 self-start font-heading text-button font-medium text-heading"
+      className="inline-flex min-h-(--tactil) items-center gap-1 self-start font-heading text-button font-medium text-heading"
     >
       <HugeiconsIcon icon={ArrowLeft01Icon} className="size-6 shrink-0" aria-hidden="true" />
       {texto}

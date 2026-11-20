@@ -3,7 +3,6 @@ import type { CSSProperties } from "react"
 import type { EtapaConRecuerdos } from "../agruparPorEtapa"
 import { variablesDeEtapa, type IdEtapa } from "../etapas"
 import { NOMBRE_DEL_MAPA } from "../mensajes"
-import "../mapa.css"
 import { CirculoDeEtapa } from "./IlustracionDeEtapa"
 import { posicionDeParada } from "../posiciones"
 import { ParadaDeEtapa } from "./ParadaDeEtapa"
@@ -64,7 +63,7 @@ export function MapaDeVida({ etapas, elegida, conAviso, onElegir }: Props) {
                 fill="none"
                 strokeWidth="28"
                 strokeLinecap="round"
-                className="stroke-[#F4C0D1] contraste-alto:stroke-muted-foreground"
+                className="stroke-mapa-camino contraste-alto:stroke-muted-foreground"
               />
               <path
                 d={camino}
@@ -72,16 +71,16 @@ export function MapaDeVida({ etapas, elegida, conAviso, onElegir }: Props) {
                 strokeWidth="2"
                 strokeDasharray="3 9"
                 strokeLinecap="round"
-                className="stroke-[#FFFBF4] contraste-alto:stroke-background"
+                className="stroke-mapa-linea contraste-alto:stroke-background"
               />
             </>
           ) : null}
           <g className="contraste-alto:hidden">
             {ARBOLITOS.slice(0, Math.max(0, etapas.length - 1)).map(([x, y]) => (
               <g key={`${x}-${y}`} transform={`translate(${x} ${y})`}>
-                <rect x="-2" y="8" width="4" height="9" fill="#854F0B" opacity=".7" />
-                <circle r="12" fill="#97C459" />
-                <circle cx="-3" cy="-3" r="6" fill="#C0DD97" />
+                <rect x="-2" y="8" width="4" height="9" className="fill-arbol-tronco" opacity=".7" />
+                <circle r="12" className="fill-arbol-copa" />
+                <circle cx="-3" cy="-3" r="6" className="fill-arbol-brillo" />
               </g>
             ))}
           </g>

@@ -50,7 +50,7 @@ function BotonFlotante() {
         aria-haspopup="dialog"
         className={cn(
           BASE,
-          "absolute top-(--page-top) right-(--page-x) z-40 size-[calc(44rem/17)] rounded-full border-2 lg:fixed lg:top-auto lg:right-6 lg:bottom-6"
+          "absolute top-(--page-top) right-(--page-x) z-40 size-(--tactil) rounded-full border-2 lg:fixed lg:top-auto lg:right-6 lg:bottom-6"
         )}
       >
         <HugeiconsIcon icon={ICONO_ACCESIBILIDAD} className="size-6" aria-hidden="true" />
@@ -80,7 +80,7 @@ function BotonDelLayout({
         BASE,
         TEXTO,
         enBarra
-          ? "size-[calc(44rem/17)] shrink-0 rounded-full border-2 lg:hidden"
+          ? "size-(--tactil) shrink-0 rounded-full border-2 lg:hidden"
           : "max-lg:hidden lg:min-h-(--altura-boton) lg:w-full lg:gap-2 lg:rounded-md lg:border-2 lg:px-3.5",
         enBarra && ocultoEnCelular && "max-lg:hidden"
       )}

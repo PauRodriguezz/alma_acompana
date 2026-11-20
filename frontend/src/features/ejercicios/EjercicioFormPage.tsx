@@ -17,7 +17,7 @@ import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
-import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
+import { PaginaDeFormulario } from "@/features/admin/EncabezadoPagina"
 import { mensajeDeError } from "@/lib/errores"
 import {
   CATEGORIAS_EJERCICIO,
@@ -53,9 +53,7 @@ import { VistaPreviaEjercicio } from "./VistaPreviaEjercicio"
 import {
   ACCION_CANCELAR,
   ACCION_GUARDANDO,
-  ESTADO_CARGANDO,
   ETIQUETA_CATEGORIA,
-  MENSAJE_NO_ENCONTRADO,
 } from "@/lib/mensajes"
 import { ADMIN_EJERCICIOS, ADMIN_PANEL } from "@/features/admin/mensajes"
 import {
@@ -346,55 +344,21 @@ export function EjercicioFormPage() {
     enabled: editando && idValido,
   })
 
-  const encabezado = (
-    <EncabezadoPagina
+  return (
+    <PaginaDeFormulario
       titulo={editando ? TITULO_EDITAR : NUEVO_EJERCICIO}
       migas={[
         { texto: ADMIN_PANEL, a: "/admin" },
         { texto: ADMIN_EJERCICIOS, a: RUTA_LISTA },
         { texto: editando ? MIGA_EDITAR : MIGA_NUEVO },
       ]}
+      editando={editando}
+      idValido={idValido}
+      detalle={detalle}
+      rutaLista={RUTA_LISTA}
+      textoVolver={VOLVER_A_EJERCICIOS}
+      formularioNuevo={<FormularioEjercicio inicial={VALORES_NUEVO} />}
+      formularioEditar={(d) => <FormularioEjercicio key={d.id} id={d.id} inicial={valoresDe(d)} />}
     />
-  )
-
-  if (!editando) {
-    return (
-      <>
-        {encabezado}
-        <FormularioEjercicio inicial={VALORES_NUEVO} />
-      </>
-    )
-  }
-
-  if (!idValido || detalle.isError) {
-    return (
-      <>
-        {encabezado}
-        <Alert variant="error">
-          <div className="flex flex-col items-start gap-3">
-            <p>{idValido ? mensajeDeError(detalle.error) : MENSAJE_NO_ENCONTRADO}</p>
-            <Link to={RUTA_LISTA} className={buttonVariants({ variant: "outline" })}>
-              {VOLVER_A_EJERCICIOS}
-            </Link>
-          </div>
-        </Alert>
-      </>
-    )
-  }
-
-  if (detalle.isPending) {
-    return (
-      <>
-        {encabezado}
-        <p role="status">{ESTADO_CARGANDO}</p>
-      </>
-    )
-  }
-
-  return (
-    <>
-      {encabezado}
-      <FormularioEjercicio key={detalle.data.id} id={detalle.data.id} inicial={valoresDe(detalle.data)} />
-    </>
   )
 }

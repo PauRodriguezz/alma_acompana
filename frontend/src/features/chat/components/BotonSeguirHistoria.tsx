@@ -3,7 +3,6 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { ICONO_HISTORIA_DE_VIDA } from "@/components/iconos"
 
 import { Button } from "@/components/ui/button"
-import { BOTON_EN_ESPERA, BOTON_TEXTO_LARGO } from "@/components/estilos"
 import { SEGUIR_MI_HISTORIA } from "@/features/historia/mensajes"
 import { useEsEscritorio } from "@/lib/useEsEscritorio"
 import { cn } from "@/lib/utils"
@@ -65,7 +64,9 @@ export function BotonSeguirHistoria() {
         variant="secondary"
         aria-disabled={deshabilitado}
         onClick={seguir}
-        className={cn("self-start", BOTON_TEXTO_LARGO, BOTON_EN_ESPERA)}
+        className="self-start"
+        tamanio="textoLargo"
+        enEspera
       >
         {SEGUIR_MI_HISTORIA}
       </Button>
@@ -108,7 +109,9 @@ function BotonFlotante({ deshabilitado, onSeguir }: { deshabilitado: boolean; on
             onSeguir()
             setDesplegado(false)
           }}
-          className={cn("min-w-0 shrink [box-shadow:var(--sombra-tarjeta)]", BOTON_TEXTO_LARGO, BOTON_EN_ESPERA)}
+          className="min-w-0 shrink [box-shadow:var(--sombra-tarjeta)]"
+          tamanio="textoLargo"
+          enEspera
         >
           {SEGUIR_MI_HISTORIA}
         </Button>

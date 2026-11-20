@@ -7,12 +7,14 @@ import { buttonVariants } from "./button-variants"
 function Button({
   className,
   variant = "primary",
+  tamanio,
+  enEspera,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
   return (
     <ButtonPrimitive
       data-slot="button"
-      className={cn(buttonVariants({ variant }), className)}
+      className={cn(buttonVariants({ variant, tamanio, enEspera }), className)}
       {...props}
     />
   )

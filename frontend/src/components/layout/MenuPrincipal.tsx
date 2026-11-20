@@ -1,12 +1,49 @@
-import { useState, type ReactNode } from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
+import { useState, type ComponentProps, type ReactNode } from "react"
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import { Link, NavLink } from "react-router-dom"
 
-import { AvatarAlma } from "@/components/alma/AvatarAlma"
+import { AvatarAlma } from "@/components/alma/Alma"
 import { ICONO_MENU, type DestinoMenu } from "@/components/layout/destinosMenu"
-import { ICONO_ITEM_MENU, ITEM_BARRA, ITEM_MENU } from "@/components/layout/estilosMenu"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+
+
+// Estilo del ítem del menú lateral: es UNO solo para la persona y para el operador (los dos menús son
+// idénticos en escritorio). Los valores son los del menú de la persona (Figma 40:273).
+//
+// - Ítem: 48 px de alto, ícono de 24 px (size-6), texto semibold, 12 px entre ícono y texto.
+// - Activo: `aria-current="page"` (lo pone NavLink) con fondo accent-soft, barra de 4×24 px a la
+//   izquierda y el ícono en accent. En alto contraste: borde de 2 px en foreground y fondo card. Todos
+//   los ítems llevan borde transparente de 2 px solo en alto contraste, para que no cambien de tamaño.
+const ITEM_MENU =
+  "group relative flex min-h-[calc(48rem/17)] w-full items-center gap-3 rounded-md px-4 py-2 text-left font-semibold text-foreground transition-colors hover:bg-secondary-hover " +
+  "before:absolute before:top-1/2 before:left-0 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-accent before:opacity-0 " +
+  "aria-[current=page]:bg-accent-soft aria-[current=page]:before:opacity-100 aria-[current=page]:hover:bg-accent-soft " +
+  "contraste-alto:border-2 contraste-alto:border-transparent contraste-alto:aria-[current=page]:border-foreground contraste-alto:aria-[current=page]:bg-card"
+
+const ICONO_ITEM_MENU =
+  "size-6 shrink-0 group-aria-[current=page]:text-accent contraste-alto:group-aria-[current=page]:text-foreground"
+
+// Barra inferior del celular de la persona: SOLO ÍCONOS (el nombre queda para el lector de pantalla). Es una
+// excepción documentada a "un ícono nunca va solo": los cinco nombres no entran en 1/5 del ancho de 360 px
+// (menos con letra grande) y el Figma la dibuja así. A cambio: nombre para el lector de pantalla (sr-only),
+// aria-current en el activo, objetivo táctil de 56 px de alto y 1/5 del ancho, y el activo distinguido por
+// más que el color (fondo, barra arriba y, en alto contraste, borde de 2 px). El alto es fijo (--nav-inferior).
+const ITEM_BARRA =
+  "group relative flex min-h-[calc(56rem/17)] flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-foreground transition-colors hover:bg-secondary " +
+  "before:absolute before:top-0 before:left-1/2 before:h-1 before:w-6 before:-translate-x-1/2 before:rounded-full before:bg-accent before:opacity-0 " +
+  "aria-[current=page]:bg-accent-soft aria-[current=page]:before:opacity-100 " +
+  "contraste-alto:border-2 contraste-alto:border-transparent contraste-alto:aria-[current=page]:border-foreground contraste-alto:aria-[current=page]:bg-card"
+
+/** Un ítem del menú que es un botón y no un enlace ("Cerrar sesión" del operador): se ve igual que los destinos. */
+export function BotonItemMenu({ icono, children, ...props }: ComponentProps<"button"> & { icono: IconSvgElement }) {
+  return (
+    <button type="button" {...props} className={`${ITEM_MENU} cursor-pointer`}>
+      <HugeiconsIcon icon={icono} className={ICONO_ITEM_MENU} aria-hidden="true" />
+      <span>{children}</span>
+    </button>
+  )
+}
 
 type Rol = "persona" | "operador"
 
@@ -39,10 +76,10 @@ const FONDO: Record<Rol, string> = {
 /**
  * Menú de las dos áreas de la aplicación (persona mayor y operador). En escritorio (1024 px o más) los dos son
  * IDÉNTICOS: barra lateral fija, marca (avatar de 40 px y "Alma"), destinos con el mismo ítem (ver
- * menu-estilos.ts) y pie. Solo cambian el fondo, el subtítulo de la marca, los destinos y el pie.
+ * ITEM_MENU) y pie. Solo cambian el fondo, el subtítulo de la marca, los destinos y el pie.
  * En celular:
  * - persona: barra inferior de SOLO ÍCONOS, de alto fijo (--nav-inferior, que usan el campo del chat y los avisos).
- *   Es una excepción documentada a "un ícono nunca va solo" (ver menu-estilos.ts): cada destino tiene su nombre
+ *   Es una excepción documentada a "un ícono nunca va solo" (ver MenuPrincipal.tsx): cada destino tiene su nombre
  *   para el lector de pantalla, aria-current en el activo y un objetivo táctil de al menos 44 px.
  * - operador: botón "Menú" (con texto) en una barra superior que abre una hoja lateral con los mismos destinos.
  * Va ANTES del contenido en el DOM, así el orden del teclado es el mismo en los dos (después de "Saltar al contenido");

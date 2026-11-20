@@ -56,7 +56,7 @@ export function ParadaDeEtapa({ grupo, indice, elegida, conAviso, onElegir }: Pr
       <span
         aria-hidden="true"
         className={cn(
-          "absolute box-border rounded-full border-3 border-(--etapa-fuerte) bg-white contraste-alto:border-foreground contraste-alto:bg-background",
+          "absolute box-border rounded-full border-3 border-(--etapa-fuerte) bg-card contraste-alto:border-foreground contraste-alto:bg-background",
           conAviso && "mapa-latido",
           derecha ? "left-0" : "right-0"
         )}
@@ -65,10 +65,10 @@ export function ParadaDeEtapa({ grupo, indice, elegida, conAviso, onElegir }: Pr
       {/* Mástil con su bolita */}
       <span
         aria-hidden="true"
-        className="absolute top-0 w-[2.5px] rounded-full bg-[#3F4F5C] contraste-alto:bg-foreground"
+        className="absolute top-0 w-[2.5px] rounded-full bg-mapa-mastil contraste-alto:bg-foreground"
         style={{ left: derecha ? u(69) : u(176), height: u(78) }}
       >
-        <span className="absolute -top-px left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-[#3F4F5C] contraste-alto:bg-foreground" />
+        <span className="absolute -top-px left-1/2 size-1.5 -translate-x-1/2 rounded-full bg-mapa-mastil contraste-alto:bg-foreground" />
       </span>
 
       <span
@@ -90,7 +90,7 @@ export function ParadaDeEtapa({ grupo, indice, elegida, conAviso, onElegir }: Pr
         </span>
         <span
           className={cn(
-            "mt-[0.4rem] box-border flex w-full flex-col rounded-lg bg-white px-2 py-1 text-[0.875rem] leading-[1.25] text-foreground contraste-alto:bg-background",
+            "mt-[0.4rem] box-border flex w-full flex-col rounded-lg bg-card px-2 py-1 text-[0.875rem] leading-[1.25] text-foreground contraste-alto:bg-background",
             "border-[1.5px] border-(--etapa-claro) contraste-alto:border-2 contraste-alto:border-foreground",
             elegida && "border-3 border-(--etapa-fuerte) contraste-alto:border-4 contraste-alto:border-foreground",
             vacia && "border-dashed"

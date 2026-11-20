@@ -1,7 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 
-import { BOTON_EN_ESPERA, BOTON_TEXTO_LARGO } from "@/components/estilos"
 import { INVITACION_AHORA_NO, INVITACION_SI } from "../mensajes"
 
 /**
@@ -22,7 +20,8 @@ export function InvitacionHistoria({
       <Button
         onClick={deshabilitado ? undefined : onSi}
         aria-disabled={deshabilitado}
-        className={cn(BOTON_TEXTO_LARGO, BOTON_EN_ESPERA)}
+        tamanio="textoLargo"
+        enEspera
       >
         {INVITACION_SI}
       </Button>
@@ -30,7 +29,8 @@ export function InvitacionHistoria({
         variant="outline"
         onClick={deshabilitado ? undefined : onAhoraNo}
         aria-disabled={deshabilitado}
-        className={cn(BOTON_TEXTO_LARGO, BOTON_EN_ESPERA)}
+        tamanio="textoLargo"
+        enEspera
       >
         {INVITACION_AHORA_NO}
       </Button>

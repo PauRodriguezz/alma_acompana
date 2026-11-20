@@ -9,7 +9,7 @@ import { DialogoConfirmar } from "@/components/DialogoConfirmar"
 import { SelectorChips } from "@/components/formularios/SelectorChips"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { buttonVariants } from "@/components/ui/button-variants"
+import { botonIconoVariants, buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
 import {
   Table,
@@ -23,7 +23,6 @@ import {
 import { useAviso } from "@/features/avisos/useAviso"
 import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
 import { mensajeDeError } from "@/lib/errores"
-import { estiloBotonIcono } from "@/components/estilos"
 import {
   CATEGORIAS_EJERCICIO,
   TEXTO_CATEGORIA_EJERCICIO,
@@ -232,7 +231,7 @@ export function EjerciciosPage() {
                         <Link
                           to={`${RUTA_LISTA}/${e.id}/editar`}
                           aria-label={ariaEditar(e.consigna)}
-                          className={`${estiloBotonIcono} text-heading`}
+                          className={botonIconoVariants({ tono: "editar" })}
                         >
                           <HugeiconsIcon icon={ICONO_EDITAR} aria-hidden="true" />
                         </Link>
@@ -243,7 +242,7 @@ export function EjerciciosPage() {
                             <button
                               type="button"
                               aria-label={ariaEliminar(e.consigna)}
-                              className={`${estiloBotonIcono} text-destructive`}
+                              className={botonIconoVariants({ tono: "eliminar" })}
                             >
                               <HugeiconsIcon icon={Delete02Icon} aria-hidden="true" />
                             </button>

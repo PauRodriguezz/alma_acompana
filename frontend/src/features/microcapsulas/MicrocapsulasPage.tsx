@@ -9,7 +9,7 @@ import { ICONO_EDITAR } from "@/components/iconos"
 import { DialogoConfirmar } from "@/components/DialogoConfirmar"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { buttonVariants } from "@/components/ui/button-variants"
+import { botonIconoVariants, buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
 import {
   Table,
@@ -22,9 +22,7 @@ import {
 } from "@/components/ui/table"
 import { useAviso } from "@/features/avisos/useAviso"
 import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
-import { BOTON_TEXTO_LARGO } from "@/components/estilos"
 import { mensajeDeError } from "@/lib/errores"
-import { estiloBotonIcono } from "@/components/estilos"
 
 import {
   CLAVES_MICROCAPSULAS,
@@ -113,7 +111,7 @@ export function MicrocapsulasPage() {
         titulo={ADMIN_MICROCAPSULAS}
         migas={[{ texto: ADMIN_PANEL, a: "/admin" }, { texto: ADMIN_MICROCAPSULAS }]}
         accion={
-          <Link to={`${RUTA_LISTA}/nueva`} className={buttonVariants({ className: BOTON_TEXTO_LARGO })}>
+          <Link to={`${RUTA_LISTA}/nueva`} className={buttonVariants({ tamanio: "textoLargo" })}>
             {NUEVA_MICROCAPSULA}
           </Link>
         }
@@ -166,7 +164,7 @@ export function MicrocapsulasPage() {
                         <Link
                           to={`${RUTA_LISTA}/${m.id}/editar`}
                           aria-label={ariaEditar(m.titulo)}
-                          className={`${estiloBotonIcono} text-heading`}
+                          className={botonIconoVariants({ tono: "editar" })}
                         >
                           <HugeiconsIcon icon={ICONO_EDITAR} aria-hidden="true" />
                         </Link>
@@ -177,7 +175,7 @@ export function MicrocapsulasPage() {
                             <button
                               type="button"
                               aria-label={ariaDarDeBaja(m.titulo)}
-                              className={`${estiloBotonIcono} text-destructive`}
+                              className={botonIconoVariants({ tono: "eliminar" })}
                             >
                               <HugeiconsIcon icon={Delete02Icon} aria-hidden="true" />
                             </button>

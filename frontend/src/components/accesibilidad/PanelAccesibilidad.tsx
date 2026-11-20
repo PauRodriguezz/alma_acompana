@@ -104,10 +104,10 @@ export function PanelAccesibilidad(props: React.ComponentProps<typeof DialogCont
           onValueChange={(valor) => cambiar({ altoContraste: valor === "alto" })}
         >
           <OpcionRadio value="normal" className="items-start gap-2 p-4">
-            {/* Muestra fija (colores del Figma): no cambia con el modo elegido */}
+            {/* Muestra fija (tokens --muestra-*): no cambia con el modo elegido */}
             <span
               aria-hidden="true"
-              className="flex h-14 w-25 items-center justify-center rounded-sm border-2 border-[#e5e0d2] bg-[#fffcf5] font-heading text-h2 font-medium text-[#2b4150]"
+              className="flex h-14 w-25 items-center justify-center rounded-sm border-2 border-muestra-normal-borde bg-muestra-normal-fondo font-heading text-h2 font-medium text-muestra-normal-texto"
             >
               Aa
             </span>
@@ -120,7 +120,7 @@ export function PanelAccesibilidad(props: React.ComponentProps<typeof DialogCont
           <OpcionRadio value="alto" className="items-start gap-2 p-4">
             <span
               aria-hidden="true"
-              className="flex h-14 w-25 items-center justify-center rounded-sm border-3 border-black bg-white font-heading text-h2 font-medium text-black"
+              className="flex h-14 w-25 items-center justify-center rounded-sm border-3 border-muestra-alto-borde bg-muestra-alto-fondo font-heading text-h2 font-medium text-muestra-alto-texto"
             >
               Aa
             </span>

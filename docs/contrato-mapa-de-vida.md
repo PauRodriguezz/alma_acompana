@@ -119,7 +119,8 @@ La app tiene dos preferencias (`useAccesibilidad`): tamaño de letra (Normal, Gr
 Además:
 - **Colores en modo normal.** Los seis colores de las etapas (Anexo A) tienen un contraste con el texto blanco del banderín de 6,2 a 7,0 y con la tarjeta blanca de 6,2 a 7,0 (se midieron con la fórmula de WCAG). Si se cambia alguno, hay que volver a medir y mantener al menos 4,5. El texto de apoyo (`#5B6B78` sobre el fondo crema) da 5,3.
 - **Nombre accesible de cada parada:** "Infancia, 3 recuerdos" / "Infancia, sin recuerdos". El mapa es un grupo (`role="group"`, `aria-label="Mapa de tu historia de vida"`). Las paradas son botones reales, se recorren con la tecla Tab y se activan con Enter o espacio.
-- **Área táctil:** como mínimo 44 × 44 px (2,75 rem). La parada completa cumple de sobra.
+- **Área táctil:** como mínimo 44 × 44 px (token `--tactil` de `index.css`). La parada completa cumple de sobra.
+- **Excepción de tamaño de texto (decisión de Pau):** en el mapa con letra Normal, el nombre del banderín (0,8125 rem, unos 13 px) y los títulos de la tarjeta (0,875 rem, unos 14 px) son más chicos que el texto base (`body`, 17 px), porque tienen que entrar en la tarjeta de 176 unidades de diseño. Están en `rem`, así que crecen con la letra, y con letra Grande o Muy grande el mapa se reemplaza por la lista (2.4), que usa el tamaño normal. Son los únicos tamaños de texto del front fuera de la escala de `index.css`. Del mismo modo, el texto blanco del banderín (`text-white`) queda fijo sobre el color fuerte de la etapa.
 - La animación respeta `prefers-reduced-motion` (2.1).
 
 ### 2.5 Descarga del mapa (imagen de 1920 × 1080)
@@ -438,6 +439,8 @@ Carpeta `docs/referencias/`:
 | Otros momentos | `#5F5E5A` | `#D3D1C7` | estrella de cuatro puntas |
 
 Otros colores: camino `#F4C0D1` con línea central punteada `#FFFBF4`; fondo crema `#FFFBF4`; título `#0F4C6B`; texto de apoyo `#5B6B78`; texto de las tarjetas `#2F3E4A`; violeta de la app y de la pastilla `#8E1B9B`; mástil `#3F4F5C`; corazón del pie `#D4537E`.
+
+**Fuente de los colores:** los valores de arriba (etapas y otros colores, y los del arbolito) están como tokens en `frontend/src/index.css` (`--etapa-<id>-fuerte`, `--etapa-<id>-claro`, `--mapa-*` y `--arbol-*`). **`index.css` es la fuente**: este contrato los documenta, y si cambia uno hay que cambiarlo en los dos lugares. Los tokens son fijos, no se redefinen en alto contraste, y los usan las clases del mapa en pantalla y el lienzo de la imagen (que los lee con `getComputedStyle` al dibujar). Por eso la imagen sale igual en cualquier modo.
 
 ### Medidas del mapa en pantalla (unidades de diseño, ancho 360)
 

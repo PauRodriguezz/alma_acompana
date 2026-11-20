@@ -1,13 +1,16 @@
-import { useId } from "react"
+import { lazy, Suspense, useId } from "react"
 
-import { TextoLectura } from "@/components/TextoLectura"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
 import type { CategoriaMicrocapsula } from "@/features/admin/etiquetas"
 
 import { EtiquetaCategoriaMicrocapsula } from "./EtiquetaCategoriaMicrocapsula"
 import { ADMIN_VISTA_PREVIA } from "@/features/admin/mensajes"
+import { ESTADO_CARGANDO } from "@/lib/mensajes"
 import { PREVIA_LECTURA, PREVIA_LEER, PREVIA_LISTA, PREVIA_TITULO } from "./mensajes"
+
+// react-markdown pesa bastante: se descarga recién cuando hay un texto con formato para mostrar.
+const TextoLectura = lazy(() => import("@/components/TextoLectura").then((m) => ({ default: m.TextoLectura })))
 
 type VistaPreviaMicrocapsulaProps = {
   titulo: string
@@ -64,7 +67,9 @@ export function VistaPreviaMicrocapsula({
           {tituloLimpio}
         </p>
         {foto}
-        <TextoLectura texto={texto} className="w-full" />
+        <Suspense fallback={<p role="status">{ESTADO_CARGANDO}</p>}>
+          <TextoLectura texto={texto} className="w-full" />
+        </Suspense>
       </Card>
     </section>
   )

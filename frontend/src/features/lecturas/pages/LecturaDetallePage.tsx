@@ -1,9 +1,8 @@
-import type { ReactNode } from "react"
+import { lazy, Suspense, type ReactNode } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 
 import { EnlaceVolver } from "@/components/EnlaceVolver"
-import { TextoLectura } from "@/components/TextoLectura"
-import { TituloConFoco } from "@/components/accesibilidad/TituloConFoco"
+import { TituloConFoco } from "@/components/accesibilidad/NavegacionPorTeclado"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"
@@ -20,6 +19,9 @@ import { AVISO_GUARDADA, AVISO_QUITADA, TITULO_LEER, VOLVER_A_LEER } from "../me
 import { conPestania, pestaniaDe } from "../pestanias"
 import type { LecturaDetalle } from "../tipos"
 import { useCambiarGuardada, useLectura } from "../useLecturas"
+
+// react-markdown pesa bastante: se descarga recién cuando hay un texto con formato para mostrar.
+const TextoLectura = lazy(() => import("@/components/TextoLectura").then((m) => ({ default: m.TextoLectura })))
 
 // Ancho de lectura (PROPUESTO, no está en el Figma): unos 70 caracteres por línea.
 const ANCHO_LECTURA = "max-w-[calc(680rem/17)]"
@@ -105,7 +107,9 @@ function Lectura({ lectura }: { lectura: LecturaDetalle }) {
       ) : null}
 
       {/* Markdown limitado (contrato de microcápsulas, sección 4): los textos viejos, sin marcas, son párrafos */}
-      <TextoLectura texto={lectura.texto} />
+      <Suspense fallback={<p role="status">{ESTADO_CARGANDO}</p>}>
+        <TextoLectura texto={lectura.texto} />
+      </Suspense>
     </article>
   )
 }

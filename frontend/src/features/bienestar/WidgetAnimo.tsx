@@ -1,6 +1,6 @@
 import { useRef } from "react"
 
-import { MensajeAlma } from "@/components/alma/MensajeAlma"
+import { MensajeAlma } from "@/components/alma/Alma"
 import { Alert } from "@/components/ui/alert"
 import { ApiError } from "@/lib/api"
 import { mensajeDeError } from "@/lib/errores"

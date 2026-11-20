@@ -25,16 +25,53 @@ import {
   type Fuente,
 } from "./tipografias"
 
-// Colores de la imagen (contrato del mapa de vida, Anexo A). Son fijos a propósito: la imagen no depende de las
-// preferencias de accesibilidad (tamaño de letra ni contraste) y no lee los tokens del tema.
-const CREMA = "#FFFBF4"
-const ROSA = "#F4C0D1"
-const TITULO = "#0F4C6B"
-const VIOLETA = "#8E1B9B"
-const TEXTO = "#2F3E4A"
-const TEXTO_DE_APOYO = "#5B6B78"
-const MASTIL = "#3F4F5C"
-const CORAZON = "#D4537E"
+/**
+ * Colores de la imagen (contrato del mapa de vida, Anexo A). Salen de los tokens de `index.css`, que el lienzo lee
+ * al dibujar con `getComputedStyle` (el canvas no usa clases, pero sí puede leer variables CSS). Esos tokens no se
+ * redefinen en alto contraste, así que la imagen no cambia con las preferencias de accesibilidad.
+ */
+type Paleta = {
+  crema: string
+  rosa: string
+  linea: string
+  titulo: string
+  violeta: string
+  texto: string
+  textoDeApoyo: string
+  mastil: string
+  corazon: string
+  blanco: string
+  arbolTronco: string
+  arbolCopa: string
+  arbolBrillo: string
+  /** El color de una etapa: acepta `var(--etapa-…)` (así vienen en `Etapa`) o el nombre de la variable. */
+  de: (valor: string) => string
+}
+
+function leerPaleta(): Paleta {
+  const estilos = getComputedStyle(document.documentElement)
+  const leer = (variable: string) => {
+    const color = estilos.getPropertyValue(variable).trim()
+    if (!color) throw new Error(`Falta el token ${variable} en index.css`)
+    return color
+  }
+  return {
+    crema: leer("--mapa-fondo"),
+    rosa: leer("--mapa-camino"),
+    linea: leer("--mapa-linea"),
+    titulo: leer("--mapa-titulo"),
+    violeta: leer("--mapa-violeta"),
+    texto: leer("--mapa-texto"),
+    textoDeApoyo: leer("--mapa-apoyo"),
+    mastil: leer("--mapa-mastil"),
+    corazon: leer("--mapa-corazon"),
+    blanco: leer("--mapa-blanco"),
+    arbolTronco: leer("--arbol-tronco"),
+    arbolCopa: leer("--arbol-copa"),
+    arbolBrillo: leer("--arbol-brillo"),
+    de: (valor) => leer(valor.match(/^var\((--[\w-]+)\)$/)?.[1] ?? valor),
+  }
+}
 
 const TAMANIO_DEL_PREFIJO = 78
 const TAMANIO_DEL_NOMBRE = 104
@@ -56,14 +93,15 @@ export function dibujarMapa(
     return ctx.measureText(texto).width
   })
 
-  dibujarFondo(ctx)
-  dibujarTitulo(ctx, nombre)
-  dibujarCamino(ctx, diseno.camino)
-  diseno.arboles.forEach(([x, y]) => dibujarArbolito(ctx, x, y))
-  diseno.banderines.forEach((banderin) => dibujarBanderin(ctx, banderin))
-  diseno.paradas.forEach((parada) => dibujarParada(ctx, parada))
-  diseno.vacias.forEach((vacia) => dibujarTarjetaVacia(ctx, vacia))
-  dibujarPie(ctx)
+  const p = leerPaleta()
+  dibujarFondo(ctx, p)
+  dibujarTitulo(ctx, p, nombre)
+  dibujarCamino(ctx, p, diseno.camino)
+  diseno.arboles.forEach(([x, y]) => dibujarArbolito(ctx, p, x, y))
+  diseno.banderines.forEach((banderin) => dibujarBanderin(ctx, p, banderin))
+  diseno.paradas.forEach((parada) => dibujarParada(ctx, p, parada))
+  diseno.vacias.forEach((vacia) => dibujarTarjetaVacia(ctx, p, vacia))
+  dibujarPie(ctx, p)
   ctx.restore()
   return diseno
 }
@@ -72,10 +110,10 @@ function usar(ctx: CanvasRenderingContext2D, f: Fuente, tamanio: number) {
   ctx.font = fuenteCss(f, tamanio)
 }
 
-function dibujarFondo(ctx: CanvasRenderingContext2D) {
-  ctx.fillStyle = CREMA
+function dibujarFondo(ctx: CanvasRenderingContext2D, p: Paleta) {
+  ctx.fillStyle = p.crema
   ctx.fillRect(0, 0, ANCHO_DE_LA_IMAGEN, ALTO_DE_LA_IMAGEN)
-  ctx.strokeStyle = ROSA
+  ctx.strokeStyle = p.rosa
   ctx.lineWidth = 4
   ctx.beginPath()
   ctx.roundRect(24, 24, ANCHO_DE_LA_IMAGEN - 48, ALTO_DE_LA_IMAGEN - 48, 60)
@@ -83,14 +121,14 @@ function dibujarFondo(ctx: CanvasRenderingContext2D) {
 }
 
 /** "La vida de" en Poppins y el nombre en cursiva, centrados juntos; sin nombre, "Mi vida" sin cursiva. */
-function dibujarTitulo(ctx: CanvasRenderingContext2D, nombre: string | null | undefined) {
+function dibujarTitulo(ctx: CanvasRenderingContext2D, p: Paleta, nombre: string | null | undefined) {
   const partes = partesDelTitulo(nombre)
   ctx.textAlign = "left"
   ctx.textBaseline = "alphabetic"
 
   if (partes.nombre === null) {
     usar(ctx, FUENTE_DE_TITULOS, TAMANIO_DEL_PREFIJO)
-    ctx.fillStyle = TITULO
+    ctx.fillStyle = p.titulo
     ctx.textAlign = "center"
     ctx.fillText(partes.prefijo, ANCHO_DE_LA_IMAGEN / 2, LINEA_BASE_DEL_TITULO)
     return
@@ -110,107 +148,107 @@ function dibujarTitulo(ctx: CanvasRenderingContext2D, nombre: string | null | un
   const inicio = (ANCHO_DE_LA_IMAGEN - total) / 2
 
   usar(ctx, FUENTE_DE_TITULOS, TAMANIO_DEL_PREFIJO * escala)
-  ctx.fillStyle = TITULO
+  ctx.fillStyle = p.titulo
   ctx.fillText(partes.prefijo, inicio, LINEA_BASE_DEL_TITULO)
   usar(ctx, FUENTE_DEL_NOMBRE, TAMANIO_DEL_NOMBRE * escala)
-  ctx.fillStyle = VIOLETA
+  ctx.fillStyle = p.violeta
   ctx.fillText(partes.nombre, inicio + prefijo + SEPARACION_DEL_NOMBRE * escala, LINEA_BASE_DEL_TITULO)
 }
 
-function dibujarCamino(ctx: CanvasRenderingContext2D, camino: string) {
+function dibujarCamino(ctx: CanvasRenderingContext2D, p: Paleta, camino: string) {
   const trazado = new Path2D(camino)
   ctx.lineCap = "round"
   ctx.lineJoin = "round"
-  ctx.strokeStyle = ROSA
+  ctx.strokeStyle = p.rosa
   ctx.lineWidth = 44
   ctx.stroke(trazado)
-  ctx.strokeStyle = CREMA
+  ctx.strokeStyle = p.linea
   ctx.lineWidth = 3
   ctx.setLineDash([14, 14])
   ctx.stroke(trazado)
   ctx.setLineDash([])
 }
 
-function dibujarArbolito(ctx: CanvasRenderingContext2D, x: number, y: number) {
-  ctx.fillStyle = "#854F0B"
+function dibujarArbolito(ctx: CanvasRenderingContext2D, p: Paleta, x: number, y: number) {
+  ctx.fillStyle = p.arbolTronco
   ctx.fillRect(x - 3, y + 14, 6, 22)
-  ctx.fillStyle = "#97C459"
+  ctx.fillStyle = p.arbolCopa
   ctx.beginPath()
   ctx.arc(x, y, 22, 0, Math.PI * 2)
   ctx.fill()
-  ctx.fillStyle = "#C0DD97"
+  ctx.fillStyle = p.arbolBrillo
   ctx.beginPath()
   ctx.arc(x - 6, y - 6, 10, 0, Math.PI * 2)
   ctx.fill()
 }
 
 /** Poste con su bolita, cinta con el nombre de la etapa, ícono y círculo numerado sobre el camino. */
-function dibujarBanderin(ctx: CanvasRenderingContext2D, b: BanderinDelMapa) {
+function dibujarBanderin(ctx: CanvasRenderingContext2D, p: Paleta, b: BanderinDelMapa) {
   const { etapa, poloX, poloArriba, caminoY, cinta, icono } = b
-  ctx.strokeStyle = MASTIL
+  ctx.strokeStyle = p.mastil
   ctx.lineWidth = 4
   ctx.lineCap = "round"
   ctx.beginPath()
   ctx.moveTo(poloX, poloArriba)
   ctx.lineTo(poloX, caminoY - CIRCULO_RADIO)
   ctx.stroke()
-  ctx.fillStyle = MASTIL
+  ctx.fillStyle = p.mastil
   ctx.beginPath()
   ctx.arc(poloX, poloArriba, 7, 0, Math.PI * 2)
   ctx.fill()
 
-  ctx.fillStyle = etapa.fuerte
+  ctx.fillStyle = p.de(etapa.fuerte)
   ctx.beginPath()
   ctx.roundRect(cinta.x, cinta.y, cinta.ancho, cinta.alto, 5)
   ctx.fill()
   usar(ctx, FUENTE_DE_TITULOS, CINTA_TAMANIO)
-  ctx.fillStyle = "#FFFFFF"
+  ctx.fillStyle = p.blanco
   ctx.textAlign = "center"
   ctx.fillText(etapa.nombre, cinta.x + cinta.ancho / 2, cinta.y + cinta.alto / 2 + 9)
 
-  ctx.fillStyle = etapa.claro
+  ctx.fillStyle = p.de(etapa.claro)
   ctx.beginPath()
   ctx.arc(icono.x, icono.y, icono.radio, 0, Math.PI * 2)
   ctx.fill()
   ctx.save()
   ctx.translate(icono.x, icono.y)
   ctx.scale(1.05, 1.05)
-  dibujarIlustracion(ctx, etapa.id, etapa.fuerte, etapa.claro)
+  dibujarIlustracion(ctx, etapa.id, p.de(etapa.fuerte), p.de(etapa.claro))
   ctx.restore()
 
-  ctx.fillStyle = "#FFFFFF"
-  ctx.strokeStyle = etapa.fuerte
+  ctx.fillStyle = p.blanco
+  ctx.strokeStyle = p.de(etapa.fuerte)
   ctx.lineWidth = 6
   ctx.beginPath()
   ctx.arc(poloX, caminoY, CIRCULO_RADIO - 3, 0, Math.PI * 2)
   ctx.fill()
   ctx.stroke()
   usar(ctx, FUENTE_DE_TITULOS, 26)
-  ctx.fillStyle = etapa.fuerte
+  ctx.fillStyle = p.de(etapa.fuerte)
   ctx.textAlign = "center"
   ctx.fillText(String(b.numero), poloX, caminoY + 9)
 }
 
 /** Un recuerdo: punto del color de la etapa sobre el camino, tarjeta blanca con el año y el título completo. */
-function dibujarParada(ctx: CanvasRenderingContext2D, parada: ParadaDelMapa) {
+function dibujarParada(ctx: CanvasRenderingContext2D, p: Paleta, parada: ParadaDelMapa) {
   const { etapa, punto, tarjeta } = parada
-  ctx.strokeStyle = etapa.claro
+  ctx.strokeStyle = p.de(etapa.claro)
   ctx.lineWidth = 3
   ctx.beginPath()
   ctx.moveTo(punto.x, punto.y + PUNTO_RADIO)
   ctx.lineTo(punto.x, tarjeta.y)
   ctx.stroke()
 
-  ctx.fillStyle = etapa.fuerte
-  ctx.strokeStyle = CREMA
+  ctx.fillStyle = p.de(etapa.fuerte)
+  ctx.strokeStyle = p.crema
   ctx.lineWidth = 4
   ctx.beginPath()
   ctx.arc(punto.x, punto.y, PUNTO_RADIO - 2, 0, Math.PI * 2)
   ctx.fill()
   ctx.stroke()
 
-  ctx.fillStyle = "#FFFFFF"
-  ctx.strokeStyle = etapa.claro
+  ctx.fillStyle = p.blanco
+  ctx.strokeStyle = p.de(etapa.claro)
   ctx.lineWidth = 3
   ctx.beginPath()
   ctx.roundRect(tarjeta.x, tarjeta.y, tarjeta.ancho, tarjeta.alto, 16)
@@ -221,20 +259,20 @@ function dibujarParada(ctx: CanvasRenderingContext2D, parada: ParadaDelMapa) {
   const izquierda = tarjeta.x + 20
   if (tarjeta.anio) {
     usar(ctx, FUENTE_DE_TEXTO_FUERTE, TAMANIO_DEL_ANIO)
-    ctx.fillStyle = etapa.fuerte
+    ctx.fillStyle = p.de(etapa.fuerte)
     ctx.fillText(tarjeta.anio, izquierda, tarjeta.lineaBaseDelAnio)
   }
   usar(ctx, FUENTE_DE_TEXTO, tarjeta.tamanio)
-  ctx.fillStyle = TEXTO
+  ctx.fillStyle = p.texto
   tarjeta.lineas.forEach((linea, i) => {
     ctx.fillText(linea, izquierda, tarjeta.lineaBaseDelTitulo + i * tarjeta.interlineado)
   })
 }
 
 /** Etapa sin recuerdos: tarjeta punteada con "Todavía sin recuerdos". */
-function dibujarTarjetaVacia(ctx: CanvasRenderingContext2D, vacia: TarjetaVacia) {
-  ctx.fillStyle = CREMA
-  ctx.strokeStyle = vacia.etapa.claro
+function dibujarTarjetaVacia(ctx: CanvasRenderingContext2D, p: Paleta, vacia: TarjetaVacia) {
+  ctx.fillStyle = p.crema
+  ctx.strokeStyle = p.de(vacia.etapa.claro)
   ctx.lineWidth = 3
   ctx.setLineDash([9, 7])
   ctx.beginPath()
@@ -243,7 +281,7 @@ function dibujarTarjetaVacia(ctx: CanvasRenderingContext2D, vacia: TarjetaVacia)
   ctx.stroke()
   ctx.setLineDash([])
   usar(ctx, FUENTE_DE_TEXTO, 26)
-  ctx.fillStyle = TEXTO_DE_APOYO
+  ctx.fillStyle = p.textoDeApoyo
   ctx.textAlign = "center"
   ctx.fillText(ETAPA_SIN_RECUERDOS, vacia.x + vacia.ancho / 2, vacia.y + vacia.alto / 2 + 9)
 }
@@ -301,9 +339,9 @@ function dibujarIlustracion(ctx: CanvasRenderingContext2D, id: IdEtapa, fuerte: 
 }
 
 /** "Alma Acompaña" con un corazón, abajo a la derecha. */
-function dibujarPie(ctx: CanvasRenderingContext2D) {
+function dibujarPie(ctx: CanvasRenderingContext2D, p: Paleta) {
   usar(ctx, FUENTE_DE_TITULOS, 30)
-  ctx.fillStyle = TITULO
+  ctx.fillStyle = p.titulo
   ctx.textAlign = "right"
   ctx.fillText(PIE_DE_LA_IMAGEN, 1802, 1030)
 
@@ -311,7 +349,7 @@ function dibujarPie(ctx: CanvasRenderingContext2D) {
   ctx.translate(1832, 1020)
   ctx.scale(1.3, 1.3)
   ctx.translate(-988, -1024)
-  ctx.fillStyle = CORAZON
+  ctx.fillStyle = p.corazon
   ctx.fill(new Path2D("M988 1034 C972 1022 978 1010 988 1018 C998 1010 1004 1022 988 1034 Z"))
   ctx.restore()
 }

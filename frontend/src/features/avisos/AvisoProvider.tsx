@@ -17,7 +17,7 @@ let contador = 0
 const POSICION = {
   persona: "bottom-[calc(var(--nav-inferior)+env(safe-area-inset-bottom)+1rem)]",
   panel:
-    "bottom-[calc(env(safe-area-inset-bottom)+1rem)] lg:bottom-[calc(1.5rem+calc(44rem/17)+1rem)]",
+    "bottom-[calc(env(safe-area-inset-bottom)+1rem)] lg:bottom-[calc(1.5rem+var(--tactil)+1rem)]",
 } as const
 
 /**

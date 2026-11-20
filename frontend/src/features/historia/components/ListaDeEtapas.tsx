@@ -23,7 +23,7 @@ export function ListaDeEtapas({ etapas, elegida, onElegir }: Props) {
     <ul aria-label={NOMBRE_DEL_MAPA} className="relative m-0 flex list-none flex-col gap-4 p-0">
       <li
         aria-hidden="true"
-        className="absolute top-6 bottom-6 left-[1.875rem] w-2 -translate-x-1/2 rounded-full bg-[#F4C0D1] contraste-alto:bg-muted-foreground"
+        className="absolute top-6 bottom-6 left-[1.875rem] w-2 -translate-x-1/2 rounded-full bg-mapa-camino contraste-alto:bg-muted-foreground"
       />
       {etapas.map(({ etapa, recuerdos }) => {
         const esta = elegida === etapa.id
@@ -37,7 +37,7 @@ export function ListaDeEtapas({ etapas, elegida, onElegir }: Props) {
               aria-pressed={esta}
               onClick={() => onElegir(etapa.id)}
               className={cn(
-                "box-border flex min-h-[2.75rem] min-w-0 flex-1 flex-col items-start gap-2 rounded-lg bg-white p-3 text-left",
+                "box-border flex min-h-(--tactil) min-w-0 flex-1 flex-col items-start gap-2 rounded-lg bg-card p-3 text-left",
                 "border-[1.5px] border-(--etapa-claro) contraste-alto:border-2 contraste-alto:border-foreground contraste-alto:bg-background",
                 esta && "border-3 border-(--etapa-fuerte) contraste-alto:border-4 contraste-alto:border-foreground",
                 recuerdos.length === 0 && "border-dashed"

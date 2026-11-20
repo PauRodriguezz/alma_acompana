@@ -64,6 +64,18 @@
     --color-juego-series-soft: var(--juego-series-soft);
     --color-juego-asociaciones-soft: var(--juego-asociaciones-soft);
     --color-juego-palabras-soft: var(--juego-palabras-soft);
+    --color-mapa-camino: var(--mapa-camino);
+    --color-mapa-linea: var(--mapa-linea);
+    --color-mapa-mastil: var(--mapa-mastil);
+    --color-arbol-tronco: var(--arbol-tronco);
+    --color-arbol-copa: var(--arbol-copa);
+    --color-arbol-brillo: var(--arbol-brillo);
+    --color-muestra-normal-fondo: var(--muestra-normal-fondo);
+    --color-muestra-normal-borde: var(--muestra-normal-borde);
+    --color-muestra-normal-texto: var(--muestra-normal-texto);
+    --color-muestra-alto-fondo: var(--muestra-alto-fondo);
+    --color-muestra-alto-borde: var(--muestra-alto-borde);
+    --color-muestra-alto-texto: var(--muestra-alto-texto);
 
     /* Radios del Figma: 8, 12 (botones y campos), 16 (tarjetas), 24 (diálogos) y círculo */
     --radius-sm: calc(8rem / 17);
@@ -168,6 +180,52 @@
     --juego-asociaciones-soft: #ecd9ee;
     --juego-palabras-soft: #e5dbd4;
 
+    /* Mapa de vida y etapas (contrato del mapa de vida, Anexo A: el contrato documenta los
+       valores y ESTE archivo es la fuente). FIJOS: no se redefinen en el bloque de alto
+       contraste, así el mapa de la imagen descargable no cambia con el modo (en pantalla,
+       el alto contraste los reemplaza con las variantes contraste-alto: de cada componente).
+       Los lee Tailwind (stroke-mapa-camino…) y el lienzo de la imagen con getComputedStyle,
+       por eso van escritos como hex y no como var() ni color-mix(). */
+    --mapa-fondo: #fffbf4;
+    --mapa-camino: #f4c0d1;
+    --mapa-linea: #fffbf4;
+    --mapa-mastil: #3f4f5c;
+    --mapa-titulo: #0f4c6b;
+    --mapa-violeta: #8e1b9b;
+    --mapa-texto: #2f3e4a;
+    --mapa-apoyo: #5b6b78;
+    --mapa-corazon: #d4537e;
+    --mapa-blanco: #ffffff;
+    --arbol-tronco: #854f0b;
+    --arbol-copa: #97c459;
+    --arbol-brillo: #c0dd97;
+    /* Etapas: fuerte = banderín, borde de la elegida y texto (contraste con blanco 6,2 a 7,0);
+       claro = fondo del círculo y borde de la tarjeta. */
+    --etapa-infancia-fuerte: #993c1d;
+    --etapa-infancia-claro: #f5c4b3;
+    --etapa-adolescencia-fuerte: #534ab7;
+    --etapa-adolescencia-claro: #cecbf6;
+    --etapa-juventud-fuerte: #185fa5;
+    --etapa-juventud-claro: #b5d4f4;
+    --etapa-adultez-fuerte: #0f6e56;
+    --etapa-adultez-claro: #9fe1cb;
+    --etapa-vejez-fuerte: #854f0b;
+    --etapa-vejez-claro: #fac775;
+    --etapa-otros-fuerte: #5f5e5a;
+    --etapa-otros-claro: #d3d1c7;
+
+    /* Muestras "Aa" del panel de accesibilidad (elección Normal / Alto contraste). Valores
+       FIJOS, iguales en todos los modos y por eso no se redefinen en el bloque de alto
+       contraste: cada muestra tiene que mostrar cómo se ve ese modo aunque el activo sea
+       el otro. Los valores son los de --background, --border y --foreground del modo
+       Claro, y blanco, negro y negro del Alto contraste. */
+    --muestra-normal-fondo: #fffcf5;
+    --muestra-normal-borde: #e5e0d2;
+    --muestra-normal-texto: #2b4150;
+    --muestra-alto-fondo: #ffffff;
+    --muestra-alto-borde: #000000;
+    --muestra-alto-texto: #000000;
+
     --sombra-sm: 0 1px 3px 0 #2b41501f;
 
     /* Pantalla de login. PROPUESTO, NO ESTÁ EN EL FIGMA: degradé de la banda, derivado de
@@ -186,7 +244,8 @@
     --foco-extra: calc(var(--foco-ancho) - var(--borde-ancho));
 
     /* Medidas de controles */
-    --altura-boton: calc(48rem / 17); /* mínimo táctil */
+    --tactil: calc(44rem / 17); /* tamaño mínimo de lo que se toca (enlaces, botones de ícono, filas) */
+    --altura-boton: calc(48rem / 17);
     --altura-boton-chat: calc(56rem / 17);
     --altura-campo: calc(55.2rem / 17); /* input-height del Figma */
     --borde-ancho: calc(2rem / 17); /* grosor real del trazo en el Figma (campos, casillas, avisos) */
@@ -268,7 +327,8 @@
     --sombra-alma: drop-shadow(0 0 #0000);
     --sombra-tarjeta: 0 0 #0000;
     --foco-ancho: calc(4rem / 17);
-    /* Los colores de los juegos no cambian: el Figma no define otros */
+    /* Los colores de los juegos, de las muestras, del mapa y de las etapas no cambian: el
+       Figma y el contrato no definen otros */
 }
 
 @layer base {
@@ -329,4 +389,23 @@
         font-size: var(--text-h3);
         line-height: var(--text-h3--line-height);
     }
+}
+
+/* Animaciones del mapa de vida (contrato del mapa de vida, 2.1). Solo con movimiento permitido:
+   con "reducir movimiento" la pastilla queda fija y los puntos quietos. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes mapa-latido {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+  }
+  @keyframes mapa-flotar {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-0.3rem); }
+  }
+  .mapa-latido {
+    animation: mapa-latido 1.8s ease-in-out infinite;
+  }
+  .mapa-flotar {
+    animation: mapa-flotar 2s ease-in-out infinite;
+  }
 }

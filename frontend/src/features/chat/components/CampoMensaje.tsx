@@ -73,7 +73,8 @@ export function CampoMensaje() {
           type="submit"
           aria-label={ENVIAR}
           aria-disabled={pendiente}
-          className="size-[calc(60rem/17)] p-0 aria-disabled:pointer-events-none aria-disabled:translate-y-0 aria-disabled:border-input aria-disabled:bg-disabled aria-disabled:text-disabled-foreground aria-disabled:shadow-none"
+          enEspera
+          className="size-[calc(60rem/17)] p-0"
         >
           <HugeiconsIcon icon={Sent02Icon} size={26} aria-hidden="true" />
         </Button>

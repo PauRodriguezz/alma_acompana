@@ -10,7 +10,6 @@ import { CLAVE_RESUMEN, obtenerResumen } from "./api"
 import { EncabezadoPagina } from "./EncabezadoPagina"
 import { mensajeDeError } from "@/lib/errores"
 import { ACCION_PROBAR_DE_NUEVO, ESTADO_CARGANDO } from "@/lib/mensajes"
-import { cn } from "@/lib/utils"
 import {
   ADMIN_EJERCICIOS,
   ADMIN_MICROCAPSULAS,
@@ -21,7 +20,6 @@ import {
   ADMIN_VER_MICROCAPSULAS,
 } from "./mensajes"
 
-const BOTON_QUE_PARTE_TEXTO = "max-w-full whitespace-normal text-center"
 
 type TarjetaConteoProps = {
   titulo: string
@@ -53,10 +51,10 @@ function TarjetaConteo({ titulo, cantidad, cargando, ver, nuevo }: TarjetaConteo
       </div>
       <div className="flex flex-wrap gap-3">
         {/* El texto puede partirse en dos líneas: con letra muy grande en celular "Nueva microcápsula" no entra en una */}
-        <Link to={ver.a} className={cn(buttonVariants({ variant: "outline" }), BOTON_QUE_PARTE_TEXTO)}>
+        <Link to={ver.a} className={buttonVariants({ variant: "outline", tamanio: "textoLargo" })}>
           {ver.texto}
         </Link>
-        <Link to={nuevo.a} className={cn(buttonVariants(), BOTON_QUE_PARTE_TEXTO)}>
+        <Link to={nuevo.a} className={buttonVariants({ tamanio: "textoLargo" })}>
           {nuevo.texto}
         </Link>
       </div>

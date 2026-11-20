@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef } from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
 import { Outlet } from "react-router-dom"
 
 import { BotonAccesibilidad } from "@/components/accesibilidad/BotonAccesibilidad"
 import { destinosOperador, ICONO_CERRAR_SESION } from "@/components/layout/destinosMenu"
-import { ICONO_ITEM_MENU, ITEM_MENU } from "@/components/layout/estilosMenu"
-import { MenuPrincipal } from "@/components/layout/MenuPrincipal"
-import { SaltarAlContenido } from "@/components/accesibilidad/SaltarAlContenido"
+import { BotonItemMenu, MenuPrincipal } from "@/components/layout/MenuPrincipal"
+import { SaltarAlContenido } from "@/components/accesibilidad/NavegacionPorTeclado"
 import { DialogoCerrarSesion } from "@/features/auth/DialogoCerrarSesion"
 import { AvisoProvider } from "@/features/avisos/AvisoProvider"
 import { CERRAR_SESION } from "@/lib/mensajes"
@@ -32,10 +30,7 @@ function ItemCerrarSesion() {
   return (
     <DialogoCerrarSesion
       disparador={
-        <button type="button" className={`${ITEM_MENU} cursor-pointer`}>
-          <HugeiconsIcon icon={ICONO_CERRAR_SESION} className={ICONO_ITEM_MENU} aria-hidden="true" />
-          <span>{CERRAR_SESION}</span>
-        </button>
+        <BotonItemMenu icono={ICONO_CERRAR_SESION}>{CERRAR_SESION}</BotonItemMenu>
       }
     />
   )

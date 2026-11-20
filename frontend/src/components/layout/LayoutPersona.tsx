@@ -1,11 +1,11 @@
 import { useRef } from "react"
 import { Link, Outlet, useLocation } from "react-router-dom"
 
-import { AvatarAlma } from "@/components/alma/AvatarAlma"
+import { AvatarAlma } from "@/components/alma/Alma"
 import { BotonAccesibilidad } from "@/components/accesibilidad/BotonAccesibilidad"
 import { DESTINOS_PERSONA, RUTA_PERFIL } from "@/components/layout/destinosMenu"
 import { MenuPrincipal } from "@/components/layout/MenuPrincipal"
-import { SaltarAlContenido } from "@/components/accesibilidad/SaltarAlContenido"
+import { SaltarAlContenido } from "@/components/accesibilidad/NavegacionPorTeclado"
 import { PanelAccesibilidadProvider } from "@/features/accesibilidad/PanelAccesibilidadProvider"
 import { AvisoProvider } from "@/features/avisos/AvisoProvider"
 import { NAVEGACION_ENLACE_ALMA, NAVEGACION_NOMBRE_ALMA, NAVEGACION_PRINCIPAL } from "@/lib/mensajes"
@@ -38,7 +38,7 @@ export function LayoutPersona() {
           />
 
           <div className="flex-1 lg:pl-(--sidebar)">
-            <div className="mt-(--page-top) flex h-[calc(44rem/17)] items-center justify-between px-(--page-x) lg:hidden">
+            <div className="mt-(--page-top) flex h-(--tactil) items-center justify-between px-(--page-x) lg:hidden">
               <Link to="/" aria-label={NAVEGACION_ENLACE_ALMA} className="inline-flex rounded-full">
                 <AvatarAlma tamano={44} />
               </Link>

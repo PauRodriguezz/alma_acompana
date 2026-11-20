@@ -24,7 +24,7 @@ export function BotonSeguirCompletando({
       aria-disabled={deshabilitado}
       onClick={deshabilitado ? undefined : onClick}
       className={cn(
-        "inline-flex min-h-[2.75rem] items-center self-start rounded-md font-semibold text-primary underline-offset-4 hover:underline contraste-alto:text-foreground contraste-alto:underline",
+        "inline-flex min-h-(--tactil) items-center self-start rounded-md font-semibold text-primary underline-offset-4 hover:underline contraste-alto:text-foreground contraste-alto:underline",
         "aria-disabled:cursor-default aria-disabled:text-muted-foreground aria-disabled:no-underline",
         className
       )}

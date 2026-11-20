@@ -4,15 +4,14 @@ import { Link } from "react-router-dom"
 
 import { Chip } from "@/components/Chip"
 import { EnlaceVolver } from "@/components/EnlaceVolver"
-import { ICONO_LUGAR, ICONO_PERSONAS } from "@/components/iconos"
-import { TituloConFoco } from "@/components/accesibilidad/TituloConFoco"
+import { Location01Icon, UserGroupIcon } from "@hugeicons/core-free-icons"
+import { TituloConFoco } from "@/components/accesibilidad/NavegacionPorTeclado"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
 import { ALMA_PENSANDO } from "@/features/chat/mensajes"
 import { ApiError } from "@/lib/api"
-import { cn } from "@/lib/utils"
 import { mensajeDeError } from "@/lib/errores"
 import {
   ACCION_PROBAR_DE_NUEVO,
@@ -23,7 +22,6 @@ import {
 
 import { formatearAnio } from "../anio"
 import { etapaDe, variablesDeEtapa } from "../etapas"
-import { BOTON_EN_ESPERA, BOTON_TEXTO_LARGO } from "@/components/estilos"
 import { CON_QUIEN, DONDE, respondisteA, SEGUIR_COMPLETANDO, TITULO_HISTORIA_DE_VIDA } from "../mensajes"
 import { RUTA_HISTORIA_DE_VIDA } from "../rutas"
 import type { PersonaDeRecuerdo, RecuerdoDetalle } from "../tipos"
@@ -128,7 +126,7 @@ function Recuerdo({ recuerdo }: { recuerdo: RecuerdoDetalle }) {
         {personas.length > 0 ? (
           <Datos id="recuerdo-personas" titulo={CON_QUIEN}>
             {personas.map((persona, i) => (
-              <ChipDeDato key={`${persona}-${i}`} icono={ICONO_PERSONAS}>
+              <ChipDeDato key={`${persona}-${i}`} icono={UserGroupIcon}>
                 {persona}
               </ChipDeDato>
             ))}
@@ -137,7 +135,7 @@ function Recuerdo({ recuerdo }: { recuerdo: RecuerdoDetalle }) {
         {recuerdo.lugares.length > 0 ? (
           <Datos id="recuerdo-lugares" titulo={DONDE}>
             {recuerdo.lugares.map((lugar) => (
-              <ChipDeDato key={lugar.id} icono={ICONO_LUGAR}>
+              <ChipDeDato key={lugar.id} icono={Location01Icon}>
                 {lugar.nombre}
               </ChipDeDato>
             ))}
@@ -158,7 +156,7 @@ function Recuerdo({ recuerdo }: { recuerdo: RecuerdoDetalle }) {
           type="button"
           aria-disabled={completando.ocupado}
           onClick={completando.ocupado ? undefined : () => void completando.completar(recuerdo.id)}
-          className={cn(buttonVariants(), "self-start", BOTON_TEXTO_LARGO, BOTON_EN_ESPERA)}
+          className={buttonVariants({ tamanio: "textoLargo", enEspera: true, className: "self-start" })}
         >
           {completando.esperandoId === recuerdo.id ? ALMA_PENSANDO : SEGUIR_COMPLETANDO}
         </button>

@@ -1,4 +1,4 @@
-import { MensajeAlma } from "@/components/alma/MensajeAlma"
+import { MensajeAlma } from "@/components/alma/Alma"
 
 /**
  * Una pregunta o repregunta del guion como mensaje de Alma (Figma 29:399): la introducción y, destacada
