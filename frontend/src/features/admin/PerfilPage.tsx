@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { AccessibilityIcon, ArrowRight01Icon, Logout01Icon } from "@hugeicons/core-free-icons"
+import { ArrowRight01Icon, Logout01Icon } from "@hugeicons/core-free-icons"
+import { ICONO_ACCESIBILIDAD } from "@/components/alma/iconos"
 
 import { PanelAccesibilidad } from "@/components/alma/panel-accesibilidad"
 import { Dialog, DialogTrigger } from "@/components/ui/dialog"
@@ -8,7 +9,6 @@ import { DialogoCerrarSesion } from "@/features/auth/DialogoCerrarSesion"
 import { useAuth } from "@/features/auth/useAuth"
 import {
   AJUSTE_ACCESIBILIDAD,
-  SUBTITULO_PERFIL,
   TITULO_AJUSTES,
   TITULO_DATOS,
 } from "@/features/perfil/mensajes"
@@ -21,6 +21,8 @@ import {
   ADMIN_PERFIL_NOMBRE,
   ADMIN_PERFIL_NOMBRE_USUARIO,
   ADMIN_PERFIL_ROL,
+  ADMIN_PERFIL_SUBTITULO,
+  ADMIN_PERFIL_TITULO,
   ADMIN_ROL_ADMINISTRADOR,
   ADMIN_ROL_PERSONA_MAYOR,
   ADMIN_TITULO_PESTANIA,
@@ -61,10 +63,8 @@ export function PerfilPage() {
     <div className="flex flex-col gap-6">
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="wrap-break-word lg:text-h1-desktop">
-            {usuario?.nombre} {usuario?.apellido}
-          </h1>
-          <p className="text-muted-foreground">{SUBTITULO_PERFIL}</p>
+          <h1 className="wrap-break-word">{ADMIN_PERFIL_TITULO}</h1>
+          <p className="text-muted-foreground">{ADMIN_PERFIL_SUBTITULO}</p>
         </div>
         <span
           aria-hidden="true"
@@ -74,7 +74,7 @@ export function PerfilPage() {
         </span>
       </header>
 
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-(--slot)">
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-(--page-x)">
         <section aria-labelledby="perfil-admin-datos">
           <h2 id="perfil-admin-datos" className="text-h3">
             {TITULO_DATOS}
@@ -97,7 +97,7 @@ export function PerfilPage() {
             <li>
               <Dialog>
                 <DialogTrigger aria-haspopup="dialog" className={FILA_BOTON}>
-                  <HugeiconsIcon icon={AccessibilityIcon} className="size-6 shrink-0" aria-hidden="true" />
+                  <HugeiconsIcon icon={ICONO_ACCESIBILIDAD} className="size-6 shrink-0" aria-hidden="true" />
                   <span className="flex-1">{AJUSTE_ACCESIBILIDAD}</span>
                   <HugeiconsIcon icon={ArrowRight01Icon} className="size-6 shrink-0" aria-hidden="true" />
                 </DialogTrigger>

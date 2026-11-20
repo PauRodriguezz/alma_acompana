@@ -48,7 +48,7 @@ export function JuegoPage() {
     return (
       <div className="flex flex-col gap-4 lg:max-w-(--narrow-max)">
         <EnlaceVolver to={RUTA_JUEGOS} texto={VOLVER} />
-        <h1 className="lg:text-h1-desktop">{TITULO_JUEGOS}</h1>
+        <h1>{TITULO_JUEGOS}</h1>
         {sinJuegos ? (
           <Alert variant="info">{SIN_JUEGOS}</Alert>
         ) : (

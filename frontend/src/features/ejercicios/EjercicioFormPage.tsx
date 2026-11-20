@@ -243,7 +243,8 @@ function FormularioEjercicio({ id, inicial }: { id?: number; inicial: DefaultVal
         </Alert>
       ) : null}
 
-      <div className="grid items-start gap-6 @3xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      {/* Sin la columna explícita, en celular la grilla crece hasta el ancho mínimo del contenido y se sale de la pantalla */}
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-6 @3xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Card className="gap-6">
           <Controller
             control={control}

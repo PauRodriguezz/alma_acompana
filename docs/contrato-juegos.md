@@ -264,7 +264,7 @@ Orden de implementación, con pausa de prueba al final de cada paso:
 
 Carpetas nuevas (no se tocan `features/ejercicios`, que es del panel de operador):
 
-- `features/entretenimiento/`: `EntretenimientoPage` (el hub con "Jugar" y "Leer") y `mensajes.ts`.
+- `features/entretenimiento/`: `EntretenimientoPage` (el hub con "Jugar" y "Leer"; la pregunta de Alma lleva `AvatarAlma`) y `mensajes.ts`.
 - `features/juegos/`: `JuegosInicioPage`, `JuegoPage` (ejercicio, respuesta y final), `api.ts`, `tipos.ts`, `mensajes.ts` y los componentes del juego. Cuando pase de unos 10 archivos se parte en `pages/` y `components/` (CLAUDE.md).
 
 ### 10.1 Rutas (dentro del `LayoutPersona`)
@@ -298,7 +298,7 @@ Carpetas nuevas (no se tocan `features/ejercicios`, que es del panel de operador
 
 ### 10.4 Accesibilidad
 
-Botones y opciones de 44 px como mínimo, etiquetas visibles, todo usable con teclado, sin tiempos, sin color como única señal (el acierto y el error llevan texto e ícono), alto contraste (`contraste-alto`) y tamaño de letra de 100/125/150 %. Tamaños y unidades en `rem`, como el resto de la app.
+Botones y opciones de 44 px como mínimo, etiquetas visibles, todo usable con teclado, sin tiempos, sin color como única señal (el acierto y el error llevan texto e ícono), alto contraste (`contraste-alto`) y tamaño de letra de 100/125/150 %. Tamaños y unidades en `rem`, como el resto de la app. **Excepción (v1.2):** el círculo del ícono de las tarjetas "Jugar" y "Leer" del hub de Entretenimiento (`EntretenimientoPage`) mide 56 px fijos y su ícono 28 px, y no crecen con el tamaño de letra, porque son decorativos; el texto sí escala. Con letra "Muy grande" en 360 px, el círculo en `rem` (84 px) dejaba 103 px al texto y una palabra se salía de la pantalla.
 
 ### 10.5 Textos
 
@@ -324,7 +324,7 @@ Todos los textos de las pantallas en `features/juegos/mensajes.ts` y `features/e
 | Figma | Contrato | Motivo |
 |---|---|---|
 | Pantallas de ejercicio y final solo en celular | Se arman también en escritorio, adaptando las de celular | Pedido del equipo |
-| La pantalla del ejercicio no muestra la navegación inferior | Se mantiene la del `LayoutPersona` | Layout compartido; no se toca en este módulo (pendiente 1) |
+| La pantalla del ejercicio no muestra la navegación inferior | Se mantiene la del `LayoutPersona` (barra de solo íconos; ver `docs/contrato-login.md`, sección 9) | Layout compartido; no se toca en este módulo (pendiente 1) |
 | Título "Acordate cómo sigue." y debajo la frase del refrán | Chip de categoría + `consigna` del catálogo (una sola línea grande) | Ganan los documentos: la consigna es un dato del ejercicio |
 | Panel "¡Muy bien!" muestra la frase completa del refrán | Muestra la explicación del ejercicio, que en el seed incluye la frase completa | La frase completa no es un dato del DC |
 | Panel de acierto igual al de error en estructura | "¡Muy bien!" y "¡Casi!" con "La respuesta era…"; solo cambia el tono | Una sola pieza de interfaz |
@@ -387,6 +387,8 @@ Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay
 
 - **v1 (04/11/2026):** primera propuesta, contra el commit `321a63f`.
 - **v1.1 (04/11/2026):** en opción múltiple, tocar la opción es la respuesta (sin botón "Responder"); se confirma ordenar sin arrastrar; diferencias con el Figma ajustadas tras revisar las pantallas.
+- **v1.3 (19/11/2026):** la pregunta de Alma del hub usa `AvatarAlma`; el chip de categoría Refranes usa el ícono `quotes` del Figma. Solo cambia el front.
+- **v1.2 (19/11/2026):** excepción a la regla de `rem` en la sección 10.4: el círculo del ícono de las tarjetas del hub de Entretenimiento tiene tamaño fijo en px (decorativo). Solo cambia el front.
 
 ---
 

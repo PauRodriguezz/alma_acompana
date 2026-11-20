@@ -1,10 +1,7 @@
 import type { ReactNode } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  AccessibilityIcon,
-  ArrowRight01Icon,
-  Logout01Icon,
-} from "@hugeicons/core-free-icons"
+import { ArrowRight01Icon, Logout01Icon } from "@hugeicons/core-free-icons"
+import { ICONO_ACCESIBILIDAD } from "@/components/alma/iconos"
 
 import { Alert } from "@/components/ui/alert"
 import { usePanelAccesibilidad } from "@/features/accesibilidad/usePanelAccesibilidad"
@@ -64,7 +61,7 @@ export function PerfilPage() {
         </span>
       </header>
 
-      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-(--slot)">
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-(--page-x)">
         <section aria-labelledby="perfil-datos">
           <h2 id="perfil-datos" className="text-h3">
             {TITULO_DATOS}
@@ -98,7 +95,7 @@ export function PerfilPage() {
           <ul>
             <li>
               <button type="button" aria-haspopup="dialog" onClick={abrir} className={FILA_BOTON}>
-                <HugeiconsIcon icon={AccessibilityIcon} className="size-6 shrink-0" aria-hidden="true" />
+                <HugeiconsIcon icon={ICONO_ACCESIBILIDAD} className="size-6 shrink-0" aria-hidden="true" />
                 <span className="flex-1">{AJUSTE_ACCESIBILIDAD}</span>
                 <HugeiconsIcon icon={ArrowRight01Icon} className="size-6 shrink-0" aria-hidden="true" />
               </button>

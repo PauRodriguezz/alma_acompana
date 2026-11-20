@@ -1,6 +1,6 @@
 import { useId } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { MinusSignIcon, PlusSignIcon } from "@hugeicons/core-free-icons"
+import { MinusSignIcon, Add01Icon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 
 import { MensajeError } from "@/components/alma/mensaje-error"
@@ -82,7 +82,7 @@ export function CampoDuracion({ valor, onChange, onBlur, error }: Props) {
           disabled={hayNumero && valor >= MAXIMO}
           onClick={() => mover(1)}
         >
-          <HugeiconsIcon icon={PlusSignIcon} className="size-6" aria-hidden="true" />
+          <HugeiconsIcon icon={Add01Icon} className="size-6" aria-hidden="true" />
         </button>
       </div>
       {error ? <MensajeError id={idError}>{error}</MensajeError> : null}

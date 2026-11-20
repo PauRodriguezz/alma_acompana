@@ -21,6 +21,8 @@ export const CERRAR_PANEL = "Cerrar"
 export const SIN_RECUERDOS =
   "Todavía no tenemos recuerdos. Respondé las preguntas de Alma y van a aparecer acá."
 export const PREFIJO_ANIO_APROXIMADO = "Alrededor de"
+/** En la imagen descargable un año estimado va como "hacia 1957" (contrato del mapa de vida, 2.5). */
+export const PREFIJO_ANIO_IMAGEN = "hacia"
 
 // Tarjeta de pregunta pendiente (B3)
 export const PROXIMA_PARADA = "Próxima parada"

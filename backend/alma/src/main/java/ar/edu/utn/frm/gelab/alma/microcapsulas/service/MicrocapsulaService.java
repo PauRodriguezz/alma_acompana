@@ -2,6 +2,7 @@ package ar.edu.utn.frm.gelab.alma.microcapsulas.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,26 @@ public class MicrocapsulaService {
 
     private static final int MAX_TITULO = 120;
     private static final int MAX_TEXTO = 5000;
+
+    static final String FORMATO_NO_PERMITIDO = "El texto tiene un formato que no se puede usar. "
+            + "Usá solo título, subtítulo, negrita, cursiva, listas y destacado.";
+
+    /**
+     * El texto es Markdown limitado: títulos (##), subtítulos (###), negrita, cursiva, listas y
+     * destacado (>). Se rechaza lo demás: HTML, enlaces, imágenes, código, líneas horizontales y los
+     * demás niveles de título. Un "<" o un ">" sueltos, o "<5", son texto normal.
+     */
+    private static final List<Pattern> FORMATOS_NO_PERMITIDOS = List.of(
+            Pattern.compile("<[!?]"),
+            Pattern.compile("</?[A-Za-z][A-Za-z0-9-]*(\\s[^<>]*)?/?>"),
+            Pattern.compile("<[A-Za-z][A-Za-z0-9+.-]*:[^\\s<>]*>"),
+            Pattern.compile("\\[[^\\]\\n]*\\]\\([^)\\n]*\\)"),
+            Pattern.compile("\\[[^\\]\\n]+\\]\\[[^\\]\\n]*\\]"),
+            Pattern.compile("^ {0,3}\\[[^\\]\\n]+\\]:\\s*\\S", Pattern.MULTILINE),
+            Pattern.compile("`|^ {0,3}~~~", Pattern.MULTILINE),
+            Pattern.compile("^ {0,3}([-*_])( *\\1){2,} *$", Pattern.MULTILINE),
+            Pattern.compile("^ {0,3}=+ *$", Pattern.MULTILINE),
+            Pattern.compile("^ {0,3}(#|#{4,6})([ \\t]|$)", Pattern.MULTILINE));
 
     private final MicrocapsulaRepository microcapsulaRepository;
 
@@ -111,6 +132,9 @@ public class MicrocapsulaService {
         if (datos.texto().strip().length() > MAX_TEXTO) {
             errores.add(new ErrorCampo("texto", "El texto puede tener hasta " + MAX_TEXTO + " caracteres."));
         }
+        if (usaFormatoNoPermitido(datos.texto())) {
+            errores.add(new ErrorCampo("texto", FORMATO_NO_PERMITIDO));
+        }
         String imagen = sinBlancos(datos.imagen());
         if (imagen != null && !RutaImagen.esValida(imagen)) {
             errores.add(new ErrorCampo("imagen", "La imagen no es válida. Volvé a elegirla."));
@@ -121,6 +145,10 @@ public class MicrocapsulaService {
         if (!errores.isEmpty()) {
             throw new DatosInvalidosException(MensajesError.DATOS_INVALIDOS, errores);
         }
+    }
+
+    private static boolean usaFormatoNoPermitido(String texto) {
+        return FORMATOS_NO_PERMITIDOS.stream().anyMatch(patron -> patron.matcher(texto).find());
     }
 
     private static boolean estaVacio(String valor) {

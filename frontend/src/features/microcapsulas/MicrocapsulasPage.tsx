@@ -3,7 +3,8 @@ import { Link } from "react-router-dom"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { format, parseISO } from "date-fns"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Delete02Icon, PencilEdit02Icon } from "@hugeicons/core-free-icons"
+import { Delete02Icon } from "@hugeicons/core-free-icons"
+import { ICONO_EDITAR } from "@/components/alma/iconos"
 
 import { DialogoConfirmar } from "@/components/alma/dialogo-confirmar"
 import { Alert } from "@/components/ui/alert"
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/table"
 import { useAviso } from "@/features/avisos/useAviso"
 import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
+import { BOTON_TEXTO_LARGO } from "@/features/historia/estilos"
 import { mensajeDeError } from "@/lib/errores"
 import { estiloBotonIcono } from "@/components/alma/estilos"
 
@@ -111,7 +113,7 @@ export function MicrocapsulasPage() {
         titulo={ADMIN_MICROCAPSULAS}
         migas={[{ texto: ADMIN_PANEL, a: "/admin" }, { texto: ADMIN_MICROCAPSULAS }]}
         accion={
-          <Link to={`${RUTA_LISTA}/nueva`} className={buttonVariants()}>
+          <Link to={`${RUTA_LISTA}/nueva`} className={buttonVariants({ className: BOTON_TEXTO_LARGO })}>
             {NUEVA_MICROCAPSULA}
           </Link>
         }
@@ -166,7 +168,7 @@ export function MicrocapsulasPage() {
                           aria-label={ariaEditar(m.titulo)}
                           className={`${estiloBotonIcono} text-heading`}
                         >
-                          <HugeiconsIcon icon={PencilEdit02Icon} aria-hidden="true" />
+                          <HugeiconsIcon icon={ICONO_EDITAR} aria-hidden="true" />
                         </Link>
                         <DialogoBaja
                           microcapsula={m}
@@ -193,11 +195,13 @@ export function MicrocapsulasPage() {
           <ul className="flex flex-col gap-4 @2xl:hidden">
             {lista.data.map((m) => (
               <li key={m.id}>
-                <Card className="items-start gap-3">
+                <Card className="items-start gap-3 p-4">
                   <h2 className="max-w-full font-sans text-body font-bold wrap-break-word text-foreground">
                     {m.titulo}
                   </h2>
-                  <EtiquetaCategoriaMicrocapsula categoria={m.categoria} />
+                  <div className="flex max-w-full [&>span]:max-w-full [&>span]:wrap-anywhere [&>span]:whitespace-normal">
+                    <EtiquetaCategoriaMicrocapsula categoria={m.categoria} />
+                  </div>
                   <p>{PUBLICADA} {fecha(m.fechaPublicacion)}</p>
                   <div className="flex flex-wrap gap-3">
                     <Link
@@ -205,7 +209,7 @@ export function MicrocapsulasPage() {
                       aria-label={ariaEditar(m.titulo)}
                       className={buttonVariants({ variant: "outline" })}
                     >
-                      <HugeiconsIcon icon={PencilEdit02Icon} className="size-6" aria-hidden="true" />
+                      <HugeiconsIcon icon={ICONO_EDITAR} className="size-6" aria-hidden="true" />
                       {ACCION_EDITAR}
                     </Link>
                     <DialogoBaja

@@ -2,7 +2,7 @@ import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import { ArrowRight01Icon, Note01Icon, PuzzleIcon } from "@hugeicons/core-free-icons"
 import { Link } from "react-router-dom"
 
-import alma from "@/assets/alma_acompana.webp"
+import { AvatarAlma } from "@/components/alma/avatar-alma"
 import { NAVEGACION_ENTRETENIMIENTO, NAVEGACION_NOMBRE_ALMA } from "@/lib/mensajes"
 
 import {
@@ -22,12 +22,10 @@ import { RUTA_JUEGOS, RUTA_LECTURAS } from "./rutas"
 export function EntretenimientoPage() {
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="lg:text-h1-desktop">{NAVEGACION_ENTRETENIMIENTO}</h1>
+      <h1>{NAVEGACION_ENTRETENIMIENTO}</h1>
 
       <p className="flex items-center gap-3">
-        <span className="inline-flex size-[calc(40rem/17)] shrink-0 items-center justify-center rounded-full bg-accent-soft contraste-alto:border-2 contraste-alto:border-foreground">
-          <img src={alma} alt="" className="size-[calc(32rem/17)] object-contain" />
-        </span>
+        <AvatarAlma />
         <span>
           {/* El Figma de celular no muestra "Alma:"; para el lector de pantalla se lee igual */}
           <span className="font-bold max-lg:sr-only">{NAVEGACION_NOMBRE_ALMA}: </span>
@@ -61,7 +59,12 @@ export function EntretenimientoPage() {
   )
 }
 
-/** Tarjeta que es un enlace entero. En alto contraste: fondo card y borde de 2 px. */
+/**
+ * Tarjeta que es un enlace entero. En alto contraste: fondo card y borde de 2 px. El círculo del
+ * ícono es decorativo y mide un tamaño fijo en px (no en rem): con letra "Muy grande" crecía hasta
+ * dejar 103 px al texto y una palabra se salía de la pantalla a 360 px. El texto sí escala
+ * (excepción documentada en el contrato de juegos, sección 10.4).
+ */
 function TarjetaAcceso({
   to,
   titulo,
@@ -85,9 +88,9 @@ function TarjetaAcceso({
     >
       <span className="flex min-w-0 flex-1 items-center gap-4 lg:flex-col lg:items-start lg:gap-2">
         <span
-          className={`inline-flex size-[calc(56rem/17)] shrink-0 items-center justify-center rounded-full contraste-alto:border-2 contraste-alto:border-foreground ${circulo}`}
+          className={`inline-flex size-[56px] shrink-0 items-center justify-center rounded-full contraste-alto:border-2 contraste-alto:border-foreground ${circulo}`}
         >
-          <HugeiconsIcon icon={icono} className="size-[calc(28rem/17)]" aria-hidden="true" />
+          <HugeiconsIcon icon={icono} className="size-[28px]" aria-hidden="true" />
         </span>
         <span className="flex min-w-0 flex-col gap-1 lg:gap-2">
           <span className="font-heading text-h2 font-medium text-heading lg:text-h3">{titulo}</span>

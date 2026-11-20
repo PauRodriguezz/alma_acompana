@@ -139,6 +139,55 @@ class MicrocapsulaAdminIntegrationTests {
                 .andExpect(jsonPath("$.errores[0].campo").value("imagen"));
     }
 
+    @Test
+    void textoConFormatoPermitidoSeGuardaTalCual() throws Exception {
+        String texto = "## Antes de salir\n\n### Para tener a mano\n\n**Llevá** agua y *abrigo*.\n\n"
+                + "- Documento\n- Llaves\n\n1. Primero\n2. Segundo\n\n> Pedí ayuda si la necesitás.";
+        MicrocapsulaRequest nueva = new MicrocapsulaRequest("Salir tranquilo", texto,
+                CategoriaMicrocapsula.RECOMENDACIONES, null, Fechas.hoy());
+        mockMvc.perform(conAdmin(post(URL)).content(json(nueva)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.texto").value(texto));
+    }
+
+    @Test
+    void textoNormalConSignosNoSeRechazaPorError() throws Exception {
+        String texto = "Menos de <5 pasos y 3 > 2. Si a < b, avisá.\n\n#1 consejo: tomá agua (siempre) [hoy].\n\n"
+                + "Precio: 5 - 3 = 2. Eso * aquello.";
+        MicrocapsulaRequest nueva = new MicrocapsulaRequest("Signos", texto,
+                CategoriaMicrocapsula.ALIMENTACION, null, Fechas.hoy());
+        mockMvc.perform(conAdmin(post(URL)).content(json(nueva)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void formatoNoPermitidoDevuelve400() throws Exception {
+        String[] noPermitidos = {
+                "Hola <b>mundo</b>",
+                "<script>alert(1)</script>",
+                "<!-- nota -->",
+                "Mirá <https://ejemplo.com>",
+                "Entrá [acá](https://ejemplo.com)",
+                "![foto](https://ejemplo.com/a.png)",
+                "Entrá [acá][1]\n\n[1]: https://ejemplo.com",
+                "Usá `código`",
+                "~~~\nbloque\n~~~",
+                "Antes\n\n---\n\nDespués",
+                "Título\n=====",
+                "# Título grande",
+                "#### Muy chico"
+        };
+        for (String texto : noPermitidos) {
+            MicrocapsulaRequest pedido = new MicrocapsulaRequest("Título", texto,
+                    CategoriaMicrocapsula.ALIMENTACION, null, Fechas.hoy());
+            mockMvc.perform(conAdmin(post(URL)).content(json(pedido)))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errores[0].campo").value("texto"))
+                    .andExpect(jsonPath("$.errores[0].mensaje").value(
+                            org.hamcrest.Matchers.startsWith("El texto tiene un formato que no se puede usar.")));
+        }
+    }
+
     private MockHttpServletRequestBuilder conAdmin(MockHttpServletRequestBuilder pedido) {
         return pedido.header(HttpHeaders.AUTHORIZATION, bearer(admin)).contentType(MediaType.APPLICATION_JSON);
     }

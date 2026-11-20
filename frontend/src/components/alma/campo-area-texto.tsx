@@ -14,6 +14,8 @@ type CampoAreaTextoProps = Omit<React.ComponentProps<typeof Textarea>, "id"> & {
   ayuda?: string
   error?: string
   id?: string
+  /** Barra de herramientas pegada arriba del campo, debajo de la etiqueta y la ayuda. */
+  barra?: React.ReactNode
 }
 
 // Igual que CampoTexto pero con un área de texto: etiqueta siempre visible arriba, ayuda
@@ -24,6 +26,7 @@ function CampoAreaTexto({
   ayuda,
   error,
   id,
+  barra,
   className,
   "aria-describedby": describedByExterno,
   ...props
@@ -48,12 +51,17 @@ function CampoAreaTexto({
           {ayuda}
         </p>
       ) : null}
-      <Textarea
-        id={idCampo}
-        aria-invalid={error ? true : undefined}
-        {...props}
-        aria-describedby={describedBy}
-      />
+      {/* Con barra (editor de texto), barra y campo forman un solo bloque: sin espacio y sin borde redondeado arriba del campo */}
+      <div className="flex flex-col">
+        {barra}
+        <Textarea
+          id={idCampo}
+          aria-invalid={error ? true : undefined}
+          {...props}
+          className={barra ? "rounded-t-none" : undefined}
+          aria-describedby={describedBy}
+        />
+      </div>
       {error ? <MensajeError id={idError}>{error}</MensajeError> : null}
     </div>
   )

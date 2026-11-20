@@ -24,6 +24,8 @@ export const NAVEGACION_ENTRETENIMIENTO = "Entretenimiento"
 export const NAVEGACION_HISTORIA_DE_VIDA = "Historia de vida"
 export const NAVEGACION_RECORDATORIOS = "Recordatorios"
 export const NAVEGACION_PERFIL = "Perfil"
+// Primer elemento de Tab, en la persona mayor y en el panel (components/alma/saltar-al-contenido.tsx)
+export const SALTAR_AL_CONTENIDO = "Saltar al contenido"
 
 // Aviso flotante de éxito (components/alma/aviso-flotante.tsx)
 export const AVISO_CERRAR = "Cerrar"

@@ -438,7 +438,7 @@ El saludo se pide con una consulta (`useSaludo`) que no se vuelve a pedir al enf
 
 Es la ruta `/` y reemplaza a `InicioPage`. De arriba hacia abajo:
 
-1. **Saludo** (`SaludoDeAlma`): la ilustración `src/assets/alma_acompana_saludo.webp` (decorativa, `alt=""`), el saludo como título y el mensaje debajo, como en el Figma. Mientras carga, un texto "Cargando…" (`ESTADO_CARGANDO`). Si falla, se muestra "Hola, soy Alma" sin mensaje y sin `Alert`: el chat sigue funcionando.
+1. **Saludo** (`SaludoDeAlma`): la ilustración `src/assets/alma_acompana_saludo.webp` (decorativa, `alt=""`), el saludo como título y el mensaje debajo, como en el Figma. Mientras carga, un texto "Cargando…" (`ESTADO_CARGANDO`). Si falla, se muestra "Hola, soy Alma" sin mensaje y sin `Alert`: el chat sigue funcionando. **(v7) Excepción a "tamaños en `rem`":** la ilustración mide un tamaño fijo en px (132 px de alto en celular, 145 px en escritorio) y no crece con el tamaño de letra, porque es decorativa; el título y el mensaje sí escalan. Con letra "Muy grande" en 360 px, la ilustración en `rem` (198 px de alto) dejaba 83 px al texto y el título se salía de la pantalla.
 2. **Tarjeta "Para hoy"** (`TarjetaParaHoy` con `useAgendaDeHoy` y `useCambioDeEstado`), igual que hoy en `InicioPage`, incluidos el anuncio y los errores de la agenda.
 3. **Ánimo**, con las reglas de 11.4:
    - sin ánimo elegido (y mientras `yaEscribio` sea `false`): `WidgetAnimo`;
@@ -492,7 +492,7 @@ Al aparecer un mensaje nuevo, la pantalla se desplaza para dejarlo a la vista (s
 - El campo y el botón se usan con teclado: Tab para moverse, Enter para enviar. El foco se ve claramente.
 - Al enviar, el foco **se queda en el campo** (para seguir escribiendo).
 - Las respuestas de Alma se anuncian una sola vez (región `role="log"`), y "Alma está pensando…" y los avisos de ánimo se anuncian con `role="status"`.
-- Con letra "Muy grande" nada se corta ni se tapa: el campo y el botón no tapan la navegación inferior ni el último mensaje, y los textos largos se parten en varias líneas.
+- Con letra "Muy grande" nada se corta ni se tapa: el campo y el botón no tapan la navegación inferior (barra de solo íconos y alto fijo `--nav-inferior`; ver `docs/contrato-login.md`, sección 9) ni el último mensaje, y los textos largos se parten en varias líneas.
 - Con alto contraste, las burbujas y el campo llevan borde.
 - Ningún estado se comunica solo con color: el error lleva texto e ícono (`Alert`).
 - El texto de la persona y de Alma se muestra como texto plano, sin interpretar formato.
@@ -504,7 +504,7 @@ Al aparecer un mensaje nuevo, la pantalla se desplaza para dejarlo a la vista (s
 | El saludo del Figma solo existe en su versión con recordatorios ("Qué lindo verte. Hoy tenés recordatorios.") | CU-02, camino alterno 1: saludo sin mención a recordatorios | Se agregan las variantes sin recordatorios y con uno solo (5.1) |
 | Las pantallas "Chat: pregunta de Alma" (con "Volver" y botones) | Son de Historia de vida (CU-03) | No se implementan acá |
 | El Figma no muestra el indicador de espera, el error ni la conversación con varios mensajes | CU-02, pasos 9.1 y camino alterno 2 | Se arman con `MensajeAlma`, `MensajePersona` y `Alert`, con los textos de 9.1 |
-| El avatar de Alma en los mensajes es un círculo liso ("provisorio") | — | Se mantiene el círculo de `MensajeAlma` |
+| El avatar de Alma en los mensajes es un círculo liso ("provisorio") | — | **(v8)** `MensajeAlma` usa `AvatarAlma` (la cara de Alma, `src/assets/alma-avatar.webp`, en un círculo blanco `bg-card` de 40 px fijos, decorativo y con borde en alto contraste). Para cambiar la imagen alcanza con reemplazar el archivo |
 | El campo mide 60 px de alto, y en celular el botón de enviar es solo un ícono | Convenciones del proyecto: 48 px como mínimo y nombre accesible | Se respeta el Figma (60 px si entra) y el botón lleva el nombre accesible "Enviar" |
 
 ---
@@ -565,6 +565,8 @@ Con `docker compose up -d`, `ollama signin` hecho y el back corriendo, se mandan
 - **v4 (11/11/2026):** el proveedor del modelo (Gemini u Ollama) se elige con `IA_PROVEEDOR`; ver `docs/contrato-ia.md` (decisión "Modelo y razonamiento", 5.6 y la lista de `ia/`). Se actualizan los textos que daban por hecho que la historia de vida no existía (`{progreso}` y `{recuerdos}`, la invitación). Además, en la prueba real con Gemini, tras "podríamos seguir escribiendo historia de vida" y "bueno dale", el modelo improvisó una pregunta del pasado que no es del guion y no se guarda. Se agrega al prompt (anexo A) la regla 7 y un ejemplo: las preguntas del guion las hace la aplicación; si la persona pide seguir o retomar su historia de vida, Alma le indica que la retome desde la sección Historia de vida, sin formular ni proponer preguntas del guion; si la persona cuenta un recuerdo por su cuenta, Alma conversa con naturalidad, con preguntas de seguimiento incluidas. El resto del contrato no cambia. Prueba manual nueva: decir "podríamos seguir con mi historia de vida" y después "bueno dale"; Alma no debe hacer ninguna pregunta del pasado y debe mandar a la sección Historia de vida. Los tests automáticos protegen el archivo (`SystemPromptDelChatTest`).
 - **v5 (11/11/2026):** en una prueba real, Alma ofreció "¿Te gustaría que le mandemos un mensaje para ver cuándo pueden verse?", y la app no puede mandar mensajes; además, ante "extraño a Mateo" comentó el recuerdo sin reconocer lo que la persona sentía. Se agregan al prompt (anexo A) la regla 8 (Alma solo conversa y no ofrece ni promete acciones que la app no tiene; Recordatorios sirve solo para medicación y citas médicas, los dos `TipoRecordatorio` que existen) y la regla 9 (reflejar la emoción dicha con claridad, sin explicarla ni calificarla; no cambia la regla 3) y dos ejemplos. Se agregan los casos T19 y T20 al anexo B. El resto del contrato no cambia.
 - **v6 (12/11/2026):** se cierran pendientes de la historia de vida: **7.2** documenta el campo `alarma` de la respuesta (y qué muestra Swagger) y **11.1 y 11.4** aclaran qué cuenta para `yaEscribio` y qué no viaja al modelo en `conversacion` (burbujas de acciones y mensajes fijos). Sin cambios de comportamiento en el chat. Ver `docs/contrato-historia-de-vida.md` (v5) y `docs/contrato-mapa-de-vida.md`.
+- **v7 (19/11/2026):** la ilustración del saludo pasa a un tamaño fijo en px (sección 11, punto 1), como excepción a la regla de `rem`, para que con letra "Muy grande" en 360 px no haya scroll horizontal. Solo cambia el front.
+- **v8 (19/11/2026):** `MensajeAlma` usa `AvatarAlma` (tabla de diferencias con el Figma); el ícono de "Seguir mi historia de vida" pasa a `book-open-02` y el del campo de mensaje a `sent-02` (nombres del Figma). Solo cambia el front.
 
 ---
 

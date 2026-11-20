@@ -2,7 +2,8 @@ import { useState, type ReactElement } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Delete02Icon, PencilEdit02Icon } from "@hugeicons/core-free-icons"
+import { Delete02Icon } from "@hugeicons/core-free-icons"
+import { ICONO_EDITAR } from "@/components/alma/iconos"
 
 import { DialogoConfirmar } from "@/components/alma/dialogo-confirmar"
 import { SelectorChips } from "@/components/alma/selector-chips"
@@ -233,7 +234,7 @@ export function EjerciciosPage() {
                           aria-label={ariaEditar(e.consigna)}
                           className={`${estiloBotonIcono} text-heading`}
                         >
-                          <HugeiconsIcon icon={PencilEdit02Icon} aria-hidden="true" />
+                          <HugeiconsIcon icon={ICONO_EDITAR} aria-hidden="true" />
                         </Link>
                         <DialogoEliminar
                           ejercicio={e}
@@ -281,7 +282,7 @@ export function EjerciciosPage() {
                       aria-label={ariaEditar(e.consigna)}
                       className={buttonVariants({ variant: "outline" })}
                     >
-                      <HugeiconsIcon icon={PencilEdit02Icon} className="size-6" aria-hidden="true" />
+                      <HugeiconsIcon icon={ICONO_EDITAR} className="size-6" aria-hidden="true" />
                       {ACCION_EDITAR}
                     </Link>
                     <DialogoEliminar

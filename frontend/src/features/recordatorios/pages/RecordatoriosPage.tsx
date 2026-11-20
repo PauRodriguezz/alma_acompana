@@ -1,5 +1,5 @@
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Calendar03Icon, ClipboardIcon } from "@hugeicons/core-free-icons"
+import { Calendar03Icon, Task01Icon } from "@hugeicons/core-free-icons"
 import { Link } from "react-router-dom"
 
 import { buttonVariants } from "@/components/ui/button-variants"
@@ -24,7 +24,7 @@ export function RecordatoriosPage() {
         {/* En celular las pestañas ocupan todo el ancho: con letra "Muy grande" no entrarían de otro modo */}
         <TabsList className="max-lg:-mx-(--page-x)">
           <TabsTab value="lista">
-            <HugeiconsIcon icon={ClipboardIcon} className="size-6" aria-hidden="true" />
+            <HugeiconsIcon icon={Task01Icon} className="size-6" aria-hidden="true" />
             {PESTANIA_LISTA}
           </TabsTab>
           <TabsTab value="calendario">

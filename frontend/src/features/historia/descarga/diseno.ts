@@ -1,142 +1,402 @@
 import type { EtapaConRecuerdos } from "../agruparPorEtapa"
 import type { Etapa } from "../etapas"
+import { PREFIJO_ANIO_IMAGEN, TITULO_IMAGEN_PREFIJO, TITULO_IMAGEN_SIN_NOMBRE } from "../mensajes"
 import type { RecuerdoResumen } from "../tipos"
-import { masRecuerdos, TITULO_IMAGEN_PREFIJO, TITULO_IMAGEN_SIN_NOMBRE } from "../mensajes"
+import { FUENTE_DE_TEXTO, FUENTE_DE_TITULOS, type Fuente } from "./tipografias"
 
-// Medidas de la imagen de 1080 × 1080 (contrato del mapa de vida, Anexo A y `mapa-descarga-cuadrada.svg`).
-// Esta parte es pura (no dibuja): el dibujo está en `dibujarMapa.ts`.
+// Diseño de la imagen descargable (contrato del mapa de vida, 2.5 y Anexo A): 1920 × 1080, un camino en zigzag
+// de dos tramos (izquierda a derecha, vuelta en U por la derecha, derecha a izquierda), seis banderines que solo
+// marcan el inicio de cada etapa y los recuerdos como paradas sueltas (punto + tarjeta) debajo del camino.
+// Esta parte es pura (no dibuja): decide qué paradas entran y dónde va cada cosa, midiendo el texto con la
+// tipografía real (`medir`). El dibujo está en `dibujarMapa.ts`.
 
-export const LADO_DE_LA_IMAGEN = 1080
+export const ANCHO_DE_LA_IMAGEN = 1920
+export const ALTO_DE_LA_IMAGEN = 1080
 
-/** Puntos de las seis paradas, en el orden del camino: fila 1 a la derecha, fila 2 a la izquierda, fila 3 a la derecha. */
-const PUNTOS: readonly (readonly [number, number])[] = [
-  [200, 400],
-  [600, 400],
-  [600, 680],
-  [200, 680],
-  [200, 960],
-  [600, 960],
+/** Cuántas paradas (tarjetas) entran en la imagen sin superponerse: dos tramos de cinco. */
+export const MAXIMO_DE_PARADAS = 10
+/** Un título se parte en hasta tres líneas; si no entra, baja el tamaño de la letra (nunca se corta con "…"). */
+export const MAXIMO_DE_LINEAS = 3
+/** Ancho máximo del título "La vida de {nombre}". */
+export const ANCHO_MAXIMO_DEL_TITULO = 1300
+
+/** Mide un texto en px con la tipografía y el tamaño indicados. */
+export type Medir = (texto: string, fuente: Fuente, tamanio: number) => number
+
+const Y_CAMINO = [365, 770] as const
+const ANCHO_TARJETA = 320
+const MARGEN_DE_TARJETA = 18
+const SEPARACION_CAMINO_TARJETA = 37
+const TAMANIO_DEL_TITULO_DE_TARJETA = 28
+const TAMANIO_MINIMO_DEL_TITULO = 16
+export const TAMANIO_DEL_ANIO = 26
+const ALTO_TARJETA_VACIA = 78
+export const ANCHO_DEL_TEXTO_DE_TARJETA = ANCHO_TARJETA - 2 * MARGEN_DE_TARJETA
+
+/** Las diez paradas, en el orden del camino: cinco en el tramo de arriba (de izquierda a derecha) y cinco en el de abajo (de derecha a izquierda). Es el centro de la tarjeta. */
+const PARADAS: readonly { fila: 0 | 1; cx: number }[] = [
+  { fila: 0, cx: 270 },
+  { fila: 0, cx: 600 },
+  { fila: 0, cx: 930 },
+  { fila: 0, cx: 1280 },
+  { fila: 0, cx: 1640 },
+  { fila: 1, cx: 1650 },
+  { fila: 1, cx: 1290 },
+  { fila: 1, cx: 920 },
+  { fila: 1, cx: 560 },
+  { fila: 1, cx: 225 },
 ]
+/** Una etapa que empieza en la sexta parada (la primera del tramo de abajo) pone su banderín justo antes de la vuelta en U, con la cinta hacia la izquierda: a la derecha no hay lugar. */
+const PRIMERA_PARADA_DE_ABAJO = 5
+const POLO_ANTES_DE_LA_VUELTA = 1780
+const POLO_DE_LA_PRIMERA_ETAPA = 100
 
-const CAMINO_HASTA_LA_QUINTA =
-  "M90 430 C130 430 150 400 200 400 C300 340 500 460 600 400 C700 340 800 460 900 400 C1000 340 1000 740 900 680 " +
-  "C800 620 700 740 600 680 C500 620 300 740 200 680 C100 620 100 1020 200 960"
-const CAMINO_COMPLETO = `${CAMINO_HASTA_LA_QUINTA} C300 900 500 1020 600 960 C680 910 740 970 790 970`
+const POSTE_ALTO = 187
+const CINTA_ALTO = 46
+const CINTA_ANCHO_MINIMO = 200
+export const CINTA_TAMANIO = 26
+const ICONO_RADIO = 27
+export const CIRCULO_RADIO = 24
+export const PUNTO_RADIO = 13
 
-/** Arbolitos de adorno: centro y escala 1,8. */
-export const ARBOLITOS: readonly (readonly [number, number])[] = [
-  [1000, 270],
-  [95, 545],
-  [1000, 825],
-  [110, 300],
+export const CAMINO = "M70 365 H1780 C1880 365 1880 770 1780 770 H90"
+
+/** Dónde se prueba poner un arbolito de adorno; se usan los primeros que no tocan nada. */
+const ARBOLES_POSIBLES: readonly (readonly [number, number])[] = [
+  [700, 265], [870, 295], [1320, 285], [460, 290], [300, 690], [450, 668],
+  [1000, 690], [800, 675], [1500, 690], [300, 300], [1750, 290], [1250, 690],
 ]
+const MAXIMO_DE_ARBOLES = 4
 
-/**
- * Medidas de una parada respecto de su punto (x, y). Todo el grupo (mástil, banderín, ilustración y tarjeta) está 14 px
- * más arriba que en la referencia: así una tarjeta de tres líneas, que es más alta, no se acerca más al camino.
- */
-export const PARADA = {
-  /** El mástil está 40 px a la derecha del punto. */
-  mastilDx: 40,
-  mastilArriba: -210,
-  mastilAbajo: -26,
-  banderinAncho: 214,
-  banderinArriba: -204,
-  banderinAbajo: -164,
-  muesca: 18,
-  ilustracionDx: 252,
-  ilustracionDy: -184,
-  tarjetaAncho: 290,
-  tarjetaArriba: -154,
-  /** Margen del texto dentro de la tarjeta, a cada lado. */
-  tarjetaMargen: 16,
-} as const
-
-/** Cuántos títulos muestra la tarjeta de la imagen antes de pasar a "y N más" (contrato del mapa de vida, 2.5). */
-export const TITULOS_POR_TARJETA = 3
-
-/**
- * El alto de la tarjeta y dónde va la línea de base de cada línea de texto (desde el borde de arriba de la tarjeta),
- * según cuántas líneas lleva. Con tres líneas la tarjeta es más alta (96 en lugar de 84) y las líneas van más juntas.
- */
-export function medidasDeTarjeta(lineas: number): { alto: number; lineasBase: number[] } {
-  if (lineas >= 3) return { alto: 96, lineasBase: [28, 54, 80] }
-  if (lineas === 2) return { alto: 84, lineasBase: [34, 64] }
-  return { alto: 84, lineasBase: [50] }
+export type Rectangulo = {
+  tipo: "titulo" | "pie" | "poste" | "cinta" | "icono" | "circulo" | "punto" | "tarjeta" | "arbol"
+  /** Las piezas del mismo grupo (un banderín; un punto con su tarjeta) pueden tocarse. */
+  grupo: string
+  x: number
+  y: number
+  ancho: number
+  alto: number
 }
 
-/** El ancho que tiene un título de la tarjeta antes de cortarse con "…". */
-export const ANCHO_DEL_TEXTO_DE_TARJETA = PARADA.tarjetaAncho - 2 * PARADA.tarjetaMargen
-
-/** Ancho máximo del título "La vida de {nombre}". */
-export const ANCHO_MAXIMO_DEL_TITULO = 940
-
-export type LineaDeTarjeta = { texto: string; destacada: boolean }
+export type TarjetaDeRecuerdo = {
+  x: number
+  y: number
+  ancho: number
+  alto: number
+  /** "1948" o "hacia 1957"; null si el recuerdo no tiene año. */
+  anio: string | null
+  /** Línea de base del año (si hay). */
+  lineaBaseDelAnio: number
+  /** El título completo, partido en líneas (nunca cortado). */
+  lineas: string[]
+  tamanio: number
+  interlineado: number
+  /** Línea de base de la primera línea del título. */
+  lineaBaseDelTitulo: number
+}
 
 export type ParadaDelMapa = {
   etapa: Etapa
-  /** 1 a 6, dentro del punto. */
+  id: string
+  /** El punto sobre el camino. */
+  punto: { x: number; y: number }
+  tarjeta: TarjetaDeRecuerdo
+}
+
+export type TarjetaVacia = { etapa: Etapa; x: number; y: number; ancho: number; alto: number }
+
+export type BanderinDelMapa = {
+  etapa: Etapa
+  /** 1 a 6, dentro del círculo sobre el camino. */
   numero: number
-  x: number
-  y: number
-  vacia: boolean
-  /** Hasta tres líneas: los títulos (ya cortados) y, con muchos recuerdos, "y N más". */
-  lineas: LineaDeTarjeta[]
-  /** Alto de la tarjeta y línea de base de cada línea, desde el borde de arriba (`medidasDeTarjeta`). */
-  altoTarjeta: number
-  lineasBase: number[]
+  poloX: number
+  poloArriba: number
+  /** Si la cinta y el ícono van a la izquierda del poste (solo el banderín de la vuelta en U). */
+  haciaLaIzquierda: boolean
+  caminoY: number
+  cinta: { x: number; y: number; ancho: number; alto: number }
+  icono: { x: number; y: number; radio: number }
 }
 
 export type DisenoDelMapa = {
-  paradas: ParadaDelMapa[]
-  /** El trazado del camino (hasta la parada 5 si no hay "Otros momentos"). */
+  ancho: number
+  alto: number
   camino: string
+  banderines: BanderinDelMapa[]
+  paradas: ParadaDelMapa[]
+  vacias: TarjetaVacia[]
+  arboles: [number, number][]
+  rectangulos: Rectangulo[]
+  /** Cuántos recuerdos hay y cuántos se muestran. */
+  total: number
+  mostrados: number
 }
 
-/**
- * Qué muestra la tarjeta de la imagen (contrato del mapa de vida, 2.5): hasta tres títulos y, con cuatro o más
- * recuerdos, los dos primeros y "y N más" (N = total − 2). La tarjeta de la pantalla usa otra regla (2.1).
- */
-export function resumenDeTarjetaDeImagen(recuerdos: RecuerdoResumen[]): { titulos: string[]; masDe: number } {
-  if (recuerdos.length <= TITULOS_POR_TARJETA) return { titulos: recuerdos.map((r) => r.titulo), masDe: 0 }
-  const mostrados = TITULOS_POR_TARJETA - 1
-  return { titulos: recuerdos.slice(0, mostrados).map((r) => r.titulo), masDe: recuerdos.length - mostrados }
+/** Los recuerdos por año (el más viejo primero); los que no tienen año, al final, en el orden que vienen. */
+export function ordenCronologico(recuerdos: RecuerdoResumen[]): RecuerdoResumen[] {
+  return recuerdos
+    .map((recuerdo, i) => ({ recuerdo, i }))
+    .sort((a, b) => (a.recuerdo.anio ?? Infinity) - (b.recuerdo.anio ?? Infinity) || a.i - b.i)
+    .map((x) => x.recuerdo)
 }
 
-/**
- * Corta un título a una sola línea con "…" si no entra en `anchoMaximo` (contrato del mapa de vida, 2.1 y 2.5). Se
- * mide el texto con la tipografía real (`medir`), así que depende del ancho de las letras y no de un número fijo de
- * caracteres.
- */
-export function recortarTitulo(texto: string, anchoMaximo: number, medir: (texto: string) => number): string {
-  const limpio = texto.trim()
-  if (medir(limpio) <= anchoMaximo) return limpio
-  let letras = Array.from(limpio)
-  while (letras.length > 1) {
-    letras = letras.slice(0, -1)
-    const candidato = `${letras.join("").trimEnd()}…`
-    if (medir(candidato) <= anchoMaximo) return candidato
+/** "1948", o "hacia 1957" si el año es aproximado o estimado (contrato, 2.5). */
+export function anioParaLaImagen(recuerdo: RecuerdoResumen): string | null {
+  if (recuerdo.anio === null) return null
+  if (recuerdo.precision === "APROXIMADA" || recuerdo.precision === "ESTIMADA") {
+    return `${PREFIJO_ANIO_IMAGEN} ${recuerdo.anio}`
   }
-  return "…"
+  return String(recuerdo.anio)
+}
+
+/** Parte un texto en líneas de hasta `ancho` px, sin cortar palabras (salvo una más ancha que la línea). */
+export function partirEnLineas(texto: string, ancho: number, medir: (texto: string) => number): string[] {
+  const lineas: string[] = []
+  let actual = ""
+  for (let palabra of texto.trim().split(/\s+/).filter(Boolean)) {
+    while (medir(palabra) > ancho && palabra.length > 1) {
+      let corte = palabra.length - 1
+      while (corte > 1 && medir(palabra.slice(0, corte)) > ancho) corte--
+      if (actual) {
+        lineas.push(actual)
+        actual = ""
+      }
+      lineas.push(palabra.slice(0, corte))
+      palabra = palabra.slice(corte)
+    }
+    const prueba = actual ? `${actual} ${palabra}` : palabra
+    if (!actual || medir(prueba) <= ancho) {
+      actual = prueba
+    } else {
+      lineas.push(actual)
+      actual = palabra
+    }
+  }
+  if (actual) lineas.push(actual)
+  return lineas.length > 0 ? lineas : [""]
+}
+
+/** Si dos rectángulos están separados por al menos `margen` px. */
+export function separados(a: Rectangulo, b: Rectangulo, margen: number): boolean {
+  return (
+    a.x + a.ancho + margen <= b.x ||
+    b.x + b.ancho + margen <= a.x ||
+    a.y + a.alto + margen <= b.y ||
+    b.y + b.alto + margen <= a.y
+  )
+}
+
+const MARGEN_ENTRE_PIEZAS = 6
+const MARGEN_CON_EL_BORDE = 30
+
+/** Hay choque si dos piezas de grupos distintos se tocan (o están a menos de 6 px) o algo se sale del borde. */
+export function hayChoques(rectangulos: Rectangulo[]): boolean {
+  for (const r of rectangulos) {
+    if (
+      r.x < MARGEN_CON_EL_BORDE ||
+      r.y < MARGEN_CON_EL_BORDE ||
+      r.x + r.ancho > ANCHO_DE_LA_IMAGEN - MARGEN_CON_EL_BORDE ||
+      r.y + r.alto > ALTO_DE_LA_IMAGEN - MARGEN_CON_EL_BORDE
+    ) {
+      return true
+    }
+  }
+  for (let i = 0; i < rectangulos.length; i++) {
+    for (let j = i + 1; j < rectangulos.length; j++) {
+      const a = rectangulos[i]
+      const b = rectangulos[j]
+      if (a.grupo !== b.grupo && !separados(a, b, MARGEN_ENTRE_PIEZAS)) return true
+    }
+  }
+  return false
+}
+
+type Elegidos = RecuerdoResumen[][]
+
+/**
+ * Las combinaciones posibles de cuántas paradas recibe cada etapa: al menos una por etapa (una etapa sin
+ * recuerdos usa una para su tarjeta punteada) y hasta diez en total.
+ */
+function combinaciones(disponibles: number[]): number[][] {
+  const resultado: number[][] = []
+  const actual: number[] = []
+  const recorrer = (k: number, suma: number) => {
+    if (k === disponibles.length) {
+      resultado.push([...actual])
+      return
+    }
+    const faltan = disponibles.length - k - 1
+    for (let n = 1; n <= disponibles[k]; n++) {
+      if (suma + n + faltan > MAXIMO_DE_PARADAS) break
+      actual.push(n)
+      recorrer(k + 1, suma + n)
+      actual.pop()
+    }
+  }
+  recorrer(0, 0)
+  return resultado
+}
+
+/**
+ * Qué recuerdos se muestran (contrato, 2.5): no todos, solo los que entran en diez paradas. Al menos uno por etapa
+ * que tenga recuerdos y el resto por orden cronológico (los que no tienen año, al final), sin "y N más". En cada
+ * etapa se muestran los primeros por año.
+ */
+export function elegirRecuerdos(grupos: EtapaConRecuerdos[]): Elegidos[] {
+  const porEtapa = grupos.map((g) => ordenCronologico(g.recuerdos))
+  const rango = new Map<string, number>()
+  ordenCronologico(grupos.flatMap((g) => g.recuerdos)).forEach((r, i) => rango.set(r.id, i))
+  const candidatas = combinaciones(porEtapa.map((r) => Math.max(1, r.length)))
+    .map((cantidades) => {
+      const elegidos = porEtapa.map((recuerdos, k) => recuerdos.slice(0, cantidades[k]))
+      const suma = elegidos.reduce((total, r) => total + r.length, 0)
+      const posicion = elegidos.flat().reduce((total, r) => total + (rango.get(r.id) ?? 0), 0)
+      return { elegidos, suma, posicion }
+    })
+    .sort((a, b) => b.suma - a.suma || a.posicion - b.posicion)
+  return candidatas.map((c) => c.elegidos)
+}
+
+function izquierda(i: number) {
+  return PARADAS[i].cx - ANCHO_TARJETA / 2
+}
+function derecha(i: number) {
+  return PARADAS[i].cx + ANCHO_TARJETA / 2
+}
+
+/** Dónde va el poste de la etapa que empieza en la parada `i`: en el hueco entre las tarjetas `i − 1` e `i`. */
+function poloAntesDe(i: number): number {
+  if (i === 0) return POLO_DE_LA_PRIMERA_ETAPA
+  if (i === PRIMERA_PARADA_DE_ABAJO) return POLO_ANTES_DE_LA_VUELTA
+  return PARADAS[i].fila === 0 ? (derecha(i - 1) + izquierda(i)) / 2 : (izquierda(i - 1) + derecha(i)) / 2
+}
+
+function armarTarjeta(recuerdo: RecuerdoResumen, parada: number, medir: Medir): TarjetaDeRecuerdo {
+  const anio = anioParaLaImagen(recuerdo)
+  let tamanio = TAMANIO_DEL_TITULO_DE_TARJETA
+  const partir = () =>
+    partirEnLineas(recuerdo.titulo, ANCHO_DEL_TEXTO_DE_TARJETA, (t) => medir(t, FUENTE_DE_TEXTO, tamanio))
+  let lineas = partir()
+  while (lineas.length > MAXIMO_DE_LINEAS && tamanio > TAMANIO_MINIMO_DEL_TITULO) {
+    tamanio -= 2
+    lineas = partir()
+  }
+  const x = izquierda(parada)
+  const y = Y_CAMINO[PARADAS[parada].fila] + SEPARACION_CAMINO_TARJETA
+  const interlineado = Math.round(tamanio * 1.2)
+  const arriba = anio ? 52 : 18
+  return {
+    x,
+    y,
+    ancho: ANCHO_TARJETA,
+    alto: arriba + tamanio + (lineas.length - 1) * interlineado + 16,
+    anio,
+    lineaBaseDelAnio: y + 38,
+    lineas,
+    tamanio,
+    interlineado,
+    lineaBaseDelTitulo: y + arriba + tamanio,
+  }
+}
+
+function armarConEleccion(grupos: EtapaConRecuerdos[], elegidos: Elegidos, medir: Medir): DisenoDelMapa {
+  const banderines: BanderinDelMapa[] = []
+  const paradas: ParadaDelMapa[] = []
+  const vacias: TarjetaVacia[] = []
+  const rectangulos: Rectangulo[] = []
+  let siguiente = 0
+
+  grupos.forEach(({ etapa, recuerdos }, k) => {
+    const desde = siguiente
+    const fila = PARADAS[desde].fila
+    const caminoY = Y_CAMINO[fila]
+    const poloX = poloAntesDe(desde)
+    const poloArriba = caminoY - POSTE_ALTO
+    const ancho = Math.max(CINTA_ANCHO_MINIMO, medir(etapa.nombre, FUENTE_DE_TITULOS, CINTA_TAMANIO) + 52)
+    const haciaLaIzquierda = desde === PRIMERA_PARADA_DE_ABAJO
+    const cinta = { x: haciaLaIzquierda ? poloX - 6 - ancho : poloX + 6, y: poloArriba + 12, ancho, alto: CINTA_ALTO }
+    const icono = {
+      x: haciaLaIzquierda ? cinta.x - 14 - ICONO_RADIO : cinta.x + ancho + 14 + ICONO_RADIO,
+      y: cinta.y + CINTA_ALTO / 2,
+      radio: ICONO_RADIO,
+    }
+    banderines.push({ etapa, numero: k + 1, poloX, poloArriba, haciaLaIzquierda, caminoY, cinta, icono })
+    const grupo = `etapa-${etapa.id}`
+    rectangulos.push(
+      { tipo: "poste", grupo, x: poloX - 3, y: poloArriba - 7, ancho: 6, alto: POSTE_ALTO - CIRCULO_RADIO + 7 },
+      { tipo: "cinta", grupo, ...cinta },
+      { tipo: "icono", grupo, x: icono.x - ICONO_RADIO, y: icono.y - ICONO_RADIO, ancho: 2 * ICONO_RADIO, alto: 2 * ICONO_RADIO },
+      { tipo: "circulo", grupo, x: poloX - CIRCULO_RADIO, y: caminoY - CIRCULO_RADIO, ancho: 2 * CIRCULO_RADIO, alto: 2 * CIRCULO_RADIO }
+    )
+
+    if (recuerdos.length === 0) {
+      const x = izquierda(desde)
+      const y = caminoY + SEPARACION_CAMINO_TARJETA
+      vacias.push({ etapa, x, y, ancho: ANCHO_TARJETA, alto: ALTO_TARJETA_VACIA })
+      rectangulos.push({ tipo: "tarjeta", grupo: `vacia-${etapa.id}`, x, y, ancho: ANCHO_TARJETA, alto: ALTO_TARJETA_VACIA })
+    }
+    elegidos[k].forEach((recuerdo, j) => {
+      const indice = desde + j
+      const tarjeta = armarTarjeta(recuerdo, indice, medir)
+      const punto = { x: PARADAS[indice].cx, y: Y_CAMINO[PARADAS[indice].fila] }
+      paradas.push({ etapa, id: recuerdo.id, punto, tarjeta })
+      const g = `recuerdo-${recuerdo.id}`
+      rectangulos.push(
+        { tipo: "punto", grupo: g, x: punto.x - PUNTO_RADIO, y: punto.y - PUNTO_RADIO, ancho: 2 * PUNTO_RADIO, alto: 2 * PUNTO_RADIO },
+        { tipo: "tarjeta", grupo: g, x: tarjeta.x, y: tarjeta.y, ancho: tarjeta.ancho, alto: tarjeta.alto }
+      )
+    })
+    siguiente += Math.max(1, elegidos[k].length)
+  })
+
+  // El título y la firma también ocupan lugar.
+  const partesTitulo = 1300
+  rectangulos.push(
+    { tipo: "titulo", grupo: "titulo", x: (ANCHO_DE_LA_IMAGEN - partesTitulo) / 2, y: 40, ancho: partesTitulo, alto: 120 },
+    { tipo: "pie", grupo: "pie", x: 1500, y: 1000, ancho: 350, alto: 44 }
+  )
+
+  const arboles: [number, number][] = []
+  for (const [x, y] of ARBOLES_POSIBLES) {
+    if (arboles.length >= MAXIMO_DE_ARBOLES) break
+    const arbol: Rectangulo = { tipo: "arbol", grupo: `arbol-${x}-${y}`, x: x - 26, y: y - 26, ancho: 52, alto: 80 }
+    if (rectangulos.every((r) => separados(arbol, r, 14))) {
+      arboles.push([x, y])
+      rectangulos.push(arbol)
+    }
+  }
+
+  const total = grupos.reduce((suma, g) => suma + g.recuerdos.length, 0)
+  const mostrados = paradas.length
+  return {
+    ancho: ANCHO_DE_LA_IMAGEN,
+    alto: ALTO_DE_LA_IMAGEN,
+    camino: CAMINO,
+    banderines,
+    paradas,
+    vacias,
+    arboles,
+    rectangulos,
+    total,
+    mostrados,
+  }
 }
 
 /**
  * Arma el diseño de la imagen a partir de los recuerdos agrupados por etapa (los mismos grupos que el mapa de
- * pantalla): una parada por etapa, con "Otros momentos" solo si hay recuerdos sin etapa.
+ * pantalla). Prueba las elecciones de recuerdos de la mejor a la peor (más paradas primero y, a igual cantidad, los
+ * más antiguos) y se queda con la primera cuya geometría no tiene choques.
  */
-export function armarDiseno(grupos: EtapaConRecuerdos[], medir: (texto: string) => number): DisenoDelMapa {
-  const paradas = grupos.slice(0, PUNTOS.length).map(({ etapa, recuerdos }, i): ParadaDelMapa => {
-    const [x, y] = PUNTOS[i]
-    const { titulos, masDe } = resumenDeTarjetaDeImagen(recuerdos)
-    const lineas: LineaDeTarjeta[] = titulos.map((titulo) => ({
-      texto: recortarTitulo(titulo, ANCHO_DEL_TEXTO_DE_TARJETA, medir),
-      destacada: false,
-    }))
-    if (masDe > 0) lineas.push({ texto: masRecuerdos(masDe), destacada: true })
-    const { alto, lineasBase } = medidasDeTarjeta(lineas.length)
-    return { etapa, numero: i + 1, x, y, vacia: recuerdos.length === 0, lineas, altoTarjeta: alto, lineasBase }
-  })
-  return { paradas, camino: paradas.length > 5 ? CAMINO_COMPLETO : CAMINO_HASTA_LA_QUINTA }
+export function armarDiseno(grupos: EtapaConRecuerdos[], medir: Medir): DisenoDelMapa {
+  const lista = grupos.slice(0, 6)
+  const elecciones = elegirRecuerdos(lista)
+  let primero: DisenoDelMapa | null = null
+  for (const elegidos of elecciones) {
+    const diseno = armarConEleccion(lista, elegidos, medir)
+    primero ??= diseno
+    if (!hayChoques(diseno.rectangulos)) return diseno
+  }
+  return primero ?? armarConEleccion(lista, lista.map(() => []), medir)
 }
 
 /**

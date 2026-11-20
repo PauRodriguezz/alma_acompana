@@ -7,7 +7,7 @@ export function TituloConFoco({ children }: { children: ReactNode }) {
     ref.current?.focus({ preventScroll: true })
   }, [])
   return (
-    <h1 ref={ref} tabIndex={-1} className="wrap-break-word outline-none lg:text-h1-desktop">
+    <h1 ref={ref} tabIndex={-1} className="wrap-break-word outline-none">
       {children}
     </h1>
   )

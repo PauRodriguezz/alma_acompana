@@ -1,6 +1,6 @@
 import type { EtapaConRecuerdos } from "../agruparPorEtapa"
 import { dibujarMapa } from "./dibujarMapa"
-import { LADO_DE_LA_IMAGEN } from "./diseno"
+import { ALTO_DE_LA_IMAGEN, ANCHO_DE_LA_IMAGEN } from "./diseno"
 import { FUENTES_DE_LA_IMAGEN, fuenteCss } from "./tipografias"
 
 export const NOMBRE_DEL_ARCHIVO = "mapa-de-vida.png"
@@ -25,8 +25,8 @@ async function cargarFuentes(): Promise<void> {
 
 function crearPng(grupos: EtapaConRecuerdos[], nombre: string | null | undefined): Promise<Blob> {
   const canvas = document.createElement("canvas")
-  canvas.width = LADO_DE_LA_IMAGEN
-  canvas.height = LADO_DE_LA_IMAGEN
+  canvas.width = ANCHO_DE_LA_IMAGEN
+  canvas.height = ALTO_DE_LA_IMAGEN
   const ctx = canvas.getContext("2d")
   if (!ctx) return Promise.reject(new Error("El navegador no puede dibujar la imagen"))
   dibujarMapa(ctx, grupos, nombre)
@@ -47,7 +47,7 @@ function bajar(blob: Blob) {
 }
 
 /**
- * Crea la imagen cuadrada del mapa de vida (contrato del mapa de vida, 2.5) y la baja como `mapa-de-vida.png`, en
+ * Crea la imagen del mapa de vida (1920 × 1080, contrato del mapa de vida, 2.5) y la baja como `mapa-de-vida.png`, en
  * todos los dispositivos. Todo se hace en el dispositivo: la imagen no pasa por el back ni se manda a ningún
  * servicio. Si algo falla al crearla, lanza el error.
  */

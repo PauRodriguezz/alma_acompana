@@ -37,7 +37,7 @@ Del contrato del grafo cambian: el prompt del extractor (2.12) y el endpoint `GE
 |---|---|
 | **M1. Mapa por etapas** | La pantalla `/historia-de-vida` pasa a ser un camino con una parada por etapa de la vida. Solo front (2.1 a 2.3). |
 | **M2. Accesibilidad del mapa** | Con letra grande el mapa se transforma en una lista; con alto contraste cambian los colores (2.4). |
-| **M3. Descarga del mapa** | Imagen cuadrada "La vida de {nombre}" generada en el dispositivo (2.5). |
+| **M3. Descarga del mapa** | Imagen "La vida de {nombre}" de 1920 × 1080 generada en el dispositivo (2.5). |
 | **M4. Detalle y "Seguir completando"** | El detalle muestra más y permite retomar las preguntas que faltan de un recuerdo (2.6 y 2.7). Back y front. |
 | **M5. Chat** | Botón fijo, invitación a pedido, burbujas de lo que se toca, espera más ágil y repreguntas con contexto (2.8 a 2.11). Solo front, salvo un dato nuevo del back (3.3). |
 | **M6. Descripción más larga** | El extractor escribe de dos a cuatro oraciones (2.12). Solo back. |
@@ -122,16 +122,20 @@ Además:
 - **Área táctil:** como mínimo 44 × 44 px (2,75 rem). La parada completa cumple de sobra.
 - La animación respeta `prefers-reduced-motion` (2.1).
 
-### 2.5 Descarga del mapa (imagen cuadrada)
+### 2.5 Descarga del mapa (imagen de 1920 × 1080)
 
-- El botón **"Descargar"** (arriba a la derecha) genera una imagen **PNG cuadrada de 1080 × 1080 px** y la descarga con el nombre `mapa-de-vida.png`. **Se crea en el dispositivo**: no pasa por el back ni se manda a ningún servicio.
-- **Contenido** (ver la imagen de referencia, Anexo A):
-  - Arriba, centrado, el título **"La vida de {Nombre}"**: "La vida de" en Poppins medium (la tipografía de los títulos de la app) y el nombre en **cursiva** con una tipografía que combine (Lora cursiva) y en el color violeta de la app. Si el nombre de la persona no está disponible, el título es "Mi vida" (sin cursiva).
-  - Un camino en forma de S con tres filas: la primera de izquierda a derecha, la segunda de derecha a izquierda y la tercera de izquierda a derecha. Las seis paradas van **numeradas del 1 al 6** dentro de su punto, para que se entienda el recorrido. Cada parada tiene su banderín, su tarjeta y su ilustración. **La tarjeta de la imagen muestra más que la de la pantalla** (la de la pantalla sigue con la regla de 2.1): con 0 recuerdos, "Todavía sin recuerdos"; con 1 a 3, **todos los títulos**; con 4 o más, **los dos primeros y "y {N−2} más"**. Cada título va en una sola línea, cortado con "…" según el **ancho medido** del texto (no por una cantidad fija de caracteres). Con tres líneas la tarjeta es más alta (96 px en lugar de 84) y todo el grupo de la parada (mástil, banderín, ilustración y tarjeta) está 14 px más arriba que en la referencia, para que la tarjeta no se acerque al camino. Una prueba automática (`descarga/diseno.test.ts`) verifica, con 0, 1, 2, 3, 4 y 6 recuerdos por etapa, que tarjetas, banderines e ilustraciones queden al menos 6 px del borde del camino y que nada se pise entre filas ni con el título, el pie o el borde.
-  - "Otros momentos" (la parada 6) solo si hay recuerdos sin etapa; si no, no se dibuja.
-  - Abajo a la derecha, pequeño, el texto **"Alma Acompaña"** con un corazón.
+- El botón **"Descargar"** (arriba a la derecha) genera una imagen **PNG de 1920 × 1080 px (apaisada)** y la descarga con el nombre `mapa-de-vida.png`. **Se crea en el dispositivo**: no pasa por el back ni se manda a ningún servicio. La imagen de referencia es `docs/referencias/mapa-descarga.png` (Anexo A).
+- **Contenido:**
+  - Arriba, centrado, el título **"La vida de {Nombre}"**: "La vida de" en Poppins medium y el nombre en **cursiva** (Lora cursiva) en el color violeta de la app. Si el nombre de la persona no está disponible, el título es "Mi vida" (sin cursiva).
+  - Un **camino en zigzag de dos tramos**: el de arriba de izquierda a derecha, una vuelta en U por la derecha y el de abajo de derecha a izquierda.
+  - **Banderines (uno por etapa, solo marcan dónde empieza):** un poste con su bolita, una cinta del color de la etapa con su nombre, el ícono de la etapa y, sobre el camino, un círculo numerado (1 a 6). "Otros momentos" (el sexto) solo si hay recuerdos sin etapa; si no, hay cinco.
+  - **Recuerdos: paradas sueltas debajo del camino.** Cada una tiene un punto del color de la etapa sobre el camino y una **tarjeta blanca de 320 px** con el **año en negrita** (en el color de la etapa) y el **título completo partido en hasta 3 líneas, nunca cortado con "…"** (si no entra en 3 líneas, baja el tamaño de la letra). Un año aproximado o estimado se muestra como **"hacia 1957"**; un recuerdo sin año no lleva año.
+  - **Etapa sin recuerdos:** una tarjeta punteada con "Todavía sin recuerdos" (ocupa una de las paradas).
+  - Árboles de adorno (los primeros que no tocan nada), el borde rosa y, abajo a la derecha, "Alma Acompaña" con un corazón.
+- **Qué paradas se muestran.** No todos los recuerdos: **solo los que entran sin superponerse, hasta 10 paradas** (cinco por tramo). **Al menos una por etapa que tenga recuerdos** y el resto **por orden cronológico** (los que no tienen año, al final). **Sin "y N más"**: lo que no entra no se menciona. De cada etapa se muestran los más antiguos. Como cada etapa usa al menos una parada (una etapa vacía también), la cantidad de recuerdos por etapa depende de las demás; además, con la geometría del camino hay combinaciones que no entran sin pisarse (por ejemplo, una etapa con un solo recuerdo que empieza justo en la vuelta en U) y el diseño elige entonces la mejor que sí entra.
+- **Todo se calcula antes de dibujar** con una función pura (`descarga/diseno.ts`), midiendo el texto con la tipografía real. Cuida que ninguna tarjeta toque un poste, un círculo numerado, una cinta o su ícono, ni se salga del borde; el título del recuerdo se parte en líneas, no se corta. Una prueba automática (`descarga/diseno.test.ts`) verifica 1920 × 1080, el tope de 10 paradas, al menos una por etapa con recuerdos, el orden cronológico, que no haya texto cortado y que no haya choques con 0, 1, 3, 6 y 12 recuerdos, con títulos largos y con todos los recuerdos en una sola etapa.
 - **La imagen no depende de las preferencias de accesibilidad** (tamaño de letra y contraste): siempre sale con el diseño de la referencia (fondo crema, colores de las etapas).
-- **Tipografías.** Poppins medium y Source Sans 3 ya están en la app. Hay que sumar Lora cursiva (`@fontsource/lora`, peso 500, cursiva, latín; ver 5.3). **Antes de dibujar, las fuentes tienen que estar cargadas** (`document.fonts.load(...)`); si se dibuja antes, la imagen sale con otra letra. Se puede dibujar con Canvas 2D o convertir un SVG a imagen, con la condición anterior.
+- **Tipografías.** Poppins medium y Source Sans 3 ya están en la app. Lora cursiva (`@fontsource/lora`, peso 500, cursiva, latín; ver 5.3). **Antes de dibujar, las fuentes tienen que estar cargadas** (`document.fonts.load(...)`); si se dibuja antes, la imagen sale con otra letra. Se dibuja con Canvas 2D.
 - Si falla, se muestra "No pudimos crear la imagen. Probá de nuevo." con el aviso existente de la app.
 - La imagen incluye los **títulos de los recuerdos**, que son datos personales. Se genera y se guarda solo en el dispositivo de la persona; lo que haga después con el archivo es decisión suya.
 
@@ -142,6 +146,8 @@ Además:
 - Debajo del título, en tono secundario: **"Respondiste a: «{preguntaTexto}»"** (3.2). Si `preguntaTexto` es nulo, no se muestra.
 - La descripción es más larga a partir de 2.12 (no cambia nada en la pantalla).
 - Si `faltantes` no está vacío, el botón **"Seguir completando este recuerdo"** (2.7).
+- **Ficha de la etapa (v6).** El detalle se presenta así: arriba el **banderín de la etapa** (el mismo del mapa, con su color; en alto contraste, negro) con el año al lado (un recuerdo sin etapa lleva "Otros momentos"; sin año, solo el banderín), después el título; la descripción va en una **tarjeta blanca con el borde del color de la etapa**, y dentro de ella "Con quién" y "Dónde" como **chips con ícono** (Hugeicons `user-group` y `location-01`), solo si hay datos. "Respondiste a: «…»" queda debajo como cita discreta (borde a la izquierda). "Seguir completando este recuerdo" es un **botón** (no un enlace) con el mismo comportamiento.
+- **Personas sin nombre (v6).** Si la persona del recuerdo no tiene nombre, el chip muestra solo el vínculo, con la primera letra en mayúscula ("Amiga"), sin paréntesis; con nombre y vínculo, "Nombre (vínculo)"; sin ninguno de los dos, no se muestra. El back puede devolver `nombre` nulo.
 - El detalle **sigue sin permitir editar** (CU-04): el botón no modifica el recuerdo, lleva a la conversación con Alma, que es donde se contestan las repreguntas.
 
 ### 2.7 "Seguir completando este recuerdo"
@@ -307,7 +313,7 @@ features/historia/
   agruparPorEtapa.ts         // agruparPorEtapa(recuerdos), resumenDeTarjeta(recuerdos)
   pideSeguirConLaHistoria.ts // 2.8 b (función pura, con pruebas)
   descarga/
-    dibujarMapa.ts           // dibuja la imagen cuadrada (2.5)
+    dibujarMapa.ts           // dibuja la imagen de 1920 × 1080 (2.5)
     descargarMapa.ts         // carga fuentes, dibuja, baja el PNG
   components/
     MapaDeVida.tsx           // camino (SVG decorativo) + paradas (HTML)
@@ -358,7 +364,7 @@ features/chat/
 - **Mapa:** las cinco etapas vacías; con recuerdos en cada etapa; "Otros momentos" con y sin recuerdos; títulos largos; 1, 2 y 3 o más recuerdos por etapa; a 320, 360 y 430 px de ancho y en escritorio.
 - **Panel:** abrir, cerrar (botón, Escape, tocar fuera), foco, desplazamiento del mapa en móvil, columna en escritorio.
 - **Accesibilidad:** letra Grande y Muy grande (lista), alto contraste, lector de pantalla (nombre de cada parada), teclado, "reducir movimiento".
-- **Descarga:** la imagen sale cuadrada, con las fuentes correctas, las seis paradas numeradas, el nombre en cursiva, "Mi vida" cuando no hay nombre, y sin la parada 6 si no hay "Otros momentos"; igual con letra grande y alto contraste activos.
+- **Descarga:** la imagen sale de 1920 × 1080, con las fuentes correctas, los banderines numerados, los recuerdos como paradas sueltas con el título completo (sin "…"), el nombre en cursiva, "Mi vida" cuando no hay nombre, y sin el banderín 6 si no hay "Otros momentos"; igual con letra grande y alto contraste activos.
 - **Botón fijo:** aparece con pendientes, desaparece sin pendientes, en modo guion y después de una alarma.
 - **Invitación a pedido:** frases que **sí** activan ("quiero seguir con mi historia de vida", "sigamos con mi historia", "podemos continuar con las preguntas", "retomemos la historia de vida") y que **no** ("me contó una historia", "la historia de mi barrio", "seguí derecho por esa calle"); con alarma no aparece.
 - **Burbujas:** cada botón tocado deja su burbuja y no viaja al modelo ni cambia `yaEscribio`.
@@ -403,20 +409,20 @@ El mapa se ve como la referencia en móvil y escritorio; con letra grande se ve 
 
 - **v1 (12/11/2026):** primera versión. Mapa por etapas con panel, lista para letra grande y alto contraste, imagen descargable cuadrada, "Seguir completando", botón fijo e invitación a pedido (se elimina la automática), burbujas de lo que se toca, espera más ágil, repreguntas con contexto y descripción más larga del recuerdo.
 
+- **v6 (20/11/2026):** detalle del recuerdo como ficha de la etapa (2.6). La imagen descargable pasa de 1080 × 1080 a **1920 × 1080** (sección 2.5 y Anexo A): camino en zigzag de dos tramos, banderines que solo marcan el inicio de cada etapa y recuerdos como paradas sueltas (hasta 10, con el título completo y sin "y N más"). Cambia solo el front; el back y los endpoints no cambian.
 - **v1, ajustes (12/11/2026):** ver la sección 2.5 (descarga directa; hasta 3 títulos por tarjeta), 2.8 a (botón fijo compacto en pantallas chicas) y 2.9 (respuesta fija de Alma tras "Contarte algo más" y "Ahora no").
 
 ---
 
 ## Anexo A. Referencias visuales
 
-Carpeta `docs/referencias/mapa-de-vida/`:
+Carpeta `docs/referencias/`:
 
 | Archivo | Qué muestra |
 |---|---|
 | `mapa-pantalla-movil.png` | Pantalla móvil, con el panel cerrado (pastilla de aviso) y con el panel abierto en la etapa Infancia (tarjeta resaltada, fila con "Seguir completando este recuerdo"). |
 | `mapa-pantalla-movil.svg` | Fuente de la anterior, con las medidas exactas. |
-| `mapa-descarga-cuadrada.png` | La imagen descargable de 1080 × 1080 con el título "La vida de Ana", las seis paradas numeradas y el pie "Alma Acompaña" con corazón. |
-| `mapa-descarga-cuadrada.svg` | Fuente de la anterior. |
+| `mapa-descarga.png` | La imagen descargable de 1920 × 1080 (maqueta aprobada): título "La vida de Ana", camino de dos tramos, seis banderines, recuerdos como paradas sueltas y firma "Alma Acompaña". Las medidas están en `descarga/diseno.ts`. |
 
 **Los nombres, títulos y años de las imágenes son de ejemplo.** Las tipografías de las imágenes son equivalentes a las de la app (Poppins; el texto en Inter en lugar de Source Sans 3). En la app se usan las de la app; Source Sans 3 es más angosta, así que los títulos entran con más caracteres.
 
@@ -440,9 +446,10 @@ Otros colores: camino `#F4C0D1` con línea central punteada `#FFFBF4`; fondo cre
 - **Punto:** círculo de radio 9, fondo blanco, borde de 3 en el color fuerte. **Mástil:** línea de 2,5 de y − 38 a y + 40, con una bolita de radio 3 arriba. **Banderín:** de y − 34 a y − 12 (alto 22), ancho 116 (138 para "Otros momentos"), con una muesca de 12 en el extremo libre, texto blanco medium de unos 12,5. **Tarjeta:** 176 × 42, radio 8, de y − 6 a y + 36 (**6 de separación con el banderín**), borde de 1,5 en el color claro (3 en el color fuerte si está seleccionada; punteado si está vacía). **Ilustración:** círculo de radio 26 en el color claro.
 - Los arbolitos de adorno están en (300, 128), (60, 248), (300, 368), (60, 488) y (300, 608).
 
-### Medidas de la imagen descargable (1080 × 1080)
+### Medidas de la imagen descargable (1920 × 1080)
 
-- Fondo `#FFFBF4`, borde rosa de 4 px a 22 px del límite, con radio 36. Título centrado con la línea de base en y = 140 ("La vida de" Poppins medium de 58; el nombre, Lora cursiva de 78, en violeta).
-- Camino de 44 de ancho con línea central punteada. Puntos en (200, 400), (600, 400), (600, 680), (200, 680), (200, 960) y (600, 960), con el número de la parada adentro. El camino sale por la izquierda, da la vuelta por la derecha entre las filas 1 y 2 y por la izquierda entre las filas 2 y 3.
-- Cada parada: mástil 40 px a la derecha de su punto, banderín de 214 × 40 sobre la tarjeta de 290 × 84, ilustración en un círculo de radio 30 a la derecha del banderín. Pie "Alma Acompaña" con corazón abajo a la derecha.
-- Las medidas exactas están en el SVG de referencia, **salvo las de la tarjeta y el grupo de la parada, que cambiaron con la regla de 2.5**: mástil, banderín, ilustración y tarjeta están 14 px más arriba (el punto no se mueve); la tarjeta mide 84 px con 0 a 2 líneas y 96 px con 3, con las líneas de base a 28, 54 y 80 px del borde de arriba. Las imágenes de `docs/referencias/` ilustran la regla anterior (hasta 2 títulos).
+- Fondo `#FFFBF4`, borde rosa de 4 px a 24 px del límite, con radio 60. Título centrado con la línea de base en y = 128 ("La vida de" Poppins medium de 78; el nombre, Lora cursiva de 104, en violeta).
+- Camino de 44 px de ancho con línea central punteada: tramo de arriba en y = 365 (de x = 70 a 1780), vuelta en U por la derecha (hasta x ≈ 1860) y tramo de abajo en y = 770 (de x = 1780 a 90).
+- Diez paradas (centros de las tarjetas, en el orden del camino): arriba x = 270, 600, 930, 1280, 1640; abajo x = 1650, 1290, 920, 560, 225. Tarjeta de 320 px de ancho, 37 px debajo del camino; punto de radio 13 sobre el camino unido a la tarjeta por una línea fina.
+- Banderín: poste de 187 px sobre el círculo numerado (radio 24, sobre el camino), cinta de 46 px de alto (ancho según el nombre, mínimo 200) a 6 px del poste, e ícono en un círculo de radio 27 a su derecha. Entre dos tarjetas va el poste de la etapa que empieza; el de la primera, en x = 100. Si una etapa empieza en la sexta parada, su cinta y su ícono van hacia la izquierda del poste (x = 1780).
+- Pie "Alma Acompaña" con corazón, abajo a la derecha.

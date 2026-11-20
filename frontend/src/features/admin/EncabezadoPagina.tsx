@@ -53,7 +53,7 @@ export function EncabezadoPagina({ titulo, migas, accion }: EncabezadoPaginaProp
         </Breadcrumb>
       ) : null}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h1 className="min-w-0 lg:text-h1-desktop">{titulo}</h1>
+        <h1 className="min-w-0">{titulo}</h1>
         {accion}
       </div>
     </div>

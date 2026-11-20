@@ -18,7 +18,7 @@ export function JuegosInicioPage() {
   return (
     <div className="flex flex-col gap-4">
       <EnlaceVolver to={RUTA_ENTRETENIMIENTO} texto={NAVEGACION_ENTRETENIMIENTO} />
-      <h1 className="lg:text-h1-desktop">{TITULO_JUEGOS}</h1>
+      <h1>{TITULO_JUEGOS}</h1>
 
       <Card className="items-center text-center max-lg:rounded-lg">
         <img

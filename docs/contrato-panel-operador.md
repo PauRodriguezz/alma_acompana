@@ -167,7 +167,7 @@ Cuerpo:
 | Campo | Regla |
 |---|---|
 | `titulo` | Obligatorio, hasta 120 caracteres |
-| `texto` | Obligatorio, hasta 5000 caracteres |
+| `texto` | Obligatorio, hasta 5000 caracteres. Es Markdown limitado (título `##`, subtítulo `###`, negrita, cursiva, listas y destacado `>`); si trae HTML, enlaces, imágenes, código u otros formatos, `400` con "El texto tiene un formato que no se puede usar. Usá solo título, subtítulo, negrita, cursiva, listas y destacado." La gramática completa está en `docs/contrato-microcapsulas.md`, sección 4 |
 | `categoria` | Obligatoria, valor del enum |
 | `imagen` | **Opcional**. Si viene, ruta devuelta por la subida de imágenes |
 | `fechaPublicacion` | Obligatoria, `yyyy-MM-dd`, no puede ser posterior a hoy (hora de Argentina) |
@@ -199,6 +199,8 @@ Se usa en dos lugares: la imagen de la microcápsula y la imagen opcional de cad
 ### 3.5 Perfil
 
 No hay endpoint nuevo: se usa `GET /api/auth/me` (contrato de login, sección 4.2). La pantalla muestra nombre, apellido, nombre de usuario y rol de la persona administradora.
+
+El encabezado dice **"Mi perfil"** como título y **"Administrador de contenidos (operador)"** debajo (no el nombre de la persona, que ya está en "Mis datos"). El título de la pestaña del navegador sigue siendo "Perfil · Alma".
 
 ---
 
@@ -239,7 +241,8 @@ Paquete base: `ar.edu.utn.frm.gelab.alma`. Un paquete por módulo, con `controll
 
 ## 6. Front: qué implementar
 
-- **Layout del panel:** menú lateral con Panel, Ejercicios, Microcápsulas y **Perfil**, y "Cerrar sesión" abajo, como en el Figma. La sección activa se marca. **Adaptable a computadora y a celular.** En escritorio (desde 1024 px, el corte que ya usa la app) el menú ocupa `--sidebar`, como en el Figma. En pantallas más chicas (**propuesto**, el Figma del operador es solo de escritorio): el menú lateral pasa a una barra superior con un botón "Menú" que abre el mismo menú en un panel (con las mismas opciones y "Cerrar sesión"), las tablas pasan a tarjetas apiladas (una por ejercicio o microcápsula, con los botones de editar y eliminar), los formularios van en una columna y la vista previa "Así lo ve la persona" queda debajo del formulario.
+- **Layout del panel:** menú lateral con Panel, Ejercicios, Microcápsulas y **Perfil**, y "Cerrar sesión" abajo, como en el Figma. La sección activa se marca. **Adaptable a computadora y a celular.** En escritorio (desde 1024 px, el corte que ya usa la app) el menú ocupa `--sidebar`, como en el Figma. En pantallas más chicas (**propuesto**, el Figma del operador es solo de escritorio): el menú lateral pasa a una barra superior que solo lleva el botón "Menú" (con texto; ya no va la marca "Alma / Panel de operador", que con letra grande dejaba demasiado texto arriba), el cual abre el mismo menú en una hoja lateral (con las mismas opciones y "Cerrar sesión"; el foco entra en el primer destino y Esc lo devuelve al botón), las tablas pasan a tarjetas apiladas (una por ejercicio o microcápsula, con los botones de editar y eliminar), los formularios van en una columna y la vista previa "Así lo ve la persona" queda debajo del formulario.
+- **Menú compartido (v3):** el menú es `MenuPrincipal` (`components/alma/`), el mismo componente que usa la persona mayor, con los destinos del operador (`components/alma/destinos-menu.ts`, que es el único lugar donde se eligen los íconos de Hugeicons: Panel `home-01`, Ejercicios `puzzle`, Microcápsulas `note-01`, Perfil `user-02` y Cerrar sesión `logout-01`). En escritorio es **idéntico** al de la persona: ítem de 48 px, ícono de 24 px, mismo texto, misma barra de activo, mismo borde y marca de 40 px (`AvatarAlma` y "Alma"). Solo cambian cuatro cosas: el fondo (beige `bg-secondary` en el operador, blanco `bg-card` en la persona, como el Figma), el subtítulo "Panel de operador" debajo de "Alma", los destinos y el pie ("Cerrar sesión" en el operador; "Accesibilidad" en la persona). El destino activo lleva `aria-current="page"`, fondo, barra y, en alto contraste, borde de 2 px. El botón de accesibilidad del operador sigue flotante (abajo a la derecha en escritorio; arriba a la derecha y desplazándose con la pantalla en celular). En las dos áreas el orden de Tab es "Saltar al contenido", el menú y el contenido (`<main id="contenido">`). Diferencia con el Figma: en el Figma Ejercicios y Microcápsulas comparten `note-01`; en el código Ejercicios usa `puzzle` (el Figma queda por actualizar).
 - **Cerrar sesión:** abre un diálogo "¿Querés cerrar sesión?" con Cancelar y "Sí, cerrar sesión". Reemplaza el botón "Salir" temporal de `PanelOperadorPage`.
 - **Rutas** (todas dentro de `ProtectedRoute` con rol `ADMINISTRADOR`):
 
@@ -254,7 +257,17 @@ Paquete base: `ar.edu.utn.frm.gelab.alma`. Un paquete por módulo, con `controll
 
 - **Las rutas del admin viven en un archivo propio** (`features/admin/`), y `App.tsx` solo suma una línea que lo incluye.
 - **Formulario de ejercicio:** categoría, consigna, formato, opciones (según el formato: opción múltiple con "Correcta" y 3 a 4 opciones; ordenar con la posición de cada paso y 3 a 5 pasos), nivel de dificultad, explicación (opcional), texto a memorizar (solo en `MEMORIA`) y, en cada opción, una imagen opcional (un botón "Agregar imagen" junto al texto de la opción, con miniatura y "Quitar imagen"; el Figma no lo dibuja, sale de CU-10). A la derecha, la vista previa "Así lo ve la persona", que se actualiza mientras se escribe. Abajo: Cancelar y "Guardar ejercicio".
-- **Formulario de microcápsula:** título, texto, categoría, imagen (opcional), fecha de publicación (con hoy como valor inicial), el aviso "Se publica apenas la guardás. No queda como borrador.", y la vista previa. Abajo: Cancelar y "Guardar y publicar".
+- **Formulario de microcápsula:** título, texto (con una barra de formato de solo íconos, ver "Barra de formato" más abajo), categoría, imagen (opcional), fecha de publicación (con hoy como valor inicial), el aviso "Se publica apenas la guardás. No queda como borrador.", y la vista previa, que muestra la tarjeta de la lista (con la imagen) y la lectura completa con el formato, igual a como la ve la persona. Abajo: Cancelar y "Guardar y publicar".
+
+**Barra de formato del texto (excepción a "un ícono nunca va solo").** Es la única barra de solo íconos de la aplicación y es del operador; se decidió así para que quede compacta y se entienda como un editor de texto. Para compensarlo:
+
+- Orden en el campo: etiqueta "Texto", ayuda, barra y área de texto. La barra y el área forman un solo bloque (barra con borde redondeado arriba, área abajo, sin espacio entre ambas).
+- Contenedor con `role="toolbar"`, nombre "Formato del texto" y `aria-controls` hacia el área de texto.
+- Siete botones, agrupados con separadores sutiles: títulos (Título, Subtítulo), estilo (Negrita, Cursiva), listas (con viñetas, numerada) y Destacado. Íconos de Hugeicons del paquete gratuito, en `components/alma/iconos.ts`: `heading-01`, `heading-02`, `text-bold`, `text-italic`, `left-to-right-list-bullet`, `left-to-right-list-number` y `quote-down`.
+- Cada botón tiene `aria-label` con el nombre del formato y, al pasar el mouse o al enfocar con el teclado, una etiqueta visible con ese nombre (no la lee el lector de pantalla, que ya lee el `aria-label`).
+- Objetivo táctil de 44 px como mínimo (escala con la letra). Se opera con Tab y Enter o Espacio; no hay navegación con flechas.
+- Con letra grande los botones pasan a más de una línea (por grupos), sin scroll horizontal. En alto contraste: borde de 2 px en la barra, los separadores y las etiquetas.
+- Cada botón escribe la marca de Markdown sobre la selección (ver `contrato-microcapsulas.md`, sección 4); en los de bloque, un segundo toque la saca.
 - **Errores de formulario:** franja roja arriba con el `detail` que devuelve el back, y los campos con error marcados en rojo, con ícono y texto (no solo color). Las mismas validaciones se hacen también en el front con zod para avisar antes de enviar.
 - **Confirmaciones:** diálogo al eliminar un ejercicio ("¿Eliminar este ejercicio?", con el texto ajustado a baja lógica: "Se va a eliminar del catálogo. Esta acción no se puede deshacer.") y al dar de baja una microcápsula ("¿Dar de baja esta microcápsula?", "Los usuarios que la guardaron como favorita seguirán viéndola.").
 - **Avisos de éxito** (breves, accesibles): "El ejercicio fue creado." / "…actualizado." / "…eliminado." y "La microcápsula fue publicada." / "…actualizada." / "…dada de baja."
@@ -310,4 +323,6 @@ Estas decisiones ya están tomadas; falta reflejarlas en `docs/casos-de-uso.md` 
 ## 10. Historial de cambios
 
 - **v1 (28/10/2026):** primera propuesta.
+- **v4 (19/11/2026):** el texto de la microcápsula admite formato (Markdown limitado), con barra de formato de solo íconos (excepción documentada en la sección 6) y vista previa fiel en el formulario (secciones 3.3 y 6). Ver `contrato-microcapsulas.md`, sección 4.
+- **v3 (19/11/2026):** menú compartido con la persona mayor (sección 6), `AvatarAlma` en la marca, barra superior del celular solo con el botón "Menú", "Saltar al contenido" y alto contraste del activo con borde; Perfil con título "Mi perfil" (3.5). Solo cambia el front.
 - **v2 (28/10/2026):** se aclaró que el catálogo va en `ejercicios/` y el juego de la persona mayor (CU-05) en `juegos/`; se explicó el uso de las imágenes (dos pasos) y por qué las opciones pueden tener imagen aunque el Figma no la dibuje; el panel es adaptable a celular y a computadora; se aceptaron las propuestas pendientes (explicación en CU-05, Perfil y panel en celular), que pasan a la lista de cosas a documentar.

@@ -314,6 +314,13 @@
         font-size: var(--text-h1);
         line-height: var(--text-h1--line-height);
     }
+    /* Un solo estilo de título de pantalla: en escritorio todos los h1 usan el tamaño del Figma */
+    @media (min-width: 64rem) {
+        h1 {
+            font-size: var(--text-h1-desktop);
+            line-height: var(--text-h1-desktop--line-height);
+        }
+    }
     h2 {
         font-size: var(--text-h2);
         line-height: var(--text-h2--line-height);

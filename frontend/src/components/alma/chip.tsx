@@ -9,8 +9,12 @@ import { cn } from "@/lib/utils"
 // Se dejaron separados a propósito: el Badge lleva un borde transparente de 2 px siempre, no
 // parte el texto en dos líneas y separa el ícono con 8 px; el Chip mide 12 px a los costados y
 // 4 px arriba y abajo, separa con 4 px y puede partir el texto en celular con letra grande.
+// Nunca es más ancho que su contenedor (max-w-full): una palabra más larga que la tarjeta se
+// corta (wrap-anywhere) en vez de salirse de la pantalla. Tiene que ser `anywhere` y no
+// `break-word`: solo `anywhere` baja el ancho mínimo del chip, y una grilla o una fila flex
+// crecería hasta ese ancho mínimo.
 const chipVariants = cva(
-  "inline-flex items-center gap-1 rounded-full px-3 py-1 text-caption font-semibold text-foreground contraste-alto:border-2 contraste-alto:border-foreground contraste-alto:bg-card",
+  "inline-flex max-w-full items-center gap-1 rounded-full px-3 py-1 wrap-anywhere text-caption font-semibold text-foreground contraste-alto:border-2 contraste-alto:border-foreground contraste-alto:bg-card",
   {
     variants: {
       tono: {

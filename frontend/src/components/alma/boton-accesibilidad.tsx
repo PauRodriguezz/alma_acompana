@@ -1,5 +1,5 @@
 import { HugeiconsIcon } from "@hugeicons/react"
-import { AccessibilityIcon } from "@hugeicons/core-free-icons"
+import { ICONO_ACCESIBILIDAD } from "@/components/alma/iconos"
 
 import { PanelAccesibilidad } from "@/components/alma/panel-accesibilidad"
 import { Dialog, DialogTrigger } from "@/components/ui/dialog"
@@ -15,8 +15,10 @@ import { Dialog, DialogTrigger } from "@/components/ui/dialog"
  *   pide 44 px como mínimo.
  * - PROPUESTO: fondo `card` (el Figma no tiene relleno): en celular queda sobre el degradé
  *   de la banda del login y sin relleno no se vería el ícono.
- * - Posición: arriba a la derecha en celular, como el Figma. PROPUESTO (no está en el
- *   Figma): abajo a la derecha en escritorio.
+ * - Posición: arriba a la derecha en celular, como el Figma, y se desplaza con la pantalla
+ *   (`absolute`): fijo se superponía con el contenido al desplazarse con letra "Muy grande". La
+ *   misma opción está en el Perfil. PROPUESTO (no está en el Figma): fijo, abajo a la derecha en
+ *   escritorio.
  */
 export function BotonAccesibilidad() {
   return (
@@ -24,9 +26,9 @@ export function BotonAccesibilidad() {
       <DialogTrigger
         aria-label="Opciones de accesibilidad"
         aria-haspopup="dialog"
-        className="fixed top-(--page-top) right-(--page-x) z-40 inline-flex size-[calc(44rem/17)] items-center justify-center rounded-full border-2 border-accent bg-card text-accent transition-colors hover:bg-accent-soft lg:top-auto lg:right-6 lg:bottom-6 contraste-alto:border-foreground contraste-alto:text-foreground"
+        className="absolute top-(--page-top) right-(--page-x) z-40 inline-flex size-[calc(44rem/17)] items-center justify-center rounded-full border-2 border-accent bg-card text-accent transition-colors hover:bg-accent-soft lg:fixed lg:top-auto lg:right-6 lg:bottom-6 contraste-alto:border-foreground contraste-alto:text-foreground"
       >
-        <HugeiconsIcon icon={AccessibilityIcon} className="size-6" aria-hidden="true" />
+        <HugeiconsIcon icon={ICONO_ACCESIBILIDAD} className="size-6" aria-hidden="true" />
       </DialogTrigger>
       <PanelAccesibilidad />
     </Dialog>

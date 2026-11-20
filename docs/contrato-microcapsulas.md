@@ -59,7 +59,7 @@ Valen las del contrato de login (sección 3). Para este módulo:
 
 - Todo cuelga de `/api/microcapsulas`. El panel sigue en `/api/admin/microcapsulas`; no hay solapamiento.
 - Enum `CategoriaMicrocapsula` tal como ya existe.
-- Las imágenes llegan como ruta (`"/imagenes/..."`) o `null`.
+- Las imágenes llegan como ruta (`"/imagenes/..."`) o `null`. `texto` puede traer el formato de la sección 4.
 - Las respuestas no traen `fechaPublicacion` ni `fechaBaja`: la persona no los usa.
 
 ---
@@ -69,7 +69,28 @@ Valen las del contrato de login (sección 3). Para este módulo:
 Según el DC. No se agregan campos de negocio.
 
 - `MicrocapsulaGuardada`: `id` (técnico), `personaMayor` (muchos a uno, obligatorio), `microcapsula` (muchos a uno, obligatorio), `fechaGuardado` (`LocalDateTime`). Restricción única sobre (`personaMayor`, `microcapsula`).
-- `Microcapsula` no cambia.
+- `Microcapsula` no cambia: no hay campos nuevos ni cambios de esquema. El formato del texto viaja dentro de `texto` (ver abajo).
+
+### Formato del texto (v2)
+
+`texto` es **Markdown limitado**, con la misma columna de hasta 5000 caracteres. La gramática es cerrada:
+
+| Formato | Se escribe | Se ve como |
+|---|---|---|
+| Título | `## Título` | `h2` |
+| Subtítulo | `### Subtítulo` | `h3` |
+| Negrita | `**negrita**` | `strong` |
+| Cursiva | `*cursiva*` | `em` |
+| Lista con viñetas | líneas con `- ` | `ul` |
+| Lista numerada | líneas con `1. ` | `ol` |
+| Destacado | `> texto` | `blockquote`, con fondo y borde |
+| Párrafo | línea en blanco entre bloques | `p` |
+
+- Un salto de línea simple dentro de un párrafo se respeta (como antes del formato).
+- No hay tamaños de letra ni colores libres: chocan con el tamaño que elige la persona y con el alto contraste. Todo escala con la letra de la persona.
+- **Compatibilidad:** los textos anteriores (párrafos separados por una línea en blanco, sin marcas) son Markdown válido y se ven igual. No hace falta migrar nada.
+- **Validación en el back** (`MicrocapsulaService`, al crear o editar desde el panel): se rechaza con `400` y el error de campo `texto` "El texto tiene un formato que no se puede usar. Usá solo título, subtítulo, negrita, cursiva, listas y destacado." si el texto trae HTML (etiquetas, comentarios, `<https://…>`), enlaces o imágenes (`[..](..)`, `![..](..)`, referencias), código (acento grave o `~~~`), líneas horizontales (`---`), subrayados de título (`===`) o títulos de otro nivel (`#` o `####` en adelante). Un `<` o un `>` sueltos ("menos de <5") son texto normal y no se rechazan. No se limpia en silencio.
+- **Defensa en el front:** `TextoLectura` (`components/alma/texto-lectura.tsx`, con `react-markdown`) arma elementos de React, ignora el HTML crudo y solo dibuja los elementos de la tabla; lo demás (enlaces, imágenes, código, indentado) se muestra como texto plano. El panel y la persona usan el mismo componente.
 
 Todo vive en el paquete `microcapsulas` ya existente.
 
@@ -137,7 +158,7 @@ Respuesta `200`:
 }
 ```
 
-Errores: `404` (5.3).
+`texto` es el Markdown limitado de la sección 4 (el ejemplo de arriba, sin marcas, sigue siendo válido). Errores: `404` (5.3).
 
 ### 6.3 `PUT /api/microcapsulas/{id}/guardada` y `DELETE /api/microcapsulas/{id}/guardada`
 
@@ -224,12 +245,12 @@ La ruta `/entretenimiento/lecturas` ya existe en `entretenimiento/rutas.ts`; el 
 - **Leer.**
   - "‹ Entretenimiento" arriba del título (hacia `/entretenimiento`) y título "Leer".
   - Pestañas "Todas" y "Guardadas", con el mismo componente `Tabs` que recordatorios.
-  - Tarjetas en una columna en celular y en tres en escritorio, con el chip de categoría, el título y el botón "Leer". Si está guardada, una marca "Guardada" con ícono y texto.
+  - Tarjetas en una columna en celular y en tres en escritorio, con la imagen si hay (decorativa, del ancho de la tarjeta y proporción 16:9, sin desbordar), el chip de categoría, el título y el botón "Leer". Si está guardada, una marca "Guardada" con ícono y texto.
   - Tocar "Leer" (o la tarjeta) abre el detalle.
   - Estados: cargando, error (`Alert` con `mensajeDeError` y "Probar de nuevo"), "Por ahora no hay lecturas disponibles." (Todas vacía) y "Todavía no guardaste ninguna lectura." (Guardadas vacía).
 - **Detalle.**
   - "‹ Leer" (hacia el listado; si la persona llegó desde Guardadas, vuelve a esa pestaña).
-  - Chip de categoría, título (`h1`), imagen si hay, el texto con sus párrafos y ancho de lectura limitado.
+  - Chip de categoría, título (`h1`), imagen si hay, el texto con su formato (sección 4) y ancho de lectura limitado. Títulos, listas y destacado escalan con la letra; el destacado lleva borde de 2 px en alto contraste. Los textos largos (hasta 5000 caracteres) se leen sin scroll horizontal.
   - Botón con texto visible: "Guardar" y, si ya está guardada, "Quitar de guardadas", con ícono y `aria-pressed`.
   - Se deshabilita mientras viaja el pedido.
   - Estados: cargando y error; en 404, "No encontramos lo que buscás." con el botón de volver.
@@ -304,7 +325,7 @@ Todos en `features/lecturas/mensajes.ts`; los generales siguen en `lib/mensajes.
 1. Sin filtros, búsqueda ni paginación: lo pide así el CU y el volumen es chico.
 2. Después de quitar una dada de baja desde el detalle, recargar la pantalla da 404 (sección 2).
 3. Dos guardados simultáneos del mismo par pueden dar un 500 (sección 2).
-4. La imagen no tiene texto alternativo propio: se trata como decorativa.
+4. La imagen no tiene texto alternativo propio: se trata como decorativa (en la tarjeta, el detalle y la vista previa del panel).
 5. Sin pruebas automáticas del front; las de la sección 13 son manuales. Falta la verificación con lector de pantalla.
 
 ---
@@ -324,6 +345,7 @@ Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay
 ## 16. Historial de cambios
 
 - **v1 (05/11/2026):** primera versión acordada, contra el commit `3009290`.
+- **v2 (19/11/2026):** texto con formato (Markdown limitado, sección 4) con validación en el back, imagen también en la tarjeta de la lista y formato dibujado en el detalle. No cambia el esquema ni los endpoints.
 
 ---
 

@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 
 import { EnlaceVolver } from "@/components/alma/enlace-volver"
+import { TextoLectura } from "@/components/alma/texto-lectura"
 import { TituloConFoco } from "@/components/alma/titulo-con-foco"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -103,21 +104,8 @@ function Lectura({ lectura }: { lectura: LecturaDetalle }) {
         <img src={lectura.imagen} alt="" className="aspect-video w-full rounded-lg object-cover" />
       ) : null}
 
-      <div className="flex flex-col gap-4 text-body">
-        {parrafos(lectura.texto).map((parrafo, i) => (
-          <p key={i} className="whitespace-pre-line wrap-break-word">
-            {parrafo}
-          </p>
-        ))}
-      </div>
+      {/* Markdown limitado (contrato de microcápsulas, sección 4): los textos viejos, sin marcas, son párrafos */}
+      <TextoLectura texto={lectura.texto} />
     </article>
   )
-}
-
-/** Los párrafos van separados por una línea en blanco; un salto simple se respeta dentro del párrafo. */
-function parrafos(texto: string): string[] {
-  return texto
-    .split(/\n\s*\n/)
-    .map((parrafo) => parrafo.trim())
-    .filter((parrafo) => parrafo !== "")
 }

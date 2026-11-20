@@ -1,5 +1,10 @@
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
-import { Brain02Icon, HashtagIcon, Link01Icon, QuoteDownIcon } from "@hugeicons/core-free-icons"
+import {
+  Brain02Icon,
+  HashtagIcon,
+  Link01Icon,
+  QuotesIcon,
+} from "@hugeicons/core-free-icons"
 
 import { Chip } from "@/components/alma/chip"
 import {
@@ -11,7 +16,7 @@ import type { CategoriaEjercicio } from "../tipos"
 
 // El Figma (134:5178) solo dibuja Refranes (comillas). PROPUESTOS: los íconos de las otras tres.
 const ICONO: Record<CategoriaEjercicio, IconSvgElement> = {
-  REFRAN: QuoteDownIcon,
+  REFRAN: QuotesIcon,
   SERIE: HashtagIcon,
   ASOCIACION: Link01Icon,
   MEMORIA: Brain02Icon,

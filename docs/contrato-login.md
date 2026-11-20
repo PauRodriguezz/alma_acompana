@@ -253,6 +253,7 @@ src/
 
 - **`lib/api.ts`:** base `/api`. Agrega `Authorization: Bearer` si hay token. Convierte las respuestas de error en un `ApiError` con `status`, `detail` y `errores`. Ante un `401` (salvo en `/auth/login`), borra el token y manda a `/login` con el aviso "Tu sesión terminó. Ingresá de nuevo."
 - **`AuthProvider`:** guarda el token con la clave `alma.token`, en `localStorage` si el usuario dejó tildado "Mantener sesión iniciada" y en `sessionStorage` si no. Al iniciar la app busca el token en ambos lugares; si hay, llama a `/api/auth/me` y, si falla, lo borra. Expone `usuario`, `cargando`, `login()` y `logout()`.
+- **Menú de las dos áreas (v8):** la persona mayor y el operador usan el mismo componente (`MenuPrincipal`, en `components/alma/`), con los destinos de cada rol en `components/alma/destinos-menu.ts` (íconos de Hugeicons, un ícono por destino, siempre con su texto en escritorio). En celular el de la persona mayor es una **barra inferior de solo íconos, de alto fijo**, como excepción a la regla de que un ícono nunca va solo (los cinco nombres no entran en 1/5 del ancho de 360 px, y menos con letra grande). La excepción se compensa así: cada destino tiene su nombre para el lector de pantalla, el activo lleva `aria-current="page"` y se distingue por más que el color (fondo, barra y, en alto contraste, borde de 2 px), y cada destino mide al menos 44 px (56 px de alto y 1/5 del ancho). El operador conserva en celular el botón "Menú" (con texto) y su hoja lateral. En las dos áreas el orden de Tab es "Saltar al contenido", el menú y el contenido. Los círculos chicos de Alma usan `AvatarAlma` (la cara, decorativa, de 40 px o 44 px fijos). Detalle del panel: `docs/contrato-panel-operador.md`, sección 6.
 - **Cerrar sesión:** el botón pide confirmación ("¿Querés cerrar sesión?") antes de llamar a `logout()`.
 - **`LoginPage`:** `react-hook-form` + `zod`. Campos: usuario, contraseña y casilla "Mantener sesión iniciada" (tildada de entrada). Después de ingresar redirige según el rol: `PERSONA_MAYOR` a `/`, `ADMINISTRADOR` a `/admin`. En error 401 muestra el mensaje genérico, sin indicar cuál campo falló.
 - **`ProtectedRoute`:** sin sesión manda a `/login`; con rol no permitido muestra una pantalla "No tenés permiso para ver esta pantalla."
@@ -328,6 +329,7 @@ Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay
 
 ## 14. Historial de cambios
 
+- **v8 (19/11/2026):** sección 9: menú compartido de la persona mayor y del operador, barra inferior de solo íconos como excepción documentada y orden de Tab. Solo cambia el front.
 - **v1 (23/10/2026):** primera propuesta.
 - **v2 (23/10/2026, contra el commit `b47fe79`):** se marcó lo que ya está hecho (springdoc, `OpenApiConfig`, parte de `SecurityConfig`), se agregó lo que falta en `SecurityConfig` y en Swagger, se aclaró que la zona horaria es la de Jackson, y se avisó que el `CLAUDE.md` debe estar en la raíz.
 - **v7 (08/11/2026):** sección 4.4: `fechaNacimiento` pasa a ser obligatoria y `GET /api/perfil` la devuelve siempre como `yyyy-MM-dd`, nunca `null` (`docs/contrato-fecha-nacimiento.md`).

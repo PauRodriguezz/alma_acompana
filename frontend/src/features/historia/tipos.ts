@@ -24,7 +24,8 @@ export type ListaDeRecuerdos = {
 
 export type PersonaDeRecuerdo = {
   id: string
-  nombre: string
+  /** Puede llegar null: el recuerdo menciona a alguien solo por su vínculo ("una amiga"). */
+  nombre: string | null
   vinculo: string | null
 }
 

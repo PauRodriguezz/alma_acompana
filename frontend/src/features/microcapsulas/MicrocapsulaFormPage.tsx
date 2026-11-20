@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { Controller, useForm, useWatch, type DefaultValues } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -33,6 +33,7 @@ import {
   type DatosMicrocapsula,
   type EntradaMicrocapsula,
 } from "./schemas"
+import { BarraFormato } from "./BarraFormato"
 import { VistaPreviaMicrocapsula } from "./VistaPreviaMicrocapsula"
 import {
   ACCION_CANCELAR,
@@ -43,6 +44,7 @@ import {
 } from "@/lib/mensajes"
 import { ADMIN_MICROCAPSULAS, ADMIN_PANEL } from "@/features/admin/mensajes"
 import {
+  AYUDA_FORMATO,
   AVISO_ACTUALIZADA,
   AVISO_PUBLICADA,
   AVISO_SE_PUBLICA,
@@ -102,7 +104,8 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
     handleSubmit,
     getValues,
     setError,
-    formState: { errors },
+    setValue,
+    formState: { errors, isSubmitted },
   } = useForm<EntradaMicrocapsula, unknown, DatosMicrocapsula>({
     resolver: zodResolver(esquemaMicrocapsula),
     defaultValues: inicial,
@@ -110,10 +113,18 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
     shouldFocusError: false,
   })
 
-  const [titulo, categoria, imagen] = useWatch({
+  const [titulo, texto, categoria, imagen] = useWatch({
     control,
-    name: ["titulo", "categoria", "imagen"],
+    name: ["titulo", "texto", "categoria", "imagen"],
   })
+
+  // El área de texto la maneja react-hook-form; la barra de formato necesita el elemento para leer
+  // la selección, así que se guarda también acá.
+  const areaTexto = useRef<HTMLTextAreaElement | null>(null)
+  const idTexto = useId()
+  const { ref: refTextoForm, ...registroTexto } = register("texto")
+  const aplicarFormato = (nuevo: string) =>
+    setValue("texto", nuevo, { shouldDirty: true, shouldValidate: isSubmitted })
 
   useEffect(() => {
     if (franja) refFranja.current?.focus()
@@ -173,11 +184,18 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
             {...register("titulo")}
           />
           <CampoAreaTexto
+            id={idTexto}
             label={ETIQUETA_TEXTO}
+            ayuda={AYUDA_FORMATO}
+            barra={<BarraFormato areaRef={areaTexto} controla={idTexto} alCambiar={aplicarFormato} />}
             placeholder={EJEMPLO_TEXTO}
-            rows={6}
+            rows={10}
             error={errors.texto?.message}
-            {...register("texto")}
+            {...registroTexto}
+            ref={(el) => {
+              refTextoForm(el)
+              areaTexto.current = el
+            }}
           />
           <Controller
             control={control}
@@ -219,7 +237,7 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
           </Alert>
         </Card>
 
-        <VistaPreviaMicrocapsula titulo={titulo} categoria={categoria} imagen={imagen} />
+        <VistaPreviaMicrocapsula titulo={titulo} texto={texto} categoria={categoria} imagen={imagen} />
       </div>
 
       <div className="flex flex-wrap justify-end gap-3">

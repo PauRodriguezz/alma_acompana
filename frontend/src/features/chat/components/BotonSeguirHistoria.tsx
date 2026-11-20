@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { BookOpen01Icon } from "@hugeicons/core-free-icons"
+import { ICONO_HISTORIA_DE_VIDA } from "@/components/alma/iconos"
 
 import { Button } from "@/components/ui/button"
 import { BOTON_EN_ESPERA, BOTON_TEXTO_LARGO } from "@/features/historia/estilos"
@@ -125,7 +125,7 @@ function BotonFlotante({ deshabilitado, onSeguir }: { deshabilitado: boolean; on
           "hover:bg-primary-hover contraste-alto:border-2 contraste-alto:border-foreground"
         )}
       >
-        <HugeiconsIcon icon={BookOpen01Icon} className="size-7" aria-hidden="true" />
+        <HugeiconsIcon icon={ICONO_HISTORIA_DE_VIDA} className="size-7" aria-hidden="true" />
       </button>
     </div>
   )

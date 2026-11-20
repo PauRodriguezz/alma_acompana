@@ -61,6 +61,10 @@ export function anuncioDeshecha(nombre: string): string {
 // --- Tarjeta "Para hoy" ---
 export const PARA_HOY = "Para hoy"
 export const CERRAR_AVISO = "Cerrar aviso"
+// Al cerrar la tarjeta: no agenda nada, solo la deja oculta hasta recargar, salir y volver, o "Mostrar de nuevo"
+export const AVISO_PARA_MAS_TARDE = "Listo, lo dejo para más tarde."
+export const MOSTRAR_DE_NUEVO = "Mostrar de nuevo"
+export const MOSTRAR_DE_NUEVO_AVISO = "Mostrar de nuevo el aviso de Para hoy"
 
 export function verLos(cantidad: number): string {
   return `Ver los ${cantidad}`

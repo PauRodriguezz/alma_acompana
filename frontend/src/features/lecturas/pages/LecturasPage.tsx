@@ -54,7 +54,7 @@ export function LecturasPage() {
   return (
     <div className="flex flex-col gap-4">
       <EnlaceVolver to={RUTA_ENTRETENIMIENTO} texto={NAVEGACION_ENTRETENIMIENTO} />
-      <h1 ref={tituloRef} tabIndex={-1} className="outline-none lg:text-h1-desktop">
+      <h1 ref={tituloRef} tabIndex={-1} className="outline-none">
         {TITULO_LEER}
       </h1>
 
