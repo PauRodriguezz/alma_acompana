@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-import { BOTON_EN_ESPERA, BOTON_TEXTO_LARGO } from "../estilos"
+import { BOTON_EN_ESPERA, BOTON_TEXTO_LARGO } from "@/components/estilos"
 import { INVITACION_AHORA_NO, INVITACION_SI } from "../mensajes"
 
 /**

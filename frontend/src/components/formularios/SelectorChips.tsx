@@ -2,7 +2,7 @@ import { useId } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Tick02Icon } from "@hugeicons/core-free-icons"
 
-import { MensajeError } from "@/components/alma/mensaje-error"
+import { MensajeError } from "@/components/formularios/MensajeError"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 type Opcion<T extends string> = { valor: T; texto: string }

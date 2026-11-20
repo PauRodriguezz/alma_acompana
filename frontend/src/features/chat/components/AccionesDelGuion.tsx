@@ -2,7 +2,7 @@ import { useId } from "react"
 
 import { Button } from "@/components/ui/button"
 import { InvitacionHistoria } from "@/features/historia/components/InvitacionHistoria"
-import { BOTON_EN_ESPERA, BOTON_TEXTO_LARGO } from "@/features/historia/estilos"
+import { BOTON_EN_ESPERA, BOTON_TEXTO_LARGO } from "@/components/estilos"
 import {
   AYUDA_PREGUNTA,
   CONTARTE_ALGO_MAS,

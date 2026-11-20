@@ -1,4 +1,4 @@
-import { EnlaceVolver } from "@/components/alma/enlace-volver"
+import { EnlaceVolver } from "@/components/EnlaceVolver"
 import { RUTA_JUEGOS } from "@/features/entretenimiento/rutas"
 
 import { PROGRESO_ETIQUETA, textoProgreso, VOLVER } from "../mensajes"

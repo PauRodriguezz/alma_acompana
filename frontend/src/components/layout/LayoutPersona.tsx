@@ -1,11 +1,11 @@
 import { useRef } from "react"
 import { Link, Outlet, useLocation } from "react-router-dom"
 
-import { AvatarAlma } from "@/components/alma/avatar-alma"
-import { BotonAccesibilidadMenu } from "@/components/alma/boton-accesibilidad-menu"
-import { DESTINOS_PERSONA, RUTA_PERFIL } from "@/components/alma/destinos-menu"
-import { MenuPrincipal } from "@/components/alma/menu-principal"
-import { SaltarAlContenido } from "@/components/alma/saltar-al-contenido"
+import { AvatarAlma } from "@/components/alma/AvatarAlma"
+import { BotonAccesibilidad } from "@/components/accesibilidad/BotonAccesibilidad"
+import { DESTINOS_PERSONA, RUTA_PERFIL } from "@/components/layout/destinosMenu"
+import { MenuPrincipal } from "@/components/layout/MenuPrincipal"
+import { SaltarAlContenido } from "@/components/accesibilidad/SaltarAlContenido"
 import { PanelAccesibilidadProvider } from "@/features/accesibilidad/PanelAccesibilidadProvider"
 import { AvisoProvider } from "@/features/avisos/AvisoProvider"
 import { NAVEGACION_ENLACE_ALMA, NAVEGACION_NOMBRE_ALMA, NAVEGACION_PRINCIPAL } from "@/lib/mensajes"
@@ -34,7 +34,7 @@ export function LayoutPersona() {
             destinos={DESTINOS_PERSONA}
             etiquetaNavegacion={NAVEGACION_PRINCIPAL}
             marca={{ nombre: NAVEGACION_NOMBRE_ALMA, enlaceA: "/" }}
-            pie={<BotonAccesibilidadMenu ubicacion="menu" />}
+            pie={<BotonAccesibilidad variante="menu" />}
           />
 
           <div className="flex-1 lg:pl-(--sidebar)">
@@ -42,7 +42,7 @@ export function LayoutPersona() {
               <Link to="/" aria-label={NAVEGACION_ENLACE_ALMA} className="inline-flex rounded-full">
                 <AvatarAlma tamano={44} />
               </Link>
-              <BotonAccesibilidadMenu ubicacion="barra" ocultoEnCelular={pathname === RUTA_PERFIL} />
+              <BotonAccesibilidad variante="barra" ocultoEnCelular={pathname === RUTA_PERFIL} />
             </div>
             <main
               ref={contenidoRef}

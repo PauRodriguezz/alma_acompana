@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState, type ReactNode, type RefObject } from "react"
 
-import { AvisoFlotante } from "@/components/alma/aviso-flotante"
+import { AvisoFlotante } from "@/components/AvisoFlotante"
 
-import { AvisoContext, type AvisoValor } from "./aviso-context"
+import { AvisoContext, type AvisoValor } from "./avisoContext"
 
 type Aviso = { clave: number; texto: string }
 

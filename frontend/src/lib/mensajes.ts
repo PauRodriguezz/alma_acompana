@@ -24,10 +24,10 @@ export const NAVEGACION_ENTRETENIMIENTO = "Entretenimiento"
 export const NAVEGACION_HISTORIA_DE_VIDA = "Historia de vida"
 export const NAVEGACION_RECORDATORIOS = "Recordatorios"
 export const NAVEGACION_PERFIL = "Perfil"
-// Primer elemento de Tab, en la persona mayor y en el panel (components/alma/saltar-al-contenido.tsx)
+// Primer elemento de Tab, en la persona mayor y en el panel (components/accesibilidad/SaltarAlContenido.tsx)
 export const SALTAR_AL_CONTENIDO = "Saltar al contenido"
 
-// Aviso flotante de éxito (components/alma/aviso-flotante.tsx)
+// Aviso flotante de éxito (components/AvisoFlotante.tsx)
 export const AVISO_CERRAR = "Cerrar"
 
 // Acciones, estados y textos comunes a los formularios y a las listas (panel de operador y
@@ -49,10 +49,28 @@ export const CAMPO_OPCIONAL = " (opcional)"
 export const ETIQUETA_CATEGORIA = "Categoría"
 export const COLUMNA_ACCIONES = "Acciones"
 
-// Subida de imagen (components/alma/subir-imagen.tsx)
+// Subida de imagen (components/formularios/SubirImagen.tsx)
 export const IMAGEN_TIPO_INVALIDO = "La imagen tiene que ser JPG, PNG o WEBP."
 export const IMAGEN_MUY_PESADA = "La imagen no puede pesar más de 2 MB."
 export const IMAGEN_ELEGIR = "Elegir imagen"
 export const IMAGEN_CAMBIAR = "Cambiar imagen"
 export const IMAGEN_QUITAR = "Quitar imagen"
 export const IMAGEN_SUBIENDO = "Subiendo imagen…"
+
+// Accesibilidad (botón y panel de tamaño de letra y contraste)
+export const ACCESIBILIDAD_OPCIONES = "Opciones de accesibilidad"
+export const ACCESIBILIDAD_TITULO = "Accesibilidad"
+export const ACCESIBILIDAD_TAMANIO = "Tamaño de la letra"
+export const ACCESIBILIDAD_AHORA = "Ahora:"
+export const ACCESIBILIDAD_TAMANIO_NORMAL = "Tamaño normal, 100 %"
+export const ACCESIBILIDAD_TAMANIO_GRANDE = "Tamaño grande, 125 %"
+export const ACCESIBILIDAD_TAMANIO_MUY_GRANDE = "Tamaño muy grande, 150 %"
+export const ACCESIBILIDAD_CONTRASTE = "Contraste"
+export const ACCESIBILIDAD_NORMAL = "Normal"
+export const ACCESIBILIDAD_NORMAL_AYUDA = "Los colores de siempre"
+export const ACCESIBILIDAD_ALTO_CONTRASTE = "Alto contraste"
+export const ACCESIBILIDAD_ALTO_CONTRASTE_AYUDA = "Letras negras y bordes marcados"
+export const ACCESIBILIDAD_MUESTRA_TITULO = "Así se va a ver"
+export const ACCESIBILIDAD_MUESTRA = "Hoy tenés una pastilla para tomar a las 21:00."
+export const ACCESIBILIDAD_VOLVER_A_LO_ORIGINAL = "Volver a lo original"
+export const ACCESIBILIDAD_LISTO = "Listo"

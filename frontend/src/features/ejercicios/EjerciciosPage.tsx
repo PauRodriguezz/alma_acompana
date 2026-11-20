@@ -3,10 +3,10 @@ import { Link, useSearchParams } from "react-router-dom"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Delete02Icon } from "@hugeicons/core-free-icons"
-import { ICONO_EDITAR } from "@/components/alma/iconos"
+import { ICONO_EDITAR } from "@/components/iconos"
 
-import { DialogoConfirmar } from "@/components/alma/dialogo-confirmar"
-import { SelectorChips } from "@/components/alma/selector-chips"
+import { DialogoConfirmar } from "@/components/DialogoConfirmar"
+import { SelectorChips } from "@/components/formularios/SelectorChips"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"
@@ -23,7 +23,7 @@ import {
 import { useAviso } from "@/features/avisos/useAviso"
 import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
 import { mensajeDeError } from "@/lib/errores"
-import { estiloBotonIcono } from "@/components/alma/estilos"
+import { estiloBotonIcono } from "@/components/estilos"
 import {
   CATEGORIAS_EJERCICIO,
   TEXTO_CATEGORIA_EJERCICIO,

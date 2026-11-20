@@ -2,11 +2,11 @@ import { useEffect, useMemo, useRef } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Outlet } from "react-router-dom"
 
-import { BotonAccesibilidad } from "@/components/alma/boton-accesibilidad"
-import { destinosOperador, ICONO_CERRAR_SESION } from "@/components/alma/destinos-menu"
-import { ICONO_ITEM_MENU, ITEM_MENU } from "@/components/alma/menu-estilos"
-import { MenuPrincipal } from "@/components/alma/menu-principal"
-import { SaltarAlContenido } from "@/components/alma/saltar-al-contenido"
+import { BotonAccesibilidad } from "@/components/accesibilidad/BotonAccesibilidad"
+import { destinosOperador, ICONO_CERRAR_SESION } from "@/components/layout/destinosMenu"
+import { ICONO_ITEM_MENU, ITEM_MENU } from "@/components/layout/estilosMenu"
+import { MenuPrincipal } from "@/components/layout/MenuPrincipal"
+import { SaltarAlContenido } from "@/components/accesibilidad/SaltarAlContenido"
 import { DialogoCerrarSesion } from "@/features/auth/DialogoCerrarSesion"
 import { AvisoProvider } from "@/features/avisos/AvisoProvider"
 import { CERRAR_SESION } from "@/lib/mensajes"
@@ -77,7 +77,7 @@ export function AdminLayout() {
     <AvisoProvider contenidoRef={contenidoRef} posicion="panel">
       <div className="min-h-dvh lg:pl-(--sidebar)">
         <SaltarAlContenido />
-        <BotonAccesibilidad />
+        <BotonAccesibilidad variante="flotante" />
         <MenuPrincipal
           rol="operador"
           destinos={destinos}

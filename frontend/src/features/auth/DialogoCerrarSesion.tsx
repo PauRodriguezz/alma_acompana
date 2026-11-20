@@ -1,7 +1,7 @@
 import type { ReactElement } from "react"
 import { useNavigate } from "react-router-dom"
 
-import { DialogoConfirmar } from "@/components/alma/dialogo-confirmar"
+import { DialogoConfirmar } from "@/components/DialogoConfirmar"
 import {
   CERRAR_SESION_AVISO,
   CERRAR_SESION_CONFIRMAR,

@@ -1,6 +1,6 @@
 import type { ReactElement } from "react"
 
-import { DialogoConfirmar } from "@/components/alma/dialogo-confirmar"
+import { DialogoConfirmar } from "@/components/DialogoConfirmar"
 
 import { ELIMINAR_AVISO, ELIMINAR_CONFIRMAR, ELIMINAR_PREGUNTA } from "../mensajes"
 

@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom"
 
-import { MensajeAlma } from "@/components/alma/mensaje-alma"
+import { MensajeAlma } from "@/components/alma/MensajeAlma"
 import { Button } from "@/components/ui/button"
-import { BOTON_TEXTO_LARGO } from "@/features/historia/estilos"
+import { BOTON_TEXTO_LARGO } from "@/components/estilos"
 import { VER_MI_HISTORIA } from "@/features/historia/mensajes"
 import { RUTA_HISTORIA_DE_VIDA } from "@/features/historia/rutas"
 

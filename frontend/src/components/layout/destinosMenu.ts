@@ -10,7 +10,7 @@ import {
   User02Icon,
 } from "@hugeicons/core-free-icons"
 
-import { ICONO_HISTORIA_DE_VIDA } from "@/components/alma/iconos"
+import { ICONO_HISTORIA_DE_VIDA } from "@/components/iconos"
 import {
   NAVEGACION_CHAT,
   NAVEGACION_ENTRETENIMIENTO,
@@ -23,8 +23,7 @@ import {
 // el ícono desde acá y no importa ninguno por su cuenta. Los nombres son los de Hugeicons que usa el
 // Figma (página Componentes, "Íconos Hugeicons (selección)"): bubble-chat, puzzle, book-open-02,
 // calendar-03, user-02, home-01, note-01, logout-01 y menu-01.
-//   - Ejercicios usa `puzzle` (decisión de Pau): el Figma le da `note-01`, igual que a Microcápsulas.
-//     El Figma queda por actualizar en este punto.
+//   - Ejercicios usa `puzzle`: el Figma le da `note-01`, igual que a Microcápsulas.
 //   - El Perfil del operador no está en el Figma: usa `user-02`, el mismo que el de la persona.
 
 export type DestinoMenu = {

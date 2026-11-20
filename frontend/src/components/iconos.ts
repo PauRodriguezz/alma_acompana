@@ -20,7 +20,7 @@ import {
 //   - pencil-edit-01: Lápiz / Editar (listas de Ejercicios y Microcápsulas)
 //   - book-open-02: Historia de vida (menú y botón "Seguir mi historia de vida")
 // Volver y Siguiente usan ArrowLeft01Icon y ArrowRight01Icon: el Figma los llama arrow-left-01-round y
-// arrow-right-01-round, y ese nombre no existe en el paquete gratuito (ver el checklist, 1.1b).
+// arrow-right-01-round, y ese nombre no existe en el paquete gratuito.
 export const ICONO_ACCESIBILIDAD = UniversalAccessIcon
 export const ICONO_EDITAR = PencilEdit01Icon
 export const ICONO_HISTORIA_DE_VIDA = BookOpen02Icon

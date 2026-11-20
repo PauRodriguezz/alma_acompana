@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { useNavigate } from "react-router-dom"
 
-import { TituloConFoco } from "@/components/alma/titulo-con-foco"
+import { TituloConFoco } from "@/components/accesibilidad/TituloConFoco"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { useAccesibilidad } from "@/features/accesibilidad/useAccesibilidad"

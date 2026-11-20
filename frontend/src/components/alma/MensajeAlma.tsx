@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { AvatarAlma } from "@/components/alma/avatar-alma"
+import { AvatarAlma } from "@/components/alma/AvatarAlma"
 import { cn } from "@/lib/utils"
 
 /**

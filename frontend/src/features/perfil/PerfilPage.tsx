@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowRight01Icon, Logout01Icon } from "@hugeicons/core-free-icons"
-import { ICONO_ACCESIBILIDAD } from "@/components/alma/iconos"
+import { ICONO_ACCESIBILIDAD } from "@/components/iconos"
 
 import { Alert } from "@/components/ui/alert"
 import { usePanelAccesibilidad } from "@/features/accesibilidad/usePanelAccesibilidad"

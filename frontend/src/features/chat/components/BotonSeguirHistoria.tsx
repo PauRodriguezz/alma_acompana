@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type RefObject } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { ICONO_HISTORIA_DE_VIDA } from "@/components/alma/iconos"
+import { ICONO_HISTORIA_DE_VIDA } from "@/components/iconos"
 
 import { Button } from "@/components/ui/button"
-import { BOTON_EN_ESPERA, BOTON_TEXTO_LARGO } from "@/features/historia/estilos"
+import { BOTON_EN_ESPERA, BOTON_TEXTO_LARGO } from "@/components/estilos"
 import { SEGUIR_MI_HISTORIA } from "@/features/historia/mensajes"
 import { useEsEscritorio } from "@/lib/useEsEscritorio"
 import { cn } from "@/lib/utils"

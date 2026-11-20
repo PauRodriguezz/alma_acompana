@@ -11,7 +11,6 @@ import { MarcaGuardada } from "./MarcaGuardada"
  * más larga que la tarjeta ("Recomendaciones" a 360 px con letra "Muy grande"), el chip no pasa del
  * ancho de la tarjeta (max-w-full) y corta la palabra (wrap-anywhere: solo `anywhere` baja el ancho
  * mínimo del chip; con `break-word` la grilla de la lista igual crece hasta el ancho de la palabra).
- * PENDIENTE: mover la etiqueta de categoría a components/alma/ (hoy vive en features/microcapsulas).
  */
 export function EtiquetasLectura({
   categoria,

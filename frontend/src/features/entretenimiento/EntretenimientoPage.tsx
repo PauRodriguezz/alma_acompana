@@ -2,7 +2,7 @@ import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import { ArrowRight01Icon, Note01Icon, PuzzleIcon } from "@hugeicons/core-free-icons"
 import { Link } from "react-router-dom"
 
-import { AvatarAlma } from "@/components/alma/avatar-alma"
+import { AvatarAlma } from "@/components/alma/AvatarAlma"
 import { NAVEGACION_ENTRETENIMIENTO, NAVEGACION_NOMBRE_ALMA } from "@/lib/mensajes"
 
 import {

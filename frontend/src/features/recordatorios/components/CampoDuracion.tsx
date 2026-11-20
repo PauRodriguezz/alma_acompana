@@ -3,7 +3,7 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { MinusSignIcon, Add01Icon } from "@hugeicons/core-free-icons"
 import { cn } from "@/lib/utils"
 
-import { MensajeError } from "@/components/alma/mensaje-error"
+import { MensajeError } from "@/components/formularios/MensajeError"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"

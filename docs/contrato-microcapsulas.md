@@ -90,7 +90,7 @@ Según el DC. No se agregan campos de negocio.
 - No hay tamaños de letra ni colores libres: chocan con el tamaño que elige la persona y con el alto contraste. Todo escala con la letra de la persona.
 - **Compatibilidad:** los textos anteriores (párrafos separados por una línea en blanco, sin marcas) son Markdown válido y se ven igual. No hace falta migrar nada.
 - **Validación en el back** (`MicrocapsulaService`, al crear o editar desde el panel): se rechaza con `400` y el error de campo `texto` "El texto tiene un formato que no se puede usar. Usá solo título, subtítulo, negrita, cursiva, listas y destacado." si el texto trae HTML (etiquetas, comentarios, `<https://…>`), enlaces o imágenes (`[..](..)`, `![..](..)`, referencias), código (acento grave o `~~~`), líneas horizontales (`---`), subrayados de título (`===`) o títulos de otro nivel (`#` o `####` en adelante). Un `<` o un `>` sueltos ("menos de <5") son texto normal y no se rechazan. No se limpia en silencio.
-- **Defensa en el front:** `TextoLectura` (`components/alma/texto-lectura.tsx`, con `react-markdown`) arma elementos de React, ignora el HTML crudo y solo dibuja los elementos de la tabla; lo demás (enlaces, imágenes, código, indentado) se muestra como texto plano. El panel y la persona usan el mismo componente.
+- **Defensa en el front:** `TextoLectura` (`components/TextoLectura.tsx`, con `react-markdown`) arma elementos de React, ignora el HTML crudo y solo dibuja los elementos de la tabla; lo demás (enlaces, imágenes, código, indentado) se muestra como texto plano. El panel y la persona usan el mismo componente.
 
 Todo vive en el paquete `microcapsulas` ya existente.
 

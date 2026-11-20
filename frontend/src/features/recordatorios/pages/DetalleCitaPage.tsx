@@ -2,18 +2,18 @@ import { useEffect, useRef, useState } from "react"
 import { Clock01Icon, ViewIcon } from "@hugeicons/core-free-icons"
 import { Link, Navigate, useNavigate } from "react-router-dom"
 
-import { Chip } from "@/components/alma/chip"
+import { Chip } from "@/components/Chip"
+import { EnlaceVolver } from "@/components/EnlaceVolver"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { useAviso } from "@/features/avisos/useAviso"
 import { ApiError } from "@/lib/api"
 import { mensajeDeError } from "@/lib/errores"
-import { useIdDeRuta } from "@/lib/useIdDeRuta"
 import { ACCION_ELIMINAR, ESTADO_CARGANDO } from "@/lib/mensajes"
+import { useIdDeRuta } from "@/lib/useIdDeRuta"
 
 import { DialogoEliminarRecordatorio } from "../components/DialogoEliminarRecordatorio"
-import { EnlaceVolver } from "../components/EnlaceVolver"
 import { fechaCompleta, horaDeFechaHora } from "../fechas"
 import {
   AVISO_ELIMINADO,
@@ -25,6 +25,7 @@ import {
   ETIQUETA_INDICACIONES_DETALLE,
   ETIQUETA_LUGAR,
   ETIQUETA_MEDICO,
+  VOLVER_A_RECORDATORIOS,
 } from "../mensajes"
 import { useCambiarEstado, useDetalle, useEliminar } from "../useRecordatorios"
 
@@ -80,7 +81,7 @@ export function DetalleCitaPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-(--narrow-max) flex-col gap-4 lg:mx-0">
-      <EnlaceVolver />
+      <EnlaceVolver to="/recordatorios" texto={VOLVER_A_RECORDATORIOS} />
 
       {id === undefined ? <Alert variant="error">{mensajeDeError(new ApiError(404))}</Alert> : null}
       {consulta.isPending && id !== undefined ? (

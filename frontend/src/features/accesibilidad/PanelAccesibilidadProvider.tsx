@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react"
 
-import { PanelAccesibilidad } from "@/components/alma/panel-accesibilidad"
+import { PanelAccesibilidad } from "@/components/accesibilidad/PanelAccesibilidad"
 import { Dialog } from "@/components/ui/dialog"
 
-import { PanelAccesibilidadContext, type PanelAccesibilidadValor } from "./panel-context"
+import { PanelAccesibilidadContext, type PanelAccesibilidadValor } from "./panelContext"
 
 /**
  * Monta UNA sola vez el panel de accesibilidad (CU-13) y deja abrirlo desde cualquier control

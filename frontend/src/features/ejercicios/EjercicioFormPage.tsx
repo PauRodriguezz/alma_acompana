@@ -11,8 +11,8 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { CampoAreaTexto } from "@/components/alma/campo-area-texto"
-import { SelectorChips } from "@/components/alma/selector-chips"
+import { CampoAreaTexto } from "@/components/formularios/CampoAreaTexto"
+import { SelectorChips } from "@/components/formularios/SelectorChips"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"

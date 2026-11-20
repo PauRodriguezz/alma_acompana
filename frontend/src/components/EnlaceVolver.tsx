@@ -4,8 +4,6 @@ import { Link } from "react-router-dom"
 
 /**
  * "‹ Texto" arriba de una pantalla para volver a la anterior (Figma). Zona de al menos 44 px.
- * PENDIENTE: unificar con el EnlaceVolver de recordatorios (features/recordatorios/components),
- * que es igual pero con el destino fijo, en una tarea aparte.
  */
 export function EnlaceVolver({ to, texto }: { to: string; texto: string }) {
   return (

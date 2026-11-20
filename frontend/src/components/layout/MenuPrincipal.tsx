@@ -2,9 +2,9 @@ import { useState, type ReactNode } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Link, NavLink } from "react-router-dom"
 
-import { AvatarAlma } from "@/components/alma/avatar-alma"
-import { ICONO_MENU, type DestinoMenu } from "@/components/alma/destinos-menu"
-import { ICONO_ITEM_MENU, ITEM_BARRA, ITEM_MENU } from "@/components/alma/menu-estilos"
+import { AvatarAlma } from "@/components/alma/AvatarAlma"
+import { ICONO_MENU, type DestinoMenu } from "@/components/layout/destinosMenu"
+import { ICONO_ITEM_MENU, ITEM_BARRA, ITEM_MENU } from "@/components/layout/estilosMenu"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 
@@ -13,7 +13,7 @@ type Rol = "persona" | "operador"
 type MenuPrincipalProps = {
   /** Decide el patrón de celular: la persona tiene la barra inferior; el operador, el botón "Menú" con su hoja. */
   rol: Rol
-  /** Destinos del rol (components/alma/destinos-menu.ts): ruta, nombre e ícono. Este componente no elige íconos. */
+  /** Destinos del rol (components/layout/destinosMenu.ts): ruta, nombre e ícono. Este componente no elige íconos. */
   destinos: readonly DestinoMenu[]
   /** Nombre accesible de la navegación ("Principal", "Menú del panel"). */
   etiquetaNavegacion: string

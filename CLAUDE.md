@@ -35,7 +35,7 @@ alma_acompana/
 ```
 
 - **Back:** un paquete por módulo (`auth`, `persona`, `administrador`, `bienestar`, `chat`, `ejercicios` (catálogo; el juego de la persona mayor irá después en `juegos`), `historia`, `juegos`, `microcapsulas`, `recordatorios`), cada uno con `controller/`, `service/`, `repository/`, `domain/`, `dto/`. Los paquetes transversales son `config/`, `common/` e `ia/`.
-- **Front:** `src/` con `App.tsx`, `main.tsx` e `index.css`, `components/ui/` (shadcn), `components/alma/`, `features/<modulo>/` y `lib/` (ver "Carpetas del front").
+- **Front:** `src/` con `App.tsx`, `main.tsx` e `index.css`, `components/ui/` (shadcn), `components/<tema>/` (`accesibilidad/`, `alma/`, `formularios/`, `layout/`), `features/<modulo>/` y `lib/` (ver "Carpetas del front").
 
 ## Comandos
 
@@ -67,10 +67,10 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 ### Carpetas del front
 - Un módulo chico queda **plano**: `features/<modulo>/` con sus páginas, componentes, `api.ts`, `tipos.ts`, `schemas.ts` y `mensajes.ts` juntos.
 - Con más de unos 10 archivos, se separa en `pages/` (una por ruta) y `components/` (piezas de esas páginas). Los hooks, `api.ts`, `tipos.ts`, `schemas.ts` y `mensajes.ts` quedan en la raíz del módulo. Hoy lo cumple `recordatorios/`.
-- Lo que usan **varios módulos** va fuera de `features/`: componentes en `components/alma/` (los de shadcn, en `components/ui/`) y funciones y textos generales en `lib/` (`api.ts`, `errores.ts`, `fechas.ts`, `mensajes.ts`).
+- Lo que usan **varios módulos** va fuera de `features/`: componentes en `components/` (los genéricos sueltos, como `Chip.tsx`, y los demás en una carpeta por tema: `accesibilidad/`, `alma/` —solo el personaje—, `formularios/` y `layout/`; los de shadcn, en `components/ui/`) y funciones y textos generales en `lib/` (`api.ts`, `errores.ts`, `fechas.ts`, `mensajes.ts`).
 - `index.ts` es la **entrada del módulo** y es **opcional**: solo hace falta cuando otro módulo o `App.tsx` importan varias cosas del módulo (por ejemplo, `recordatorios/`). Exporta solo lo que se usa desde afuera. Los módulos que usa únicamente su módulo padre o únicamente `App.tsx` no lo necesitan: se importan por su ruta (`@/features/<modulo>/…`). Dentro del módulo se importa con rutas relativas.
 - Los textos que ve la persona viven en `mensajes.ts`, uno por módulo; los generales, en `lib/mensajes.ts`. Los esquemas de validación se llaman `schemas.ts`.
-- Un componente o hook que ya existe en otro módulo no se duplica: se mueve a `components/alma/` o `lib/` y se actualizan los imports.
+- Un componente o hook que ya existe en otro módulo no se duplica: se mueve a `components/` o `lib/` y se actualizan los imports.
 
 ## Decisiones tomadas
 

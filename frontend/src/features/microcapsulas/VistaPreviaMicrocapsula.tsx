@@ -1,6 +1,6 @@
 import { useId } from "react"
 
-import { TextoLectura } from "@/components/alma/texto-lectura"
+import { TextoLectura } from "@/components/TextoLectura"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
 import type { CategoriaMicrocapsula } from "@/features/admin/etiquetas"

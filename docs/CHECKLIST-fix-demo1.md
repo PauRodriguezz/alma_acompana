@@ -50,7 +50,7 @@ Pantallas: Recordatorios calendario `50:1395` (celular `32:868`), lista `46:1244
   - (D) Elegir editor: Markdown con barra simple o editor con formatos acotados (título, negrita, cursiva, listas y "destacado"; sin tamaños libres, chocan con el tamaño de letra de la persona). Dependencia nueva: avisar antes.
   - Formulario del operador (`MicrocapsulaFormPage`) con las herramientas de texto y vista previa fiel; vista de lectura (`LecturaDetallePage`) que muestre el formato y soporte textos largos.
   - Imagen en tarjetas y detalle (ya existe la subida del panel: `subir-imagen.tsx`, `ImagenAdminController`; verificar si la microcápsula tiene campo de imagen).
-- [ ] **1.6 Historia de vida** (D, necesita la captura de Pau):
+- [x] **1.6 Historia de vida** (D, necesita la captura de Pau):
   - Rediseñar el detalle del recuerdo (no convence).
   - Descarga del mapa como imagen: más ancha y con cada recuerdo mejor desglosado (hoy se ve mal con recuerdos cortados).
 - [ ] **1.9 Limpieza del front (al final, para no refactorizar dos veces):**

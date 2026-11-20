@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
 
 import almaSaludo from "@/assets/alma_acompana_saludo.webp"
-import { EnlaceVolver } from "@/components/alma/enlace-volver"
+import { EnlaceVolver } from "@/components/EnlaceVolver"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
 import { RUTA_ENTRETENIMIENTO, RUTA_JUGAR } from "@/features/entretenimiento/rutas"

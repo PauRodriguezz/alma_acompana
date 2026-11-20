@@ -1,7 +1,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-import { MensajeError } from "@/components/alma/mensaje-error"
+import { MensajeError } from "@/components/formularios/MensajeError"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { CAMPO_OPCIONAL } from "@/lib/mensajes"

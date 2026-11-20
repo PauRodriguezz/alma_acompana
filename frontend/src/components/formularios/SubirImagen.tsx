@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ImageUpload01Icon } from "@hugeicons/core-free-icons"
 
-import { MensajeError } from "@/components/alma/mensaje-error"
+import { MensajeError } from "@/components/formularios/MensajeError"
 import { Button } from "@/components/ui/button"
 import { ApiError, api } from "@/lib/api"
 import {

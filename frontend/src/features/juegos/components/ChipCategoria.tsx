@@ -6,7 +6,7 @@ import {
   QuotesIcon,
 } from "@hugeicons/core-free-icons"
 
-import { Chip } from "@/components/alma/chip"
+import { Chip } from "@/components/Chip"
 import {
   ESTILO_CATEGORIA_EJERCICIO,
   TEXTO_CATEGORIA_EJERCICIO,

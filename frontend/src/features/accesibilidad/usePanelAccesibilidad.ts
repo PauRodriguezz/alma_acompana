@@ -1,6 +1,6 @@
 import { useContext } from "react"
 
-import { PanelAccesibilidadContext } from "./panel-context"
+import { PanelAccesibilidadContext } from "./panelContext"
 
 export function usePanelAccesibilidad() {
   const contexto = useContext(PanelAccesibilidadContext)

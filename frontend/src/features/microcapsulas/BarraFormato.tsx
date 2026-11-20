@@ -9,7 +9,7 @@ import {
   ICONO_FORMATO_NEGRITA,
   ICONO_FORMATO_SUBTITULO,
   ICONO_FORMATO_TITULO,
-} from "@/components/alma/iconos"
+} from "@/components/iconos"
 import { cn } from "@/lib/utils"
 
 import {

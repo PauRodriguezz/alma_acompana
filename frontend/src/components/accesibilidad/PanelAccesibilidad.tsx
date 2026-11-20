@@ -1,6 +1,6 @@
 import { useId } from "react"
 
-import { OpcionRadio, TildeOpcion } from "@/components/alma/opcion-radio"
+import { OpcionRadio, TildeOpcion } from "@/components/formularios/OpcionRadio"
 import { Button } from "@/components/ui/button"
 import {
   DialogBody,
@@ -11,15 +11,32 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { RadioGroup } from "@/components/ui/radio-group"
-import { useAccesibilidad } from "@/features/accesibilidad/useAccesibilidad"
 import type { TamanioLetra } from "@/features/accesibilidad/tipos"
+import { useAccesibilidad } from "@/features/accesibilidad/useAccesibilidad"
+import {
+  ACCESIBILIDAD_TAMANIO_NORMAL,
+  ACCESIBILIDAD_TAMANIO_GRANDE,
+  ACCESIBILIDAD_TAMANIO_MUY_GRANDE,
+  ACCESIBILIDAD_TITULO,
+  ACCESIBILIDAD_TAMANIO,
+  ACCESIBILIDAD_AHORA,
+  ACCESIBILIDAD_CONTRASTE,
+  ACCESIBILIDAD_NORMAL,
+  ACCESIBILIDAD_NORMAL_AYUDA,
+  ACCESIBILIDAD_ALTO_CONTRASTE,
+  ACCESIBILIDAD_ALTO_CONTRASTE_AYUDA,
+  ACCESIBILIDAD_MUESTRA_TITULO,
+  ACCESIBILIDAD_MUESTRA,
+  ACCESIBILIDAD_VOLVER_A_LO_ORIGINAL,
+  ACCESIBILIDAD_LISTO,
+} from "@/lib/mensajes"
 
 // Tamaños de letra del Figma: 100, 125 y 150 %.
 // PROPUESTO: los nombres accesibles de cada opción ("Tamaño normal, 100 %", etc.).
 const TAMANIOS: { valor: TamanioLetra; porcentaje: string; nombre: string }[] = [
-  { valor: "NORMAL", porcentaje: "100 %", nombre: "Tamaño normal, 100 %" },
-  { valor: "GRANDE", porcentaje: "125 %", nombre: "Tamaño grande, 125 %" },
-  { valor: "MUY_GRANDE", porcentaje: "150 %", nombre: "Tamaño muy grande, 150 %" },
+  { valor: "NORMAL", porcentaje: "100 %", nombre: ACCESIBILIDAD_TAMANIO_NORMAL },
+  { valor: "GRANDE", porcentaje: "125 %", nombre: ACCESIBILIDAD_TAMANIO_GRANDE },
+  { valor: "MUY_GRANDE", porcentaje: "150 %", nombre: ACCESIBILIDAD_TAMANIO_MUY_GRANDE },
 ]
 
 /**
@@ -46,14 +63,14 @@ export function PanelAccesibilidad(props: React.ComponentProps<typeof DialogCont
   return (
     <DialogContent {...props}>
       <DialogHeader>
-        <DialogTitle>Accesibilidad</DialogTitle>
+        <DialogTitle>{ACCESIBILIDAD_TITULO}</DialogTitle>
       </DialogHeader>
 
       <DialogBody className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-2">
-          <h3 id={idTamanio}>Tamaño de la letra</h3>
+          <h3 id={idTamanio}>{ACCESIBILIDAD_TAMANIO}</h3>
           <p className="shrink-0 text-muted-foreground">
-            Ahora: {tamanioActual?.porcentaje}
+            {ACCESIBILIDAD_AHORA} {tamanioActual?.porcentaje}
           </p>
         </div>
         <RadioGroup
@@ -80,7 +97,7 @@ export function PanelAccesibilidad(props: React.ComponentProps<typeof DialogCont
           ))}
         </RadioGroup>
 
-        <h3 id={idContraste}>Contraste</h3>
+        <h3 id={idContraste}>{ACCESIBILIDAD_CONTRASTE}</h3>
         <RadioGroup
           aria-labelledby={idContraste}
           value={preferencias.altoContraste ? "alto" : "normal"}
@@ -95,10 +112,10 @@ export function PanelAccesibilidad(props: React.ComponentProps<typeof DialogCont
               Aa
             </span>
             <span className="flex w-full items-center gap-2">
-              <span className="flex-1 font-bold">Normal</span>
+              <span className="flex-1 font-bold">{ACCESIBILIDAD_NORMAL}</span>
               <TildeOpcion className="size-6" />
             </span>
-            <span className="text-muted-foreground">Los colores de siempre</span>
+            <span className="text-muted-foreground">{ACCESIBILIDAD_NORMAL_AYUDA}</span>
           </OpcionRadio>
           <OpcionRadio value="alto" className="items-start gap-2 p-4">
             <span
@@ -108,24 +125,24 @@ export function PanelAccesibilidad(props: React.ComponentProps<typeof DialogCont
               Aa
             </span>
             <span className="flex w-full items-center gap-2">
-              <span className="flex-1 font-bold">Alto contraste</span>
+              <span className="flex-1 font-bold">{ACCESIBILIDAD_ALTO_CONTRASTE}</span>
               <TildeOpcion className="size-6" />
             </span>
-            <span className="text-muted-foreground">Letras negras y bordes marcados</span>
+            <span className="text-muted-foreground">{ACCESIBILIDAD_ALTO_CONTRASTE_AYUDA}</span>
           </OpcionRadio>
         </RadioGroup>
 
-        <h3>Así se va a ver</h3>
+        <h3>{ACCESIBILIDAD_MUESTRA_TITULO}</h3>
         <p className="rounded-md bg-secondary p-4 text-secondary-foreground">
-          Hoy tenés una pastilla para tomar a las 21:00.
+          {ACCESIBILIDAD_MUESTRA}
         </p>
       </DialogBody>
 
       <DialogFooter>
         <Button variant="outline" onClick={restablecer}>
-          Volver a lo original
+          {ACCESIBILIDAD_VOLVER_A_LO_ORIGINAL}
         </Button>
-        <DialogClose render={<Button />}>Listo</DialogClose>
+        <DialogClose render={<Button />}>{ACCESIBILIDAD_LISTO}</DialogClose>
       </DialogFooter>
     </DialogContent>
   )

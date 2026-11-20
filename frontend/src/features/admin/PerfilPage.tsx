@@ -1,9 +1,9 @@
 import { useEffect, type ReactNode } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowRight01Icon, Logout01Icon } from "@hugeicons/core-free-icons"
-import { ICONO_ACCESIBILIDAD } from "@/components/alma/iconos"
+import { ICONO_ACCESIBILIDAD } from "@/components/iconos"
 
-import { PanelAccesibilidad } from "@/components/alma/panel-accesibilidad"
+import { PanelAccesibilidad } from "@/components/accesibilidad/PanelAccesibilidad"
 import { Dialog, DialogTrigger } from "@/components/ui/dialog"
 import { DialogoCerrarSesion } from "@/features/auth/DialogoCerrarSesion"
 import { useAuth } from "@/features/auth/useAuth"
@@ -14,7 +14,7 @@ import {
 } from "@/features/perfil/mensajes"
 import { CERRAR_SESION } from "@/lib/mensajes"
 
-import { FILA, FILA_BOTON } from "./filas-perfil"
+import { FILA, FILA_BOTON } from "./filasPerfil"
 import {
   ADMIN_PERFIL,
   ADMIN_PERFIL_APELLIDO,

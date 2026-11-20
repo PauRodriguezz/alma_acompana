@@ -1,6 +1,6 @@
 import { useState } from "react"
 
-import { EnlaceVolver } from "@/components/alma/enlace-volver"
+import { EnlaceVolver } from "@/components/EnlaceVolver"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { RUTA_JUEGOS } from "@/features/entretenimiento/rutas"

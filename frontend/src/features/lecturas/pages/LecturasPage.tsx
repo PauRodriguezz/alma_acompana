@@ -4,7 +4,7 @@ import { Bookmark02Icon, Note01Icon } from "@hugeicons/core-free-icons"
 import type { UseQueryResult } from "@tanstack/react-query"
 import { useSearchParams } from "react-router-dom"
 
-import { EnlaceVolver } from "@/components/alma/enlace-volver"
+import { EnlaceVolver } from "@/components/EnlaceVolver"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs"

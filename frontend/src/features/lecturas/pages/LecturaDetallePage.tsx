@@ -1,9 +1,9 @@
 import type { ReactNode } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 
-import { EnlaceVolver } from "@/components/alma/enlace-volver"
-import { TextoLectura } from "@/components/alma/texto-lectura"
-import { TituloConFoco } from "@/components/alma/titulo-con-foco"
+import { EnlaceVolver } from "@/components/EnlaceVolver"
+import { TextoLectura } from "@/components/TextoLectura"
+import { TituloConFoco } from "@/components/accesibilidad/TituloConFoco"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"

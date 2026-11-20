@@ -1,6 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 
-import { LayoutPersona } from "@/components/alma/layout-persona"
+import { LayoutPersona } from "@/components/layout/LayoutPersona"
 import { RutasAdmin } from "@/features/admin/RutasAdmin"
 import { AuthProvider } from "@/features/auth/AuthProvider"
 import { LoginPage } from "@/features/auth/LoginPage"
