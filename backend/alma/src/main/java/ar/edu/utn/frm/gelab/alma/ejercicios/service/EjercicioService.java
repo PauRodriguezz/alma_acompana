@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ar.edu.utn.frm.gelab.alma.common.ErrorCampo;
 import ar.edu.utn.frm.gelab.alma.common.Fechas;
 import ar.edu.utn.frm.gelab.alma.common.MensajesError;
+import ar.edu.utn.frm.gelab.alma.common.MensajesPanel;
 import ar.edu.utn.frm.gelab.alma.common.exception.DatosInvalidosException;
 import ar.edu.utn.frm.gelab.alma.common.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frm.gelab.alma.common.imagenes.RutaImagen;
@@ -31,10 +32,6 @@ import ar.edu.utn.frm.gelab.alma.ejercicios.repository.EjercicioRepository;
  */
 @Service
 public class EjercicioService {
-
-    static final String CAMPOS_REQUERIDOS = "Completá todos los campos requeridos del ejercicio.";
-    static final String OPCIONES_MULTIPLE = "Cargá de 3 a 4 opciones y marcá una sola como correcta.";
-    static final String OPCIONES_ORDENAR = "Cargá de 3 a 5 pasos y asignale a cada uno una posición distinta.";
 
     private static final int MAX_CONSIGNA = 300;
     private static final int MAX_EXPLICACION = 500;
@@ -130,59 +127,60 @@ public class EjercicioService {
 
         List<ErrorCampo> faltantes = new ArrayList<>();
         if (datos.categoria() == null) {
-            faltantes.add(new ErrorCampo("categoria", "Elegí una categoría."));
+            faltantes.add(new ErrorCampo("categoria", MensajesPanel.ELEGI_CATEGORIA));
         }
         if (datos.formato() == null) {
-            faltantes.add(new ErrorCampo("formato", "Elegí un formato."));
+            faltantes.add(new ErrorCampo("formato", MensajesPanel.EJERCICIO_ELEGI_FORMATO));
         }
         if (estaVacio(datos.consigna())) {
-            faltantes.add(new ErrorCampo("consigna", "Ingresá la consigna."));
+            faltantes.add(new ErrorCampo("consigna", MensajesPanel.EJERCICIO_INGRESA_CONSIGNA));
         }
         if (datos.nivelDificultad() == null) {
-            faltantes.add(new ErrorCampo("nivelDificultad", "Elegí un nivel de dificultad."));
+            faltantes.add(new ErrorCampo("nivelDificultad", MensajesPanel.EJERCICIO_ELEGI_NIVEL));
         }
         if (datos.categoria() == CategoriaEjercicio.MEMORIA && estaVacio(datos.textoAMemorizar())) {
-            faltantes.add(new ErrorCampo("textoAMemorizar", "Ingresá el texto a memorizar."));
+            faltantes.add(new ErrorCampo("textoAMemorizar", MensajesPanel.EJERCICIO_INGRESA_TEXTO_A_MEMORIZAR));
         }
         for (int i = 0; i < opciones.size(); i++) {
             OpcionRequest opcion = opciones.get(i);
             if (opcion == null || estaVacio(opcion.texto())) {
-                faltantes.add(new ErrorCampo("opciones[" + i + "].texto", "Ingresá el texto de la opción."));
+                faltantes.add(new ErrorCampo("opciones[" + i + "].texto", MensajesPanel.EJERCICIO_INGRESA_TEXTO_OPCION));
             }
         }
         if (!faltantes.isEmpty()) {
-            throw new DatosInvalidosException(CAMPOS_REQUERIDOS, faltantes);
+            throw new DatosInvalidosException(MensajesPanel.EJERCICIO_CAMPOS_REQUERIDOS, faltantes);
         }
 
         if (datos.formato() == FormatoEjercicio.OPCION_MULTIPLE && !opcionMultipleValida(opciones)) {
-            throw new DatosInvalidosException(OPCIONES_MULTIPLE, List.of(new ErrorCampo("opciones", OPCIONES_MULTIPLE)));
+            throw new DatosInvalidosException(MensajesPanel.EJERCICIO_OPCIONES_MULTIPLE,
+                    List.of(new ErrorCampo("opciones", MensajesPanel.EJERCICIO_OPCIONES_MULTIPLE)));
         }
         if (datos.formato() == FormatoEjercicio.ORDENAR && !ordenarValido(opciones)) {
-            throw new DatosInvalidosException(OPCIONES_ORDENAR, List.of(new ErrorCampo("opciones", OPCIONES_ORDENAR)));
+            throw new DatosInvalidosException(MensajesPanel.EJERCICIO_OPCIONES_ORDENAR,
+                    List.of(new ErrorCampo("opciones", MensajesPanel.EJERCICIO_OPCIONES_ORDENAR)));
         }
 
         List<ErrorCampo> errores = new ArrayList<>();
         if (datos.consigna().strip().length() > MAX_CONSIGNA) {
-            errores.add(new ErrorCampo("consigna", "La consigna puede tener hasta " + MAX_CONSIGNA + " caracteres."));
+            errores.add(new ErrorCampo("consigna", MensajesPanel.consignaLarga(MAX_CONSIGNA)));
         }
         if (!estaVacio(datos.explicacion()) && datos.explicacion().strip().length() > MAX_EXPLICACION) {
-            errores.add(new ErrorCampo("explicacion",
-                    "La explicación puede tener hasta " + MAX_EXPLICACION + " caracteres."));
+            errores.add(new ErrorCampo("explicacion", MensajesPanel.explicacionLarga(MAX_EXPLICACION)));
         }
         if (datos.categoria() == CategoriaEjercicio.MEMORIA
                 && datos.textoAMemorizar().strip().length() > MAX_TEXTO_A_MEMORIZAR) {
             errores.add(new ErrorCampo("textoAMemorizar",
-                    "El texto a memorizar puede tener hasta " + MAX_TEXTO_A_MEMORIZAR + " caracteres."));
+                    MensajesPanel.textoAMemorizarLargo(MAX_TEXTO_A_MEMORIZAR)));
         }
         for (int i = 0; i < opciones.size(); i++) {
             OpcionRequest opcion = opciones.get(i);
             if (opcion.texto().strip().length() > MAX_TEXTO_OPCION) {
                 errores.add(new ErrorCampo("opciones[" + i + "].texto",
-                        "El texto de la opción puede tener hasta " + MAX_TEXTO_OPCION + " caracteres."));
+                        MensajesPanel.textoDeOpcionLargo(MAX_TEXTO_OPCION)));
             }
             String imagen = sinBlancos(opcion.imagen());
             if (imagen != null && !RutaImagen.esValida(imagen)) {
-                errores.add(new ErrorCampo("opciones[" + i + "].imagen", "La imagen no es válida. Volvé a elegirla."));
+                errores.add(new ErrorCampo("opciones[" + i + "].imagen", MensajesPanel.IMAGEN_INVALIDA));
             }
         }
         if (!errores.isEmpty()) {

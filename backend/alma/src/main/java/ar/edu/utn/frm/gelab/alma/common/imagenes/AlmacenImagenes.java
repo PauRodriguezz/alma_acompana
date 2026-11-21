@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import ar.edu.utn.frm.gelab.alma.common.ErrorCampo;
+import ar.edu.utn.frm.gelab.alma.common.MensajesError;
 import ar.edu.utn.frm.gelab.alma.common.exception.DatosInvalidosException;
 
 /**
@@ -22,8 +23,6 @@ import ar.edu.utn.frm.gelab.alma.common.exception.DatosInvalidosException;
  */
 @Service
 public class AlmacenImagenes {
-
-    static final String TIPO_INVALIDO = "La imagen tiene que ser JPG, PNG o WEBP.";
 
     private static final byte[] FIRMA_JPG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
     private static final byte[] FIRMA_PNG = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'};
@@ -85,6 +84,7 @@ public class AlmacenImagenes {
     }
 
     private static DatosInvalidosException tipoInvalido() {
-        return new DatosInvalidosException(TIPO_INVALIDO, List.of(new ErrorCampo("archivo", TIPO_INVALIDO)));
+        return new DatosInvalidosException(MensajesError.IMAGEN_TIPO_INVALIDO,
+                List.of(new ErrorCampo("archivo", MensajesError.IMAGEN_TIPO_INVALIDO)));
     }
 }

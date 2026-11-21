@@ -156,7 +156,7 @@ public class GeminiModeloConversacional implements ModeloConversacional {
         } catch (RuntimeException e) {
             registrarFalla(e, inicio, etiqueta);
             // No se pasa el mensaje original: el del SDK puede citar el cuerpo de la respuesta.
-            throw new ModeloNoDisponibleException("Falló la llamada a Gemini: " + causaRaiz(e).getClass().getSimpleName(),
+            throw new ModeloNoDisponibleException("Falló la llamada a Gemini: " + ErroresTransitorios.causaRaiz(e).getClass().getSimpleName(),
                     e, ErroresTransitorios.deGemini(e));
         }
     }
@@ -276,30 +276,10 @@ public class GeminiModeloConversacional implements ModeloConversacional {
 
     /** Solo la clase de la causa raíz y el código HTTP si lo hay; nunca el mensaje. */
     private void registrarFalla(RuntimeException e, long inicio, String etiqueta) {
-        Throwable raiz = causaRaiz(e);
-        Integer codigoHttp = codigoHttpDe(e);
+        Throwable raiz = ErroresTransitorios.causaRaiz(e);
+        Integer codigoHttp = ErroresTransitorios.codigoHttp(e);
         log.warn("{} no pudo responder tras {} ms (error: {}, código HTTP: {})", etiqueta, milisDesde(inicio),
                 raiz.getClass().getSimpleName(), codigoHttp != null ? codigoHttp : "s/d");
-    }
-
-    private static Throwable causaRaiz(Throwable e) {
-        Throwable actual = e;
-        // El límite evita un ciclo de causas.
-        for (int i = 0; i < 20 && actual.getCause() != null && actual.getCause() != actual; i++) {
-            actual = actual.getCause();
-        }
-        return actual;
-    }
-
-    private static Integer codigoHttpDe(Throwable e) {
-        Throwable actual = e;
-        for (int i = 0; i < 20 && actual != null; i++) {
-            if (actual instanceof ApiException api) {
-                return api.code();
-            }
-            actual = actual.getCause() != actual ? actual.getCause() : null;
-        }
-        return null;
     }
 
     private static long milisDesde(long inicioNanos) {

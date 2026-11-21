@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ar.edu.utn.frm.gelab.alma.common.ErrorCampo;
 import ar.edu.utn.frm.gelab.alma.common.Fechas;
 import ar.edu.utn.frm.gelab.alma.common.MensajesError;
+import ar.edu.utn.frm.gelab.alma.common.MensajesPanel;
 import ar.edu.utn.frm.gelab.alma.common.exception.DatosInvalidosException;
 import ar.edu.utn.frm.gelab.alma.common.exception.RecursoNoEncontradoException;
 import ar.edu.utn.frm.gelab.alma.common.imagenes.RutaImagen;
@@ -25,13 +26,8 @@ import ar.edu.utn.frm.gelab.alma.microcapsulas.repository.MicrocapsulaRepository
 @Service
 public class MicrocapsulaService {
 
-    static final String CAMPOS_REQUERIDOS = "Completá todos los campos requeridos de la microcápsula.";
-
     private static final int MAX_TITULO = 120;
     private static final int MAX_TEXTO = 5000;
-
-    static final String FORMATO_NO_PERMITIDO = "El texto tiene un formato que no se puede usar. "
-            + "Usá solo título, subtítulo, negrita, cursiva, listas y destacado.";
 
     /**
      * El texto es Markdown limitado: títulos (##), subtítulos (###), negrita, cursiva, listas y
@@ -110,37 +106,37 @@ public class MicrocapsulaService {
     private static void validar(MicrocapsulaRequest datos) {
         List<ErrorCampo> faltantes = new ArrayList<>();
         if (estaVacio(datos.titulo())) {
-            faltantes.add(new ErrorCampo("titulo", "Ingresá el título."));
+            faltantes.add(new ErrorCampo("titulo", MensajesPanel.MICROCAPSULA_INGRESA_TITULO));
         }
         if (estaVacio(datos.texto())) {
-            faltantes.add(new ErrorCampo("texto", "Ingresá el texto."));
+            faltantes.add(new ErrorCampo("texto", MensajesPanel.MICROCAPSULA_INGRESA_TEXTO));
         }
         if (datos.categoria() == null) {
-            faltantes.add(new ErrorCampo("categoria", "Elegí una categoría."));
+            faltantes.add(new ErrorCampo("categoria", MensajesPanel.ELEGI_CATEGORIA));
         }
         if (datos.fechaPublicacion() == null) {
-            faltantes.add(new ErrorCampo("fechaPublicacion", "Ingresá la fecha de publicación."));
+            faltantes.add(new ErrorCampo("fechaPublicacion", MensajesPanel.MICROCAPSULA_INGRESA_FECHA));
         }
         if (!faltantes.isEmpty()) {
-            throw new DatosInvalidosException(CAMPOS_REQUERIDOS, faltantes);
+            throw new DatosInvalidosException(MensajesPanel.MICROCAPSULA_CAMPOS_REQUERIDOS, faltantes);
         }
 
         List<ErrorCampo> errores = new ArrayList<>();
         if (datos.titulo().strip().length() > MAX_TITULO) {
-            errores.add(new ErrorCampo("titulo", "El título puede tener hasta " + MAX_TITULO + " caracteres."));
+            errores.add(new ErrorCampo("titulo", MensajesPanel.tituloLargo(MAX_TITULO)));
         }
         if (datos.texto().strip().length() > MAX_TEXTO) {
-            errores.add(new ErrorCampo("texto", "El texto puede tener hasta " + MAX_TEXTO + " caracteres."));
+            errores.add(new ErrorCampo("texto", MensajesPanel.textoLargo(MAX_TEXTO)));
         }
         if (usaFormatoNoPermitido(datos.texto())) {
-            errores.add(new ErrorCampo("texto", FORMATO_NO_PERMITIDO));
+            errores.add(new ErrorCampo("texto", MensajesPanel.MICROCAPSULA_FORMATO_NO_PERMITIDO));
         }
         String imagen = sinBlancos(datos.imagen());
         if (imagen != null && !RutaImagen.esValida(imagen)) {
-            errores.add(new ErrorCampo("imagen", "La imagen no es válida. Volvé a elegirla."));
+            errores.add(new ErrorCampo("imagen", MensajesPanel.IMAGEN_INVALIDA));
         }
         if (datos.fechaPublicacion().isAfter(Fechas.hoy())) {
-            errores.add(new ErrorCampo("fechaPublicacion", "La fecha de publicación no puede ser futura."));
+            errores.add(new ErrorCampo("fechaPublicacion", MensajesPanel.MICROCAPSULA_FECHA_FUTURA));
         }
         if (!errores.isEmpty()) {
             throw new DatosInvalidosException(MensajesError.DATOS_INVALIDOS, errores);
