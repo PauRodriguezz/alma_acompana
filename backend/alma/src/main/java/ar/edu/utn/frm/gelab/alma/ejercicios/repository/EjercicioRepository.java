@@ -32,6 +32,10 @@ public interface EjercicioRepository extends JpaRepository<Ejercicio, Long> {
     /** Activos de un nivel: el pool del que elige el juego (contrato de juegos, 5.1). */
     List<Ejercicio> findByNivelDificultadAndFechaBajaIsNull(NivelDificultad nivelDificultad);
 
-    /** Incluye los dados de baja: lo usa el seed para no recrear lo que se eliminó. */
-    boolean existsByConsigna(String consigna);
+    /**
+     * Incluye los dados de baja: lo usa el seed para no recrear lo que se eliminó. La clave es categoría,
+     * nivel y consigna, porque hay consignas iguales con distinto nivel (por ejemplo, ordenar números).
+     */
+    boolean existsByCategoriaAndNivelDificultadAndConsigna(CategoriaEjercicio categoria,
+            NivelDificultad nivelDificultad, String consigna);
 }

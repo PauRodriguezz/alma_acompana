@@ -562,14 +562,38 @@ Contenido de `src/main/resources/historia/guion.json`. Los ids son fijos y no se
 
 ## Anexo B. Datos de ejemplo para `ana`
 
-`ana` (nacida el 12/05/1950) con las preguntas 1, 2, 7 y 17 respondidas, la 8 salteada y la 3 como próxima pendiente. Recuerdos:
+`ana` (nacida el 12/05/1950) con las preguntas 1 a 18 respondidas y las 19, 20 y 21 sin responder: la 19 es la próxima pendiente. Tiene 18 recuerdos (uno por pregunta, de la 1 a la 18), 18 personas y 13 lugares. Los títulos y las descripciones están escritos a mano, en primera persona. Es la misma Ana que la del seed automático: nació en Cipolletti, vivió en la casa de la calle San Martín con su madre Rosa, su padre Hugo y su hermana Marta, tuvo a la maestra Elena en la Escuela N° 12 y se mudó a Mendoza a los 14 años.
 
-- "Nací en Cipolletti": 1950, `ESTIMADA`, `INFANCIA`, lugar Cipolletti (pregunta 1).
-- "La casa de la calle San Martín": 1958, `APROXIMADA`, `INFANCIA`, con Marta (hermana) y Rosa (madre), en Cipolletti (pregunta 2).
-- "Mi maestra Elena": 1957, `EXACTA`, `INFANCIA`, con Elena (maestra), en la Escuela N° 12 (pregunta 7).
-- "Un viaje a la costa": **sin año**, con una persona sin nombre (marido), lugar "la costa", con `intentosAnio` en 1 (pregunta 17).
+Año, precisión y etapa se calculan con el nacimiento en 1950: un año dicho es `EXACTA`; un "aproximadamente" o un rango es `APROXIMADA`, con el punto medio del rango (división entera).
 
-Cubre un recuerdo sin año, una persona sin nombre y una repregunta con un intento ya usado. Se carga solo si `alma.seed.enabled=true` y `ana` no tiene recuerdos ni progreso (ninguna relación `RESPONDIO` ni `SALTEO`). `carlos` queda sin historia. (Los archivos `datos-de-ejemplo.cypher` del modelo son otra cosa: se cargan a mano en un Neo4j de pruebas y no sirven para la aplicación.)
+| Pregunta | Recuerdo | Año | Precisión | Etapa |
+|---|---|---|---|---|
+| 1 | Mis primeros días en Cipolletti | 1950 | `EXACTA` | `INFANCIA` |
+| 2 | La casa de mi infancia | 1957 | `APROXIMADA` | `INFANCIA` |
+| 3 | Una familia numerosa | 1958 | `APROXIMADA` | `INFANCIA` |
+| 4 | Un barrio donde todos se conocían | 1960 | `APROXIMADA` | `INFANCIA` |
+| 5 | Tardes de juegos en la vereda | 1960 | `APROXIMADA` | `INFANCIA` |
+| 6 | Los sabores de mamá | 1960 | `APROXIMADA` | `INFANCIA` |
+| 7 | Mis años en la escuela | 1959 | `APROXIMADA` | `INFANCIA` |
+| 8 | Una maestra que recuerdo | 1957 | `APROXIMADA` | `INFANCIA` |
+| 9 | Lo que aprendí de mi mamá | 1957 | `APROXIMADA` | `INFANCIA` |
+| 10 | Amigas y tardes de adolescencia | 1966 | `APROXIMADA` | `ADOLESCENCIA` |
+| 11 | La música de aquellos años | 1969 | `APROXIMADA` | `JUVENTUD` |
+| 12 | Mi primer trabajo | 1968 | `APROXIMADA` | `JUVENTUD` |
+| 13 | Nuestro primer hogar | 1973 | `APROXIMADA` | `JUVENTUD` |
+| 14 | Una casualidad que terminó en amor | 1970 | `APROXIMADA` | `JUVENTUD` |
+| 15 | La llegada de mi primer hijo | 1974 | `EXACTA` | `JUVENTUD` |
+| 16 | Las llaves de nuestra casa | 1982 | `APROXIMADA` | `ADULTEZ` |
+| 17 | Vacaciones frente al mar | 1984 | `APROXIMADA` | `ADULTEZ` |
+| 18 | Empezar de nuevo en otro hogar | 1964 | `APROXIMADA` | `ADOLESCENCIA` |
+
+- **Personas con nombre (9):** Rosa (madre), Hugo (padre), Marta (hermana), Elena (maestra), Silvia y Norma (amigas), Roberto (marido), Martín (hijo) y Teresa (jefa). Marta, Rosa y Hugo son un solo nodo cada uno, reutilizado en todos los recuerdos donde aparecen. Los nombres no aparecen en las descripciones, solo como personas del recuerdo.
+- **Personas sin nombre (9), un solo nodo por grupo:** hermanos, vecinos, amigos del barrio, amigas del barrio, compañeras, maestros, novio, compañeras de trabajo e hijos.
+- **Lugares (13):** Cipolletti, Casa de la calle San Martín, Escuela N° 12, Mendoza, Las Heras, Centro de Mendoza, Clubes y salones de baile de Mendoza, Local de ropa en el centro de Mendoza, Godoy Cruz, Casa de Silvia (Las Heras), Hospital de Mendoza, Casa propia en Godoy Cruz y Mar del Plata.
+
+Cubre personas con nombre y sin nombre, y rangos de años. Ningún recuerdo queda sin año, lugares o personas, y una persona sin nombre cuenta como presente (5.7), así que no queda ninguna repregunta pendiente: Alma solo tiene para preguntar la 19, la 20 y la 21 (los contadores `intentos*` valen 0).
+
+Se carga a mano con `backend/alma/scripts/historia-demo-ana.cypher` en el Navegador de Neo4j (la guarda no carga nada si `ana` ya tiene recuerdos o progreso; las instrucciones están en el encabezado del script). El seed automático (`alma.seed.enabled=true`, `cargarHistoriaDeEjemplo`) sigue cargando la historia corta de cuatro recuerdos (preguntas 1, 2, 7 y 17 respondidas y la 8 salteada, con Cipolletti) solo si `ana` no tiene recuerdos ni progreso, y no pisa la de este anexo una vez cargada. (Los archivos `datos-de-ejemplo.cypher` del modelo son otra cosa: se cargan a mano en un Neo4j de pruebas y no sirven para la aplicación.)
 
 ## Anexo C. Prueba del modelo (respuestas sintéticas)
 

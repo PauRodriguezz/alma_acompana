@@ -234,7 +234,7 @@ Paquete base: `ar.edu.utn.frm.gelab.alma`. Un paquete por módulo, con `controll
 - Entidades según el DC. `fechaAlta` y `fechaBaja` son `LocalDate`.
 - Las reglas de validación van en el servicio (o en validadores propios), para poder devolver los textos exactos de la sección 4.
 - **Archivos compartidos** (se modifican solo agregando, sin cambiar lo que ya existe): `application.properties` (carpeta de imágenes y tamaño máximo de subida), `SecurityConfig` (ruta pública `/imagenes/**`), `GlobalExceptionHandler` (si hace falta), `.gitignore` (carpeta `uploads/`) y `.env.example` (variable comentada).
-- **Seed de ejemplo** en una clase nueva, `config/DatosDeCatalogo`, con `@ConditionalOnProperty("alma.seed.enabled")` e idempotente: al menos un ejercicio por categoría (incluido uno de `ORDENAR`, y uno de `MEMORIA` con texto a memorizar) y 5 microcápsulas. No se edita `DatosDePrueba`.
+- **Seed de ejemplo** en una clase nueva, `config/DatosDeCatalogo`, con `@ConditionalOnProperty("alma.seed.enabled")` e idempotente: al menos un ejercicio por categoría (incluido uno de `ORDENAR`, y uno de `MEMORIA` con texto a memorizar) y 5 microcápsulas. No se edita `DatosDePrueba`. Desde la v5 el seed tiene 57 ejercicios (`config/DatosDeCatalogoJuegos` y `config/EjerciciosNuevos` suman a los 3 de `DatosDeCatalogo`) y un ejercicio se identifica por categoría, nivel y consigna; ver `docs/contrato-juegos.md`, anexo A.
 - Tests de integración con `@SpringBootTest` y MockMvc, igual que los del login.
 
 ---
@@ -323,6 +323,7 @@ Estas decisiones ya están tomadas; falta reflejarlas en `docs/casos-de-uso.md` 
 ## 10. Historial de cambios
 
 - **v1 (28/10/2026):** primera propuesta.
+- **v5 (24/11/2026):** el seed de ejercicios pasa a 57 (se retiran 9 y se suman 36) y su clave de identidad es (categoría, nivel, consigna). No cambia el catálogo del panel ni los endpoints. Ver `docs/contrato-juegos.md` (v1.4 y anexo A).
 - **v4 (19/11/2026):** el texto de la microcápsula admite formato (Markdown limitado), con barra de formato de solo íconos (excepción documentada en la sección 6) y vista previa fiel en el formulario (secciones 3.3 y 6). Ver `contrato-microcapsulas.md`, sección 4.
 - **v3 (19/11/2026):** menú compartido con la persona mayor (sección 6), `AvatarAlma` en la marca, barra superior del celular solo con el botón "Menú", "Saltar al contenido" y alto contraste del activo con borde; Perfil con título "Mi perfil" (3.5). Solo cambia el front.
 - **v2 (28/10/2026):** se aclaró que el catálogo va en `ejercicios/` y el juego de la persona mayor (CU-05) en `juegos/`; se explicó el uso de las imágenes (dos pasos) y por qué las opciones pueden tener imagen aunque el Figma no la dibuje; el panel es adaptable a celular y a computadora; se aceptaron las propuestas pendientes (explicación en CU-05, Perfil y panel en celular), que pasan a la lista de cosas a documentar.

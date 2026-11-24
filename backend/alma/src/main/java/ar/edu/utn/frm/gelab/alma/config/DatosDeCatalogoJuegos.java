@@ -17,9 +17,11 @@ import ar.edu.utn.frm.gelab.alma.ejercicios.domain.OpcionRespuesta;
 import ar.edu.utn.frm.gelab.alma.ejercicios.repository.EjercicioRepository;
 
 /**
- * Ejercicios de prueba para el juego (contrato de juegos, anexo A): 24 que se suman a los 6 de
- * DatosDeCatalogo, para tener al menos 2 por categoría y nivel. Solo con alma.seed.enabled=true.
- * Es idempotente por consigna, aunque el ejercicio esté dado de baja (no se recrea lo que se eliminó).
+ * Ejercicios de prueba para el juego (contrato de juegos, anexo A): 18 propios más los 36 de
+ * {@link EjerciciosNuevos}, que se suman a los 3 que quedan en DatosDeCatalogo (57 en total), para tener al
+ * menos 2 por categoría y nivel. Solo con alma.seed.enabled=true.
+ * Es idempotente por categoría, nivel y consigna, aunque el ejercicio esté dado de baja (no se recrea lo que
+ * se eliminó).
  */
 @Component
 @ConditionalOnProperty(name = "alma.seed.enabled", havingValue = "true")
@@ -36,7 +38,7 @@ public class DatosDeCatalogoJuegos implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        int creados = refranes() + series() + asociaciones() + memoria();
+        int creados = refranes() + series() + asociaciones() + memoria() + nuevos();
         if (creados > 0) {
             log.info("Catálogo de juegos: {} ejercicios creados", creados);
         }
@@ -87,15 +89,6 @@ public class DatosDeCatalogoJuegos implements ApplicationRunner {
     private int series() {
         CategoriaEjercicio c = CategoriaEjercicio.SERIE;
         int creados = 0;
-        creados += opcionMultiple(c, NivelDificultad.BASICO,
-                "¿Qué número sigue? 5, 10, 15, 20…",
-                "Cada número es 5 más que el anterior.",
-                null,
-                "25", "30", "24");
-        creados += ordenar(c, NivelDificultad.BASICO,
-                "Ordená las comidas del día, de la mañana a la noche",
-                "Durante el día comemos en este orden: primero el desayuno y al final la cena.",
-                "Desayuno", "Almuerzo", "Merienda", "Cena");
         creados += opcionMultiple(c, NivelDificultad.INTERMEDIO,
                 "¿Qué número sigue? 3, 6, 12, 24…",
                 "Cada número es el doble del anterior.",
@@ -121,31 +114,11 @@ public class DatosDeCatalogoJuegos implements ApplicationRunner {
     private int asociaciones() {
         CategoriaEjercicio c = CategoriaEjercicio.ASOCIACION;
         int creados = 0;
-        creados += opcionMultiple(c, NivelDificultad.BASICO,
-                "¿Con qué se toma la sopa?",
-                "La sopa es líquida y se toma con cuchara.",
-                null,
-                "Cuchara", "Tenedor", "Cuchillo");
-        creados += opcionMultiple(c, NivelDificultad.BASICO,
-                "¿Qué objeto usás para saber la hora?",
-                "El reloj nos dice qué hora es.",
-                null,
-                "Reloj", "Brújula", "Balanza");
-        creados += opcionMultiple(c, NivelDificultad.INTERMEDIO,
-                "El pan se compra en la panadería. ¿Y los medicamentos? ¿Dónde se compran?",
-                "Los medicamentos se compran en la farmacia.",
-                null,
-                "En la farmacia", "En la carnicería", "En la biblioteca");
         creados += opcionMultiple(c, NivelDificultad.INTERMEDIO,
                 "¿Cuál es el intruso? Lunes, Martes, Julio, Viernes",
                 "Lunes, martes y viernes son días de la semana. Julio es un mes.",
                 null,
                 "Julio", "Lunes", "Martes", "Viernes");
-        creados += opcionMultiple(c, NivelDificultad.AVANZADO,
-                "El pájaro vive en un nido. ¿Dónde vive la abeja?",
-                "Las abejas viven en la colmena.",
-                null,
-                "En una colmena", "En una cueva", "En una jaula");
         creados += opcionMultiple(c, NivelDificultad.AVANZADO,
                 "¿Cuál es el intruso? Rosa, Margarita, Tulipán, Pino",
                 "Rosa, margarita y tulipán son flores. El pino es un árbol.",
@@ -191,10 +164,24 @@ public class DatosDeCatalogoJuegos implements ApplicationRunner {
         return creados;
     }
 
+    /** Los ejercicios de {@link EjerciciosNuevos}: los carga con los mismos métodos que el resto. */
+    private int nuevos() {
+        int creados = 0;
+        for (EjercicioSemilla semilla : EjerciciosNuevos.TODOS) {
+            String[] opciones = semilla.opciones().toArray(String[]::new);
+            creados += semilla.formato() == FormatoEjercicio.ORDENAR
+                    ? ordenar(semilla.categoria(), semilla.nivelDificultad(), semilla.consigna(),
+                            semilla.explicacion(), opciones)
+                    : opcionMultiple(semilla.categoria(), semilla.nivelDificultad(), semilla.consigna(),
+                            semilla.explicacion(), semilla.textoAMemorizar(), opciones);
+        }
+        return creados;
+    }
+
     /** La primera opción es la correcta (el juego las mezcla al mostrarlas). */
     private int opcionMultiple(CategoriaEjercicio categoria, NivelDificultad nivel, String consigna,
                                String explicacion, String textoAMemorizar, String... opciones) {
-        if (ejercicioRepository.existsByConsigna(consigna)) {
+        if (ejercicioRepository.existsByCategoriaAndNivelDificultadAndConsigna(categoria, nivel, consigna)) {
             return 0;
         }
         Ejercicio ejercicio = ejercicio(categoria, FormatoEjercicio.OPCION_MULTIPLE, nivel, consigna,
@@ -209,7 +196,7 @@ public class DatosDeCatalogoJuegos implements ApplicationRunner {
     /** Los pasos van en el orden correcto (ordenCorrecto 1..n). */
     private int ordenar(CategoriaEjercicio categoria, NivelDificultad nivel, String consigna,
                         String explicacion, String... pasos) {
-        if (ejercicioRepository.existsByConsigna(consigna)) {
+        if (ejercicioRepository.existsByCategoriaAndNivelDificultadAndConsigna(categoria, nivel, consigna)) {
             return 0;
         }
         Ejercicio ejercicio = ejercicio(categoria, FormatoEjercicio.ORDENAR, nivel, consigna, explicacion, null);

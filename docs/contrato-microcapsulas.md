@@ -48,7 +48,7 @@
 | Doble guardado simultáneo | No se agrega una guarda: la restricción única lo impide y, en el caso improbable de dos pedidos a la vez, uno puede dar 500 | Mismo criterio que juegos |
 | Dueño del dato | Todo sale del token. No hay ids de persona en URL ni body | Contrato de login, sección 2 |
 | Fechas | `LocalDateTime` de Argentina para `fechaGuardado`, con el `Clock` existente | Mismo criterio que recordatorios y juegos |
-| Seed | Se suman 5 microcápsulas con un componente nuevo (anexo A). Se apaga con `ALMA_SEED_ENABLED=false` | Faltan Cuidado del hogar y Recomendaciones, y hacen falta textos de distinto largo |
+| Seed | Se suman 5 microcápsulas con un componente nuevo; desde la v3 las 10 del seed llevan textos largos con formato, guardados en archivos de recursos (anexo A). Se apaga con `ALMA_SEED_ENABLED=false` | Faltan Cuidado del hogar y Recomendaciones, y hacen falta textos de distinto largo |
 | Carpeta del front | `features/lecturas/`. No se toca `features/microcapsulas` (es el panel) | Mismo criterio que `juegos` y `ejercicios` |
 
 ---
@@ -198,7 +198,9 @@ microcapsulas/
   domain/MicrocapsulaGuardada
   repository/MicrocapsulaGuardadaRepository
   dto/MicrocapsulaLecturaResumenResponse, MicrocapsulaLecturaDetalleResponse
-config/DatosDeCatalogoMicrocapsulas           seed del anexo A
+config/DatosDeCatalogoMicrocapsulas           seed del anexo A (5 de las 10)
+config/MicrocapsulaSemilla                    título, categoría, fecha y archivo de una microcápsula del seed
+config/TextosDeMicrocapsulas                  lee el texto desde src/main/resources/microcapsulas/
 ```
 
 Se agrega junto a lo del panel sin modificarlo (no se toca `MicrocapsulaAdminController` ni `MicrocapsulaService`). Los DTO son records.
@@ -207,7 +209,7 @@ Orden de implementación, con pausa de prueba al final de cada paso:
 
 1. **Entidad y repositorio.** `MicrocapsulaGuardada` con la restricción única y su repositorio (existencia, borrado, lista de la persona con su microcápsula y los ids guardados por una persona). Si hace falta una consulta nueva en `MicrocapsulaRepository`, se agrega sin tocar lo existente.
 2. **Servicio y endpoints.** Las reglas 5.1 a 5.5, los DTO de la sección 6, el controlador documentado en Swagger y la línea de `SecurityConfig`. El usuario sale del token (claim `sub` = id de cuenta, buscar su `PersonaMayor`).
-3. **Seed.** `DatosDeCatalogoMicrocapsulas` con el anexo A, idempotente por título (`existsByTitulo`), con `@ConditionalOnProperty("alma.seed.enabled", havingValue = "true")`. No se toca `DatosDeCatalogo`.
+3. **Seed.** `DatosDeCatalogoMicrocapsulas` con el anexo A, idempotente por título (`existsByTitulo`), con `@ConditionalOnProperty("alma.seed.enabled", havingValue = "true")`. Desde la v3 también se toca `DatosDeCatalogo` (sus 5 microcápsulas leen el texto de los archivos de recursos); la lógica no cambia.
 4. **Pruebas** (sección 13) y resumen.
 
 ### Cambios en archivos compartidos (para la descripción del PR)
@@ -346,17 +348,27 @@ Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay
 
 - **v1 (05/11/2026):** primera versión acordada, contra el commit `3009290`.
 - **v2 (19/11/2026):** texto con formato (Markdown limitado, sección 4) con validación en el back, imagen también en la tarjeta de la lista y formato dibujado en el detalle. No cambia el esquema ni los endpoints.
+- **v3 (24/11/2026):** las 10 microcápsulas del seed pasan a textos largos con formato (Markdown limitado), con los mismos títulos y categorías. Los textos viven en `src/main/resources/microcapsulas/` (uno por archivo, UTF-8 y LF) y los lee `TextosDeMicrocapsulas`. El seed sigue idempotente por título: **si un título ya existe, no se actualiza su texto** (en una base ya cargada hay que borrar las filas o editarlas desde el panel). Se agrega la prueba `TextosDeSeedTest` (límites y formato, con el mismo validador del servicio, que pasa a ser de paquete). No cambia el esquema ni los endpoints.
 
 ---
 
 ## Anexo A. Datos de prueba (seed)
 
-Componente nuevo `config/DatosDeCatalogoMicrocapsulas`, con `alma.seed.enabled=true`, idempotente por título (como `DatosDeCatalogo`, que no se toca). Los textos llevan párrafos separados por una línea en blanco (`\n\n`). Con las 5 que ya existen quedan 10: cada categoría tiene al menos una.
+Las 10 microcápsulas las cargan `config/DatosDeCatalogoMicrocapsulas` (5) y `config/DatosDeCatalogo` (5), con `alma.seed.enabled=true`. Son idempotentes por título: si el título ya existe (aunque esté dado de baja), no se crea ni se modifica nada. En cada una, el título, la categoría y la fecha están en el código (`MicrocapsulaSemilla`) y el texto, en un archivo de `src/main/resources/microcapsulas/` (solo el texto, Markdown limitado de la sección 4, UTF-8, saltos de línea LF; la regla `*.txt text eol=lf` de `.gitattributes` los mantiene así). El largo es el del texto sin espacios en los bordes; el máximo es 5000.
 
-| Fecha de publicación | Categoría | Título | Texto |
-|---|---|---|---|
-| 2026-10-06 | CUIDADO_HOGAR | Un botiquín listo en casa | Tené en un lugar fijo y a mano un termómetro, gasas, curitas y alcohol en gel. Sumá una lista con los teléfonos de tu médico y de un familiar.\n\nRevisá de vez en cuando las fechas de vencimiento de lo que guardás.\n\nGuardá los medicamentos en su caja original, lejos del calor y de la humedad. |
-| 2026-10-07 | RECOMENDACIONES | Preguntá todo lo que quieras en la consulta | Antes de ir al médico, anotá tus dudas y los medicamentos que tomás. Llevá esa lista y mostrásela.\n\nSi no entendés algo, pedí que te lo expliquen de nuevo con palabras simples. Es tu derecho y es parte de cuidarte.\n\nPodés ir acompañado por alguien de confianza. Al terminar, pedí que te dejen las indicaciones por escrito para no olvidarte de nada. |
-| 2026-10-08 | PREVENCION_CAIDAS | Levantate despacio | Al salir de la cama o de una silla, quedate un momento sentado en el borde y respirá tranquilo.\n\nDespués apoyá bien los pies en el piso y ponete de pie despacio, con algo firme para agarrarte.\n\nAsí se evitan los mareos y los tropiezos. Si te mareás seguido, contáselo a tu médico. |
-| 2026-10-09 | ALIMENTACION | Comer bien todos los días | Tratá de sumar verduras y frutas de distintos colores en tus comidas.\n\nRepartí lo que comés en varias veces al día, sin saltearte ninguna.\n\nPara darle sabor a la comida, probá con limón, ajo o hierbas en lugar de sal.\n\nSi tenés una dieta indicada por tu médico, seguí lo que te recomendó. |
-| 2026-10-10 | ACTIVIDAD_FISICA | Ejercicios suaves para empezar el día | Antes de empezar el día, mové con suavidad el cuello, los hombros, los brazos y las piernas. Podés hacerlo sentado o parado con un apoyo.\n\nNo hace falta forzar nada ni sentir dolor: unos pocos minutos alcanzan.\n\nSi algún movimiento te duele, dejalo y consultá con tu médico. |
+| Fecha de publicación | Categoría | Título | Archivo | Largo |
+|---|---|---|---|---|
+| 2026-10-01 | PREVENCION_CAIDAS | Una casa sin tropiezos | `casa-sin-tropiezos.txt` | 3644 |
+| 2026-10-02 | ALIMENTACION | Tomá agua aunque no tengas sed | `tomar-agua-aunque-no-tengas-sed.txt` | 3010 |
+| 2026-10-03 | ACTIVIDAD_FISICA | Caminar un rato todos los días | `caminar-todos-los-dias.txt` | 3364 |
+| 2026-10-04 | SUENIO_DESCANSO | Dormir mejor | `dormir-mejor.txt` | 4014 |
+| 2026-10-05 | BIENESTAR_EMOCIONAL | Charlar le hace bien al ánimo | `charlar-le-hace-bien-al-animo.txt` | 3564 |
+| 2026-10-06 | CUIDADO_HOGAR | Un botiquín listo en casa | `botiquin-listo-en-casa.txt` | 3662 |
+| 2026-10-07 | RECOMENDACIONES | Preguntá todo lo que quieras en la consulta | `preguntar-en-la-consulta.txt` | 3143 |
+| 2026-10-08 | PREVENCION_CAIDAS | Levantate despacio | `levantate-despacio.txt` | 3315 |
+| 2026-10-09 | ALIMENTACION | Comer bien todos los días | `comer-bien-todos-los-dias.txt` | 3590 |
+| 2026-10-10 | ACTIVIDAD_FISICA | Ejercicios suaves para empezar el día | `ejercicios-suaves-para-empezar-el-dia.txt` | 3382 |
+
+`TextosDeSeedTest` (sin Spring ni bases) comprueba sobre las 10 que hay 10 títulos y archivos distintos, que cada una pasa `MicrocapsulaService.validar` (título hasta 120, texto hasta 5000, formato permitido) y que los archivos no tienen BOM ni `\r`.
+
+**Base ya cargada.** Como el seed no actualiza, quien tenga las microcápsulas viejas en su Postgres de desarrollo debe borrarlas (junto con las guardadas, `microcapsula_guardada`) o editarlas desde el panel, y reiniciar el back con `ALMA_SEED_ENABLED=true`.

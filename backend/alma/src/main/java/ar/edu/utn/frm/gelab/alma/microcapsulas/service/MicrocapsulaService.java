@@ -103,7 +103,7 @@ public class MicrocapsulaService {
      * Primero los obligatorios (detail de CU-11); si están completos, el resto de las reglas
      * con el detail genérico.
      */
-    private static void validar(MicrocapsulaRequest datos) {
+    static void validar(MicrocapsulaRequest datos) {
         List<ErrorCampo> faltantes = new ArrayList<>();
         if (estaVacio(datos.titulo())) {
             faltantes.add(new ErrorCampo("titulo", MensajesPanel.MICROCAPSULA_INGRESA_TITULO));

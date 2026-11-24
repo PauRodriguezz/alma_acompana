@@ -51,7 +51,7 @@
 | Ejercicio dado de baja a mitad del juego | Si el operador lo da de baja entre el `siguiente` y la respuesta, la respuesta se acepta igual | No castigar a la persona por algo ajeno |
 | Dueño del dato | Todo sale del token. No hay ids de persona en URL ni body | Contrato de login, sección 2 |
 | Fechas | `LocalDate` y `LocalDateTime` de Argentina, sin zona en el JSON. Se usa el `Clock` / `Fechas` que ya existen | Mismo criterio que recordatorios |
-| Seed | Se amplía a 30 ejercicios con un componente nuevo (anexo A). Se apaga con `ALMA_SEED_ENABLED=false` | Pedido del equipo; no se toca `DatosDeCatalogo` |
+| Seed | Se amplía a 30 ejercicios con un componente nuevo (anexo A). Desde la v1.4 el seed trae 57: se retiran 9 y se suman 36 (anexo A), y un ejercicio se identifica por categoría, nivel y consigna. Se apaga con `ALMA_SEED_ENABLED=false` | Pedido del equipo; desde la v1.4 también se tocan los dos seed |
 
 ---
 
@@ -242,6 +242,8 @@ juegos/
   dto/EjercicioJuegoResponse, OpcionJuegoResponse, SiguienteResponse, RespuestaRequest, ResultadoResponse
   MensajesJuego
 config/DatosDeCatalogoJuegos      seed del anexo A
+config/EjercicioSemilla           un ejercicio del seed (v1.4)
+config/EjerciciosNuevos           los 36 ejercicios nuevos del seed (v1.4)
 ```
 
 Orden de implementación, con pausa de prueba al final de cada paso:
@@ -250,7 +252,7 @@ Orden de implementación, con pausa de prueba al final de cada paso:
 2. **Nivel.** `registrarAcierto()` y `registrarError()` con tests unitarios (3 aciertos suben, 2 errores bajan, tope en ambos extremos, los contadores se reinician).
 3. **Selector.** `SelectorDeEjercicio` y sus tests unitarios (rotación, exclusión del último, C.A. Nº1, categorías vacías, nivel más cercano, sin ejercicios).
 4. **Servicio y endpoints.** `siguiente` y `responder`, DTO sin respuestas correctas, mezcla de opciones, `MensajesJuego`, regla en `SecurityConfig` y documentación en Swagger.
-5. **Seed.** `DatosDeCatalogoJuegos` con el anexo A, idempotente por consigna.
+5. **Seed.** `DatosDeCatalogoJuegos` con el anexo A, idempotente por categoría, nivel y consigna (v1.4; antes, solo por consigna).
 6. **Pruebas de integración** (sección 13) y resumen.
 
 ### Cambios en archivos compartidos (para la descripción del PR)
@@ -387,6 +389,7 @@ Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay
 
 - **v1 (04/11/2026):** primera propuesta, contra el commit `321a63f`.
 - **v1.1 (04/11/2026):** en opción múltiple, tocar la opción es la respuesta (sin botón "Responder"); se confirma ordenar sin arrastrar; diferencias con el Figma ajustadas tras revisar las pantallas.
+- **v1.4 (24/11/2026):** el seed pasa de 30 a 57 ejercicios: se retiran 9 de consigna muy elemental o de rutina y se suman 36 nuevos (anexo A). La clave con la que el seed decide si un ejercicio ya existe pasa de la consigna a (categoría, nivel, consigna), porque hay consignas iguales con distinto nivel (ordenar números); en `EjercicioRepository`, `existsByConsigna` se reemplaza por `existsByCategoriaAndNivelDificultadAndConsigna`. `EjercicioService.validar` pasa a ser de paquete, para la prueba `EjerciciosNuevosTest`. No cambia el esquema ni los endpoints. El seed sigue sin actualizar lo que ya existe: en una base ya cargada, los 9 retirados hay que darlos de baja (baja lógica, desde el panel o con SQL) y los nuevos se cargan solos al arrancar con `ALMA_SEED_ENABLED=true`.
 - **v1.3 (19/11/2026):** la pregunta de Alma del hub usa `AvatarAlma`; el chip de categoría Refranes usa el ícono `quotes` del Figma. Solo cambia el front.
 - **v1.2 (19/11/2026):** excepción a la regla de `rem` en la sección 10.4: el círculo del ícono de las tarjetas del hub de Entretenimiento tiene tamaño fijo en px (decorativo). Solo cambia el front.
 
@@ -394,9 +397,33 @@ Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay
 
 ## Anexo A. Datos de prueba (seed)
 
+Los ejercicios del seed los cargan `config/DatosDeCatalogo` (3 ejercicios, que no cambian salvo por la clave de identidad), `config/DatosDeCatalogoJuegos` (18 propios, más los 36 de `config/EjerciciosNuevos`, que también recorre) y suman **57**. Solo con `alma.seed.enabled=true`. **En cada ejercicio de opción múltiple la primera opción es la correcta** (el back las mezcla). En ordenar, los pasos van en el orden correcto.
+
+Un ejercicio se identifica por **categoría, nivel y consigna** (v1.4; antes, solo por la consigna), y se cuenta aunque esté dado de baja, así que no se recrea lo que la persona operadora eliminó. Si ya existe, no se modifica nada. Hay consignas iguales con distinto nivel (por ejemplo, "Ordená estos números de menor a mayor" en SERIE básico y en SERIE avanzado), y por eso la consigna sola no alcanza.
+
+`EjerciciosNuevosTest` (sin Spring ni bases) comprueba que los 36 nuevos pasan `EjercicioService.validar`, que su clave no se repite, que el texto a memorizar está en MEMORIA y solo ahí, y sus conteos por categoría, formato y nivel.
+
+**Conteos del seed (57):**
+
+| Categoría | BASICO | INTERMEDIO | AVANZADO | Total |
+|---|---|---|---|---|
+| REFRAN | 5 | 5 | 4 | 14 |
+| SERIE | 3 | 6 | 5 | 14 |
+| ASOCIACION | 2 | 5 | 3 | 10 |
+| MEMORIA | 4 | 8 | 7 | 19 |
+| **Total** | 14 | 24 | 19 | **57** |
+
+Por formato: 53 de opción múltiple y 4 de ordenar. Cada categoría tiene al menos 2 por nivel.
+
+### A.1 Los 3 que quedan en `DatosDeCatalogo`
+
+Completá el refrán «Más vale pájaro en mano…» (REFRAN, básico), Completá el refrán «No por mucho madrugar…» (REFRAN, intermedio) y ¿Cuál de estos productos estaba en la lista de compras? (MEMORIA, básico), con las mismas opciones y explicaciones de siempre.
+
+### A.2 Los 18 que quedan en `DatosDeCatalogoJuegos`
+
 Componente nuevo `config/DatosDeCatalogoJuegos`, con `alma.seed.enabled=true`, idempotente por consigna (como `DatosDeCatalogo`, que no se toca). **En cada ejercicio de opción múltiple la primera opción es la correcta** (el back las mezcla). En ordenar, los pasos van en el orden correcto. Con los 6 que ya existen quedan 30 ejercicios: cada categoría tiene al menos 2 por nivel.
 
-### REFRAN (opción múltiple)
+#### REFRAN (opción múltiple)
 
 | Nivel | Consigna | Opciones (la primera es la correcta) | Explicación |
 |---|---|---|---|
@@ -407,29 +434,23 @@ Componente nuevo `config/DatosDeCatalogoJuegos`, con `alma.seed.enabled=true`, i
 | AVANZADO | Completá el refrán: «Quien a buen árbol se arrima…» | …buena sombra lo cobija · …buen fruto le cae · …nunca le falta el sol | Quiere decir que acercarse a buenas personas trae beneficios. El refrán completo es: «Quien a buen árbol se arrima, buena sombra lo cobija». |
 | AVANZADO | Completá el refrán: «El que mucho abarca…» | …poco aprieta · …todo lo pierde · …nunca descansa · …más gana | Quiere decir que quien quiere hacer demasiado a la vez termina haciendo poco. El refrán completo es: «El que mucho abarca poco aprieta». |
 
-### SERIE
+#### SERIE
 
 | Nivel | Formato | Consigna | Opciones / pasos | Explicación |
 |---|---|---|---|---|
-| BASICO | Opción múltiple | ¿Qué número sigue? 5, 10, 15, 20… | 25 · 30 · 24 | Cada número es 5 más que el anterior. |
-| BASICO | Ordenar | Ordená las comidas del día, de la mañana a la noche | Desayuno · Almuerzo · Merienda · Cena | Durante el día comemos en este orden: primero el desayuno y al final la cena. |
 | INTERMEDIO | Opción múltiple | ¿Qué número sigue? 3, 6, 12, 24… | 48 · 36 · 30 · 27 | Cada número es el doble del anterior. |
 | INTERMEDIO | Ordenar | Ordená estos meses, del primero al último del año | Marzo · Junio · Septiembre · Diciembre | En el año vienen en este orden: marzo, junio, septiembre y diciembre. |
 | AVANZADO | Opción múltiple | ¿Qué número sigue? 1, 4, 9, 16… | 25 · 20 · 24 · 32 | Son los números multiplicados por sí mismos: 1×1, 2×2, 3×3, 4×4. Sigue 5×5, que es 25. |
 | AVANZADO | Opción múltiple | ¿Qué número sigue? 2, 3, 5, 8, 12… | 17 · 16 · 15 · 18 | Se suma 1, después 2, después 3, después 4, y ahora toca sumar 5. |
 
-### ASOCIACION (opción múltiple)
+#### ASOCIACION (opción múltiple)
 
 | Nivel | Consigna | Opciones (la primera es la correcta) | Explicación |
 |---|---|---|---|
-| BASICO | ¿Con qué se toma la sopa? | Cuchara · Tenedor · Cuchillo | La sopa es líquida y se toma con cuchara. |
-| BASICO | ¿Qué objeto usás para saber la hora? | Reloj · Brújula · Balanza | El reloj nos dice qué hora es. |
-| INTERMEDIO | El pan se compra en la panadería. ¿Y los medicamentos? ¿Dónde se compran? | En la farmacia · En la carnicería · En la biblioteca | Los medicamentos se compran en la farmacia. |
 | INTERMEDIO | ¿Cuál es el intruso? Lunes, Martes, Julio, Viernes | Julio · Lunes · Martes · Viernes | Lunes, martes y viernes son días de la semana. Julio es un mes. |
-| AVANZADO | El pájaro vive en un nido. ¿Dónde vive la abeja? | En una colmena · En una cueva · En una jaula | Las abejas viven en la colmena. |
 | AVANZADO | ¿Cuál es el intruso? Rosa, Margarita, Tulipán, Pino | Pino · Rosa · Margarita · Tulipán | Rosa, margarita y tulipán son flores. El pino es un árbol. |
 
-### MEMORIA (opción múltiple, con texto a memorizar)
+#### MEMORIA (opción múltiple, con texto a memorizar)
 
 | Nivel | Texto a memorizar | Consigna | Opciones (la primera es la correcta) | Explicación |
 |---|---|---|---|---|
@@ -439,3 +460,77 @@ Componente nuevo `config/DatosDeCatalogoJuegos`, con `alma.seed.enabled=true`, i
 | INTERMEDIO | Leé con atención esta lista: lápiz, tijera, cinta, regla y sobre. | ¿Cuál de estas cosas estaba en la lista? | Tijera · Pincel · Goma · Compás | En la lista estaban el lápiz, la tijera, la cinta, la regla y el sobre. |
 | AVANZADO | Leé con atención: el domingo vamos a almorzar a lo de Rosa. Llevamos un postre de durazno y una botella de agua. | ¿Qué postre llevamos? | De durazno · De frutilla · De manzana · De banana | El postre era de durazno. |
 | AVANZADO | Leé con atención esta lista: harina, azúcar, huevos, manteca, vainilla y limón. | ¿Cuál de estos ingredientes estaba en la lista? | Vainilla · Chocolate · Canela · Leche | En la lista estaban la harina, el azúcar, los huevos, la manteca, la vainilla y el limón. |
+
+### A.3 Los 36 nuevos (`EjerciciosNuevos`)
+
+Salen de la parte 1 de `docs/ejercicios-nuevos.txt`. La lista Java se generó con un script a partir de ese archivo.
+
+#### REFRAN
+
+| Nivel | Formato | Consigna | Opciones (la primera es la correcta) o pasos en orden | Explicación |
+|---|---|---|---|---|
+| BASICO | Opción múltiple | Completá el refrán: «Ojos que no ven…» | …corazón que no siente · …boca que no habla · …oídos que no escuchan | Quiere decir que lo que no vemos no nos preocupa. El refrán completo es: «Ojos que no ven, corazón que no siente». |
+| BASICO | Opción múltiple | Completá el refrán: «Dime con quién andas…» | …y te diré quién eres · …y te diré adónde vas · …y te daré un consejo | Quiere decir que las compañías de una persona muestran cómo es. El refrán completo es: «Dime con quién andas y te diré quién eres». |
+| INTERMEDIO | Opción múltiple | Completá el refrán: «Perro que ladra…» | …no muerde · …se cansa · …cuida la casa · …tiene hambre | Quiere decir que quien amenaza mucho casi nunca lo cumple. El refrán completo es: «Perro que ladra no muerde». |
+| INTERMEDIO | Opción múltiple | Completá el refrán: «A mal tiempo…» | …buena cara · …paraguas · …más abrigo · …puerta cerrada | Quiere decir que ante las dificultades conviene mantener el buen ánimo. El refrán completo es: «A mal tiempo, buena cara». |
+| AVANZADO | Opción múltiple | ¿Qué quiere decir «Más vale tarde que nunca»? | Que es mejor hacer algo tarde que no hacerlo · Que conviene llegar siempre tarde · Que lo que se hace tarde no sirve · Que nunca hay que apurarse | Quiere decir que, aunque llegues tarde, es mejor hacer algo que no hacerlo. |
+| AVANZADO | Opción múltiple | ¿Qué quiere decir «Del dicho al hecho hay mucho trecho»? | Que decir algo es más fácil que hacerlo · Que hay que hablar menos · Que los caminos son largos · Que lo que se dice siempre se cumple | Quiere decir que decir algo es mucho más fácil que hacerlo. |
+
+#### SERIE
+
+| Nivel | Formato | Consigna | Opciones (la primera es la correcta) o pasos en orden | Explicación |
+|---|---|---|---|---|
+| BASICO | Opción múltiple | ¿Qué número sigue? 100, 95, 90, 85… | 80 · 75 · 85 · 70 | Cada número es 5 menos que el anterior. Después del 85 viene el 80. |
+| BASICO | Opción múltiple | ¿Qué número sigue? 7, 14, 21, 28… | 35 · 32 · 42 · 36 | Cada número es 7 más que el anterior. Después del 28 viene el 35. |
+| INTERMEDIO | Opción múltiple | ¿Qué letra sigue? A, C, E, G… | I · H · J · K | La serie va saltando una letra: A, C, E, G, I. |
+| INTERMEDIO | Opción múltiple | ¿Qué número sigue? 2, 6, 18, 54… | 162 · 108 · 72 · 148 | Cada número es el triple del anterior. 54 por 3 es 162. |
+| INTERMEDIO | Opción múltiple | ¿Qué mes sigue? Enero, Marzo, Mayo, Julio… | Septiembre · Agosto · Octubre · Noviembre | La serie va saltando un mes: enero, marzo, mayo, julio, septiembre. |
+| AVANZADO | Opción múltiple | ¿Qué número sigue? 2, 5, 3, 6, 4, 7… | 5 · 8 · 4 · 6 | Hay dos series mezcladas: 2, 3, 4 y 5, 6, 7. Después del 7 vuelve la primera serie y sigue el 5. |
+| AVANZADO | Opción múltiple | ¿Qué número sigue? 1, 1, 2, 3, 5, 8… | 13 · 11 · 12 · 16 | Cada número es la suma de los dos anteriores. 5 más 8 es 13. |
+| BASICO | Ordenar | Ordená estos números de menor a mayor | 9 · 19 · 90 · 109 | Primero va el número de una cifra, después los de dos y al final el de tres. |
+| INTERMEDIO | Ordenar | Ordená estas fechas del año, de la primera a la última | 1 de mayo · 25 de mayo · 9 de julio · 25 de diciembre | Mayo viene antes que julio, y diciembre cierra el año. Dentro de mayo, el 1 va antes que el 25. |
+| AVANZADO | Ordenar | Ordená estos números de menor a mayor | 35 · 53 · 305 · 530 | Primero van los de dos cifras (35 y 53) y después los de tres (305 y 530). |
+
+#### ASOCIACION
+
+| Nivel | Formato | Consigna | Opciones (la primera es la correcta) o pasos en orden | Explicación |
+|---|---|---|---|---|
+| BASICO | Opción múltiple | ¿Cuál es el intruso? Panadería, Carnicería, Farmacia, Verdulería | Farmacia · Panadería · Carnicería · Verdulería | En las otras tres se compran alimentos. La farmacia vende medicamentos. |
+| BASICO | Opción múltiple | ¿Qué tienen en común el paraguas, el impermeable y las botas de goma? | Protegen de la lluvia · Protegen del sol · Protegen del frío · Protegen del viento | Los tres sirven para protegerse de la lluvia. |
+| INTERMEDIO | Opción múltiple | ¿Cuál es el intruso? Martillo, Serrucho, Destornillador, Cuchara | Cuchara · Martillo · Serrucho · Destornillador | Los otros tres son herramientas de taller. La cuchara se usa en la cocina. |
+| INTERMEDIO | Opción múltiple | ¿Qué tienen en común un reloj, un calendario y una agenda? | Sirven para organizar el tiempo · Sirven para cocinar · Sirven para viajar · Sirven para abrigarse | Los tres nos ayudan a saber qué hacemos y cuándo. |
+| INTERMEDIO | Opción múltiple | ¿Qué tienen en común el tango, la zamba y el chamamé? | Son ritmos de música argentina · Son bebidas típicas · Son deportes de equipo · Son comidas regionales | Los tres son ritmos y bailes tradicionales de la Argentina. |
+| INTERMEDIO | Opción múltiple | ¿Cuál de estos NO es un río argentino? Paraná, Uruguay, Colorado, Amazonas | Amazonas · Paraná · Uruguay · Colorado | El Amazonas está en Brasil y en otros países. Los otros tres forman parte de la geografía argentina. |
+| AVANZADO | Opción múltiple | ¿Qué tienen en común una receta, un mapa y un manual de instrucciones? | Nos guían para llegar a algo siguiendo indicaciones · Se guardan en el botiquín · Se usan solo en la cocina · Sirven para escribir cartas | Los tres nos orientan para hacer algo o llegar a algún lugar. |
+| AVANZADO | Opción múltiple | ¿Qué palabra significa lo contrario de «escaso»? | Abundante · Barato · Pequeño · Lento | Escaso es lo que hay poco. Lo contrario es lo que hay mucho: abundante. |
+
+#### MEMORIA (con texto a memorizar)
+
+| Nivel | Formato | Texto a memorizar | Consigna | Opciones (la primera es la correcta) | Explicación |
+|---|---|---|---|---|---|
+| BASICO | Opción múltiple | Leé con atención: hoy es martes y mañana tenés el turno del dentista a las diez. | ¿Qué día es el turno del dentista? | El miércoles · El martes · El jueves | Hoy es martes, así que el turno es mañana, el miércoles. |
+| INTERMEDIO | Opción múltiple | Leé con atención: el colectivo 25 pasa a las 7:10 y el 41 pasa a las 7:30. | ¿A qué hora pasa el colectivo 41? | A las 7:30 · A las 7:10 · A las 7:25 · A las 7:40 | El 41 pasa a las 7:30. El 25 es el que pasa a las 7:10. |
+| INTERMEDIO | Opción múltiple | Leé con atención: la reunión del club es el segundo viernes de cada mes, a las cinco de la tarde, en el salón principal. | ¿Dónde es la reunión del club? | En el salón principal · En el patio · En la biblioteca · En el comedor | La reunión es en el salón principal. |
+| INTERMEDIO | Opción múltiple | Leé con atención: la receta empieza batiendo los huevos, después se agrega el azúcar y al final la harina. | ¿Qué se agrega en segundo lugar? | El azúcar · La harina · Los huevos · La leche | Primero se baten los huevos, en segundo lugar se agrega el azúcar y al final la harina. |
+| INTERMEDIO | Opción múltiple | Leé con atención: el teléfono de la farmacia termina en 4721. | ¿Con qué números termina el teléfono de la farmacia? | 4721 · 4712 · 4217 · 7421 | El teléfono termina en 4721. |
+| INTERMEDIO | Opción múltiple | Leé con atención: esta mañana Rosa fue a la feria con su hermano. Compró zapallo y un queso de cabra, pero se olvidó la billetera y volvió a buscarla. | ¿Qué se olvidó Rosa? | La billetera · El zapallo · Las llaves · El queso | Rosa se olvidó la billetera y volvió a buscarla. |
+| INTERMEDIO | Opción múltiple | Leé con atención: Marta tiene tres nietos y Pedro tiene dos. | ¿Cuántos nietos tienen entre los dos? | Cinco · Cuatro · Seis · Tres | Marta tiene tres y Pedro dos. Entre los dos tienen cinco nietos. |
+| AVANZADO | Opción múltiple | Leé con atención esta lista: sal, azúcar, aceite, vinagre y pimienta. | ¿Qué producto venía justo después del azúcar? | El aceite · El vinagre · La sal · La pimienta | El orden era: sal, azúcar, aceite, vinagre y pimienta. Después del azúcar venía el aceite. |
+| AVANZADO | Opción múltiple | Leé con atención: el jueves la panadería abre a las 8 y cierra a las 13. A la tarde no atiende. | ¿Se puede comprar pan el jueves a las cinco de la tarde? | No, porque ya cerró · Sí, porque abre todo el día · Sí, hasta las ocho de la noche · No, porque no abre los jueves | La panadería cierra a las 13 y a la tarde no atiende, así que a las cinco de la tarde ya está cerrada. |
+| AVANZADO | Opción múltiple | Leé con atención: en la feria compré un kilo de manzanas a 1000 pesos y un kilo de peras a 1500 pesos. | ¿Cuánto gasté en total? | 2500 pesos · 2000 pesos · 3000 pesos · 1500 pesos | Las manzanas costaron 1000 y las peras 1500. En total gasté 2500 pesos. |
+| AVANZADO | Opción múltiple | Leé con atención: Marta tiene 70 años y su hermano Julio tiene 5 años menos. | ¿Cuántos años tiene Julio? | 65 · 75 · 60 · 70 | Marta tiene 70 y Julio tiene 5 años menos, o sea 65. |
+| AVANZADO | Opción múltiple | Leé con atención esta lista de la feria: zapallo, choclo, ciruelas, queso de cabra, miel y nueces. | ¿Cuál de estas cosas NO estaba en la lista? | Peras · Miel · Choclo · Nueces | Las peras no estaban en la lista. Las otras tres sí estaban. |
+
+### A.4 Los 9 que se retiraron del seed
+
+Eran de consigna muy elemental o de rutina. Se sacaron del código de los dos seed. En una base ya cargada hay que darlos de baja (baja lógica con `fecha_baja`), porque el seed no borra ni actualiza lo que ya existe:
+
+- SERIE, BASICO: ¿Qué número sigue? 2, 4, 6, 8…
+- SERIE, BASICO: Ordená los pasos para lavarte las manos
+- SERIE, BASICO: ¿Qué número sigue? 5, 10, 15, 20…
+- SERIE, BASICO: Ordená las comidas del día, de la mañana a la noche
+- ASOCIACION, BASICO: ¿Qué objeto usás cuando llueve?
+- ASOCIACION, BASICO: ¿Con qué se toma la sopa?
+- ASOCIACION, BASICO: ¿Qué objeto usás para saber la hora?
+- ASOCIACION, INTERMEDIO: El pan se compra en la panadería. ¿Y los medicamentos? ¿Dónde se compran?
+- ASOCIACION, AVANZADO: El pájaro vive en un nido. ¿Dónde vive la abeja?

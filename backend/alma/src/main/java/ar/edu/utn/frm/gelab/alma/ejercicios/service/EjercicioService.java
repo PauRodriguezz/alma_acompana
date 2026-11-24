@@ -122,7 +122,7 @@ public class EjercicioService {
     /**
      * Orden de las reglas: 1) campos obligatorios, 2) opciones según el formato, 3) largos e imágenes.
      */
-    private static void validar(EjercicioRequest datos) {
+    static void validar(EjercicioRequest datos) {
         List<OpcionRequest> opciones = datos.opciones() == null ? List.of() : datos.opciones();
 
         List<ErrorCampo> faltantes = new ArrayList<>();
