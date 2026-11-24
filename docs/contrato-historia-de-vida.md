@@ -293,8 +293,10 @@ La tarjeta "Próxima parada" aparece al final del camino cuando `GET /api/histor
 Ejemplo de línea:
 
 ```
-- Mi maestra Elena (1957): Su maestra de primer grado, que le enseñó a leer. Con Elena (maestra), en Escuela N° 12.
+- Mi maestra Elena (1957): Mi maestra de primer grado, que me enseñó a leer. Con Elena (maestra), en Escuela N° 12.
 ```
+
+**Voz de las descripciones (23/11/2026):** las descripciones de los recuerdos están en primera persona, con las palabras de la persona (`docs/contrato-grafo.md`, v21), igual que los títulos. En el prompt del chat esas líneas van tal cual: la regla 4 del system prompt le aclara a Alma que los recuerdos son de la persona y no suyos, y que habla de ellos en segunda persona (`docs/contrato-chat.md`, v10). Los recuerdos creados antes de la v21 siguen en tercera persona.
 
 #### 5.5.1 Frases de etapa
 
@@ -432,7 +434,7 @@ Listado para la línea de tiempo. Ordenado según 5.1.
       "anio": 1957,
       "precision": "APROXIMADA",
       "etapaDeVida": "INFANCIA",
-      "resumen": "Su maestra de primer grado, que le enseñó a leer.",
+      "resumen": "Mi maestra de primer grado, que me enseñó a leer.",
       "faltantes": ["ANIO", "LUGARES"]
     },
     {
@@ -459,7 +461,7 @@ Listado para la línea de tiempo. Ordenado según 5.1.
 {
   "id": "6f0c0c1e-2b8a-4f3e-9d1a-0c4f5a7e1b22",
   "titulo": "Mi maestra Elena",
-  "descripcion": "Su maestra de primer grado, que le enseñó a leer.",
+  "descripcion": "Mi maestra de primer grado, que me enseñó a leer.",
   "anio": 1957,
   "precision": "APROXIMADA",
   "etapaDeVida": "INFANCIA",
@@ -790,7 +792,7 @@ Mensaje de la persona: "Hoy me acordé de Elena, de cuando era chica."
 ```
 Historia de vida: Respondió 4, salteó 1, quedan 16.
 Recuerdos relacionados:
-- Mi maestra Elena (1957): Su maestra de primer grado, que le enseñó a leer. Con Elena (maestra), en Escuela N° 12.
+- Mi maestra Elena (1957): Mi maestra de primer grado, que me enseñó a leer. Con Elena (maestra), en Escuela N° 12.
 - Las siestas en el patio (1955): Dormía la siesta bajo la parra con su abuela. Con Rosa (abuela), en Casa de la abuela.
 ```
 

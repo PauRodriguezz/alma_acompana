@@ -221,7 +221,7 @@ Se rotan estas tres, una por recuerdo y por charla:
 
 ### 2.12 Descripción de recuerdo más larga (extractor)
 
-- `historia/prompt-extractor.txt`: la `descripcion` pasa de "una o dos oraciones" a **de dos a cuatro oraciones**, en tercera persona, **solo con lo que la persona dijo** (sin inventar ni agregar interpretaciones). El `titulo` sigue siendo un texto corto que nombra el recuerdo y **nunca una pregunta ni empieza con "¿"**.
+- `historia/prompt-extractor.txt`: la `descripcion` pasa de "una o dos oraciones" a **de dos a cuatro oraciones**, en **primera persona** (con la voz de la persona; `docs/contrato-grafo.md`, v21), **solo con lo que la persona dijo** (sin inventar ni agregar interpretaciones). El `titulo` sigue siendo un texto corto que nombra el recuerdo y **nunca una pregunta ni empieza con "¿"**.
 - No cambia el esquema del JSON ni las validaciones ("no inventar" y las demás). Si la respuesta de la persona es muy corta, la descripción puede tener menos oraciones y **nunca se rellena**. El tope de tokens de la extracción con Gemini (mínimo 1500) alcanza; el de Ollama (`extraccion-max-tokens`) sube de 600 a 800 para que el JSON no se corte (si se corta, se crea el recuerdo de respaldo).
 - Se prueba con el modelo real (sección 6) porque una descripción más larga puede aumentar las invenciones.
 - Vale para los recuerdos que se creen desde ahora. Los que ya están guardados no se modifican.
@@ -243,7 +243,7 @@ Cada elemento agrega **`faltantes`**: lista con los datos que se pueden seguir c
   "anio": 1957,
   "precision": "ESTIMADA",
   "etapaDeVida": "INFANCIA",
-  "resumen": "Su maestra de primer grado, que le enseñó a leer.",
+  "resumen": "Mi maestra de primer grado, que me enseñó a leer.",
   "faltantes": ["ANIO", "LUGARES"]
 }
 ```
