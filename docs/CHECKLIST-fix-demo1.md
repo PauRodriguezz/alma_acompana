@@ -70,20 +70,20 @@ Pantallas: Recordatorios calendario `50:1395` (celular `32:868`), lista `46:1244
 ## 2. BACKEND
 
 ### 2.1 Limpieza de Neo4j y scripts
-- [ ] Hay 4 scripts en `backend/alma/scripts/` (dos pares de vista previa y borrado de datos de prueba de bugs ya arreglados). Reemplazarlos por **un solo script** de vista previa + borrado por persona (recuerdos, relaciones RESPONDIO/SALTEO, y nodos Persona y Lugar huérfanos), sin tocar el guion. Leer antes `docs/Modelo_de_grafo/` para no borrar nodos compartidos.
-- [ ] Al borrar los 4: sacar `ScriptsDeLimpiezaTest` y las referencias en `docs/contrato-grafo.md`.
+- [x] Hay 4 scripts en `backend/alma/scripts/` (dos pares de vista previa y borrado de datos de prueba de bugs ya arreglados). Reemplazarlos por **un solo script** de vista previa + borrado por persona (recuerdos, relaciones RESPONDIO/SALTEO, y nodos Persona y Lugar huérfanos), sin tocar el guion. Leer antes `docs/Modelo_de_grafo/` para no borrar nodos compartidos.
+- [x] Al borrar los 4: sacar `ScriptsDeLimpiezaTest` y las referencias en `docs/contrato-grafo.md`.
 - [ ] Borrar lo de `ana` y `carlos` en Neo4j para recargar desde cero. Con `alma.seed.enabled=true`, `CargaInicialDelGrafo` puede volver a cargar la historia de ejemplo de `ana`: apagar el seed (`ALMA_SEED_ENABLED=false` en el `.env`) durante la limpieza o decidir si esa carga se elimina.
 
 ### 2.2 Seed y valores por defecto
-- [ ] ⚠ `alma.seed.enabled` es `true` por defecto y crea cuentas con contraseña fija (`Alma2026!`). Definir perfil de producción con seed apagado.
-- [ ] ⚠ Swagger y `/v3/api-docs` son públicos: protegerlos o apagarlos en producción.
-- [ ] ⚠ Alinear la documentación del proveedor de IA: `CLAUDE.md` y el plan hablan de Ollama `gemma4:cloud`, el default real es Gemini (`IA_PROVEEDOR=gemini`).
-- [ ] Documentar cómo conectarse a las bases con VS Code (Postgres `localhost:5432`, base `alma`, usuario `alma`; Neo4j `bolt://localhost:7687` o `http://localhost:7474`; claves en el `.env`, nunca en el repo).
+- [x] ⚠ `alma.seed.enabled` es `true` por defecto y crea cuentas con contraseña fija (`Alma2026!`). Definir perfil de producción con seed apagado.
+- [x] ⚠ Swagger y `/v3/api-docs` son públicos: protegerlos o apagarlos en producción.
+- [x] ⚠ Alinear la documentación del proveedor de IA: `CLAUDE.md` y el plan hablan de Ollama `gemma4:cloud`, el default real es Gemini (`IA_PROVEEDOR=gemini`).
+- [] Documentar cómo conectarse a las bases con VS Code (Postgres `localhost:5432`, base `alma`, usuario `alma`; Neo4j `bolt://localhost:7687` o `http://localhost:7474`; claves en el `.env`, nunca en el repo).
 
 ### 2.3 Código y tests
-- [ ] Revisar por responsabilidades mezcladas o código repetido: `EscrituraDelGrafo` (475 líneas), `ExtractorDeRecuerdos` (357), `GeminiModeloConversacional` (308).
-- [ ] Todos los tests en verde (`./mvnw test`, necesita Postgres y Neo4j arriba), sin `@Disabled`. Tests para lo que se cambie.
-- [ ] Mensajes de error y textos centralizados (`Mensajes*`).
+- [x] Revisar por responsabilidades mezcladas o código repetido: `EscrituraDelGrafo` (475 líneas), `ExtractorDeRecuerdos` (357), `GeminiModeloConversacional` (308).
+- [x] Todos los tests en verde (`./mvnw test`, necesita Postgres y Neo4j arriba), sin `@Disabled`. Tests para lo que se cambie.
+- [x] Mensajes de error y textos centralizados (`Mensajes*`).
 
 ### 2.4 Soporte para 1.5 (microcápsulas con formato e imagen)
 - [ ] Campo de contenido con formato, validación y **sanitización** (porque se va a mostrar), y soporte de imagen. Actualizar `docs/contrato-microcapsulas.md` (si algo contradice el contrato, se edita el documento y se avisa). Trabajar sobre las clases existentes.
