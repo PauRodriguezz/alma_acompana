@@ -56,7 +56,57 @@ services:
       retries: 5
       start_period: 20s
 
+  backend:
+    build: ./backend/alma
+    container_name: alma-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    environment:
+      # Hosts de las bases: dentro de la red de Docker se llaman por el nombre del servicio
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB:-alma}
+      POSTGRES_USER: ${POSTGRES_USER:-alma}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD en el archivo .env}
+      NEO4J_HOST: neo4j
+      NEO4J_USER: ${NEO4J_USER:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:?Falta NEO4J_PASSWORD en el archivo .env}
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma4:cloud}
+      IA_PROVEEDOR: ${IA_PROVEEDOR:-gemini}
+      # La clave se lee del .env (que no se sube a Git) o del shell: no va en ningun archivo del repo
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en el archivo .env}
+      JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-1440}
+      JWT_REMEMBER_EXPIRATION_MINUTES: ${JWT_REMEMBER_EXPIRATION_MINUTES:-43200}
+      ALMA_SEED_ENABLED: ${ALMA_SEED_ENABLED:-false}
+      ALMA_UPLOADS_DIR: /data/uploads
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+    volumes:
+      - alma_uploads:/data/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
+  frontend:
+    build: ./frontend
+    container_name: alma-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8081}:8080"
+
 volumes:
   postgres_data:
   neo4j_data:
   ollama_data:
+  alma_uploads:

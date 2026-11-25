@@ -1,75 +1,50 @@
-# React + TypeScript + Vite
+# Alma Acompaña · Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interfaz web de la persona mayor y del panel de operador. React 19, TypeScript, Vite, Tailwind CSS y shadcn/ui. Gestor de paquetes: **pnpm** (no usar npm ni yarn).
 
-Currently, two official plugins are available:
+Para levantar todo el sistema (bases de datos, backend y configuración) mirá el [README de la raíz](../README.md).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Comandos
 
-## React Compiler
+Desde esta carpeta (`frontend/`):
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+pnpm install   # instala las dependencias
+pnpm dev       # servidor de desarrollo en http://localhost:5173
+pnpm lint      # revisa el código
+pnpm test      # corre los tests (vitest)
+pnpm build     # compila para producción (tsc + vite build)
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+En desarrollo, las llamadas a `/api` y a `/imagenes` pasan por el proxy de Vite hacia el backend en `http://localhost:8080` (ver `vite.config.ts`). El backend tiene que estar levantado.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Para probarlo desde el celular en la misma red wifi: `pnpm dev --host` y abrir `http://IP-DE-LA-COMPU:5173`.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Estructura
 
 ```
+src/
+├── App.tsx, main.tsx     Rutas y arranque
+├── index.css             Colores, tipografías y tamaños (variables de diseño)
+├── components/
+│   ├── ui/               Componentes base (shadcn/ui): botón, campo, tarjeta, diálogo…
+│   ├── alma/             Piezas propias de Alma (avatar, mensajes del chat…)
+│   ├── layout/           Menú y estructura de las pantallas
+│   ├── formularios/      Campos de formulario del panel
+│   └── accesibilidad/    Controles de tamaño de letra y contraste
+├── features/             Una carpeta por módulo (chat, recordatorios, bienestar,
+│                         juegos, lecturas, historia, perfil, admin…). Cada una tiene
+│                         sus páginas, su api.ts (llamadas al backend), sus tipos
+│                         y sus textos (mensajes.ts).
+└── lib/                  Utilidades compartidas: cliente de la API, errores,
+                          fechas, textos comunes (mensajes.ts) y manejo del token
+```
+
+## Convenciones
+
+- Todo el texto que ve la persona está en español (voseo, frases cortas) y vive en archivos `mensajes.ts`, no en los componentes.
+- Cada pantalla respeta el tamaño de letra y el contraste que elige la persona (100, 125 o 150 %, y alto contraste).
+
+## Con Docker
+
+El `Dockerfile` de esta carpeta construye la app y la sirve con nginx (`nginx.conf`), que también reenvía `/api` y `/imagenes` al backend. Normalmente no se usa a mano: se levanta con `docker compose up -d --build` desde la raíz (ver `../README.md`).

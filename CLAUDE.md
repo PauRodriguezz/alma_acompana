@@ -19,19 +19,19 @@ Compañero digital para personas mayores: chat con "Alma", recordatorios de medi
 - **Back:** Java 21, Spring Boot 4.1.1, Maven (`./mvnw`), Spring Security con JWT propio (OAuth2 Resource Server), JPA + PostgreSQL, Spring Data Neo4j, Spring AI 2.0.1 con **Gemini** (proveedor por defecto, modelo `gemini-3.5-flash-lite`) u Ollama (alternativa, `gemma4:cloud`; se elige con `IA_PROVEEDOR`), springdoc 3.1.1 (Swagger en `/swagger-ui.html`), Actuator, Lombok.
 - **Front:** React 19 + TypeScript, Vite, Tailwind, shadcn/ui, react-router-dom, TanStack Query, react-hook-form + zod, Hugeicons, fuentes Poppins y Source Sans 3, date-fns.
 - **Gestor de paquetes del front: pnpm.** Nunca uses npm ni yarn.
-- **Infra:** Docker Compose con PostgreSQL 17.11, Neo4j 5.26.29 y Ollama 0.40.6 (Ollama solo se usa con `IA_PROVEEDOR=ollama`). La app no está en el compose y el `Dockerfile` está vacío (queda para el cierre, Etapa 4).
-- **Base de datos:** el esquema lo crea Hibernate (`ddl-auto=update`). No hay Flyway. Los datos de prueba se cargan con código y **solo si `ALMA_SEED_ENABLED=true`** (ver "Datos de demo, perfiles y pruebas").
+- **Infra:** Docker Compose con PostgreSQL 17.11, Neo4j 5.26.29 y Ollama 0.40.6 (Ollama solo se usa con `IA_PROVEEDOR=ollama`). Backend y frontend también están en el compose (`backend/alma/Dockerfile` con JRE 21 y `frontend/Dockerfile` con nginx, que sirve los estáticos y reenvía `/api` y `/imagenes` al back). Solo el frontend se publica al host (`FRONTEND_PORT`, 8081 por defecto).
+- **Base de datos:** el esquema lo crea Hibernate (`ddl-auto=update`). No hay Flyway. Los datos de prueba se cargan con código y **solo si `ALMA_SEED_ENABLED=true`** (también en Docker, donde queda apagado por defecto) (ver "Datos de demo, perfiles y pruebas").
 
 ## Estructura
 
 ```
 alma_acompana/
 ├── backend/alma/        Spring Boot (código en src/main/java/ar/edu/utn/frm/gelab/alma/)
+│   ├── Dockerfile       imagen del back (Maven + JRE 21, sin root)
 │   └── scripts/         ver-y-limpiar-historia.cypher (se corre a mano en el navegador de Neo4j)
-├── frontend/            Vite + React (código en src/)
+├── frontend/            Vite + React (código en src/); Dockerfile y nginx.conf para la imagen
 ├── docs/                contratos, casos de uso y diagramas (ver "Documentos")
-├── docker-compose.yml   postgres, neo4j, ollama
-├── Dockerfile           vacío
+├── docker-compose.yml   postgres, neo4j, ollama, backend y frontend
 ├── .env / .env.example  variables (el .env no se sube)
 └── CLAUDE.md
 ```
@@ -44,6 +44,7 @@ alma_acompana/
 Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. (Nosotros, en PowerShell, usamos `.\mvnw.cmd`.) Los archivos del repo están en CRLF: no uses `sed -i` sobre ellos.
 
 - **Bases de datos** (desde la raíz): `docker compose up -d`, `docker compose ps`, `docker compose stop`. **Nunca `docker compose down -v`:** borra los datos y el inicio de sesión de Ollama. Con Docker apagado el back y los tests no arrancan.
+- **Todo el stack en Docker** (desde la raíz): `docker compose up --build` (app en `http://localhost:8081`, o el puerto de `FRONTEND_PORT`). El build de la imagen del back no corre los tests. Las imágenes subidas desde el panel viven en el volumen `alma_uploads`: `docker compose down -v` también lo borra.
 - **Back** (desde `backend/alma`): `./mvnw spring-boot:run`, `./mvnw clean compile`, `./mvnw test`.
 - **Front** (desde `frontend`): `pnpm install`, `pnpm dev` (puerto 5173), `pnpm build`, `pnpm lint`, `pnpm test` (Vitest).
 
@@ -115,4 +116,4 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 1. **Base común:** repo, Docker, login, layout y accesibilidad.
 2. **Dos frentes en paralelo, sin Neo4j.** A: recordatorios, ánimo y chat. B: juegos, microcápsulas y panel de operador.
 3. **Neo4j e historia de vida:** grafo, extractor a JSON, línea de tiempo.
-4. **Cierre:** 16 casos de guardrails, pruebas de accesibilidad, `docker compose up --build` y README.
+4. **Cierre:** 20 casos de guardrails, pruebas de accesibilidad y README. (`docker compose up --build` ya levanta todo el stack.)
