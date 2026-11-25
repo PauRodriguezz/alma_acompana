@@ -4,13 +4,13 @@
 
 **Fuente de verdad:** casos de uso CU-07 (recordatorio de medicación), CU-08 (recordatorio de cita médica) y CU-09 (aviso de recordatorio), en su versión v2, y el diagrama de clases (clases `Recordatorio`, `RecordatorioMedicacion`, `RecordatorioCita` y `NotificacionRecordatorio`, y los enums `FrecuenciaToma` y `EstadoNotificacion`). Si este contrato contradice esos documentos, ganan los documentos y se corrige el contrato. El Figma es ilustrativo: donde difiere en funcionalidad, ganan los documentos (ver sección 12).
 
-**Dónde va:** `docs/contrato-recordatorios.md`. El `CLAUDE.md` debe enlazarlo en la sección "Documentos".
+**Dónde va:** `docs/especificaciones/contrato-recordatorios.md`. El `CLAUDE.md` debe enlazarlo en la sección "Documentos".
 
 **Última revisión contra el repo:** commit `19764e1` (merge de `feature/login`, 28/10/2026).
 
 **(v4) Última revisión del front contra el repo:** commit `9fef453` (reordenamiento de `features/recordatorios`, 28/10/2026). Lo que quedó realmente en el front está en la sección 10.1.
 
-**Contratos relacionados:** `docs/contrato-login.md`. Todo lo que no se redefine acá (token, roles, formato de errores, convenciones) sigue como está ahí.
+**Contratos relacionados:** `docs/especificaciones/contrato-login.md`. Todo lo que no se redefine acá (token, roles, formato de errores, convenciones) sigue como está ahí.
 
 ---
 
@@ -673,10 +673,10 @@ El Figma es una referencia: puede cambiar para mejor, pero donde difiere en func
 ## 15. Cómo usar este documento con Claude Code
 
 **Back**
-> Leé `CLAUDE.md` y `docs/contrato-recordatorios.md`. Mostrame primero el plan para implementar la parte del back según la sección 9, y no escribas código hasta que lo apruebe.
+> Leé `CLAUDE.md` y `docs/especificaciones/contrato-recordatorios.md`. Mostrame primero el plan para implementar la parte del back según la sección 9, y no escribas código hasta que lo apruebe.
 
 **Front**
-> Leé `CLAUDE.md` y `docs/contrato-recordatorios.md`. Mostrame primero el plan para implementar la parte del front según la sección 10, y no escribas código hasta que lo apruebe.
+> Leé `CLAUDE.md` y `docs/especificaciones/contrato-recordatorios.md`. Mostrame primero el plan para implementar la parte del front según la sección 10, y no escribas código hasta que lo apruebe.
 
 Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay que cambiarlo, se edita este archivo.
 

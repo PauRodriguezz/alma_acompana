@@ -2,10 +2,8 @@
 
 **Versión:** 1 de este documento (es la v5 de la funcionalidad de historia de vida). Diseño aprobado. **Front implementado** (mapa, chat, "Seguir completando" y descarga); el back de 2.12 y 3.1 a 3.3 ya está en el repo. **Documentos de la sección 7 actualizados el 12/11/2026.** Falta: la prueba manual completa contra el back real (sección 6) y el Figma (sección 8).
 **Rama:** `feature/historia-de-vida` (back y front)
-**Complementa y reemplaza, en lo que se indica en la sección 0:** `docs/contrato-historia-de-vida.md` (v4), `docs/contrato-grafo.md` (extractor y endpoint de repreguntas) y la parte del chat que ya implementó el módulo de historia de vida.
+**Complementa y reemplaza, en lo que se indica en la sección 0:** `docs/especificaciones/contrato-historia-de-vida.md` (v4), `docs/especificaciones/contrato-grafo.md` (extractor y endpoint de repreguntas) y la parte del chat que ya implementó el módulo de historia de vida.
 **Casos de uso:** CU-02 (criterio de aceptación Nº 4), CU-03 y CU-04, en `docs/casos-de-uso.md`. Este contrato los sigue tal como están escritos: no hace falta modificarlos (ver 2.8 y 2.6 para los dos puntos que se interpretan).
-**Referencias visuales:** `docs/referencias/mapa-de-vida/` (Anexo A). **Las imágenes y los SVG de esa carpeta son parte del contrato**: lo que no se pueda decir con palabras está ahí.
-
 Al probar la versión anterior con el modelo real aparecieron problemas de diseño que no son errores de código: el camino de paradas numeradas no se parecía al diseño y quedaba largo; los títulos y las descripciones de los recuerdos eran poco atractivos; las repreguntas se sentían vacías; una repregunta pendiente se perdía al volver a Historia de vida; la invitación a seguir la historia aparecía en medio de la conversación; y lo que la persona tocaba en el chat no dejaba constancia. Este contrato lo resuelve con un **mapa de vida por etapas**, una **imagen descargable** y varios ajustes del chat.
 
 ---
@@ -125,7 +123,7 @@ Además:
 
 ### 2.5 Descarga del mapa (imagen de 1920 × 1080)
 
-- El botón **"Descargar"** (arriba a la derecha) genera una imagen **PNG de 1920 × 1080 px (apaisada)** y la descarga con el nombre `mapa-de-vida.png`. **Se crea en el dispositivo**: no pasa por el back ni se manda a ningún servicio. La imagen de referencia es `docs/referencias/mapa-descarga.png` (Anexo A).
+- El botón **"Descargar"** (arriba a la derecha) genera una imagen **PNG de 1920 × 1080 px (apaisada)** y la descarga con el nombre `mapa-de-vida.png`. **Se crea en el dispositivo**: no pasa por el back ni se manda a ningún servicio.
 - **Contenido:**
   - Arriba, centrado, el título **"La vida de {Nombre}"**: "La vida de" en Poppins medium y el nombre en **cursiva** (Lora cursiva) en el color violeta de la app. Si el nombre de la persona no está disponible, el título es "Mi vida" (sin cursiva).
   - Un **camino en zigzag de dos tramos**: el de arriba de izquierda a derecha, una vuelta en U por la derecha y el de abajo de derecha a izquierda.
@@ -221,7 +219,7 @@ Se rotan estas tres, una por recuerdo y por charla:
 
 ### 2.12 Descripción de recuerdo más larga (extractor)
 
-- `historia/prompt-extractor.txt`: la `descripcion` pasa de "una o dos oraciones" a **de dos a cuatro oraciones**, en **primera persona** (con la voz de la persona; `docs/contrato-grafo.md`, v21), **solo con lo que la persona dijo** (sin inventar ni agregar interpretaciones). El `titulo` sigue siendo un texto corto que nombra el recuerdo y **nunca una pregunta ni empieza con "¿"**.
+- `historia/prompt-extractor.txt`: la `descripcion` pasa de "una o dos oraciones" a **de dos a cuatro oraciones**, en **primera persona** (con la voz de la persona; `docs/especificaciones/contrato-grafo.md`, v21), **solo con lo que la persona dijo** (sin inventar ni agregar interpretaciones). El `titulo` sigue siendo un texto corto que nombra el recuerdo y **nunca una pregunta ni empieza con "¿"**.
 - No cambia el esquema del JSON ni las validaciones ("no inventar" y las demás). Si la respuesta de la persona es muy corta, la descripción puede tener menos oraciones y **nunca se rellena**. El tope de tokens de la extracción con Gemini (mínimo 1500) alcanza; el de Ollama (`extraccion-max-tokens`) sube de 600 a 800 para que el JSON no se corte (si se corta, se crea el recuerdo de respaldo).
 - Se prueba con el modelo real (sección 6) porque una descripción más larga puede aumentar las invenciones.
 - Vale para los recuerdos que se creen desde ahora. Los que ya están guardados no se modifican.
@@ -380,10 +378,10 @@ El mapa se ve como la referencia en móvil y escritorio; con letra grande se ve 
 
 ## 7. Documentos a actualizar al cerrar
 
-1. `docs/contrato-historia-de-vida.md`: pasar a v5, marcar las secciones de la sección 0 como reemplazadas (con un puntero a este documento) e integrar lo que corresponda.
-2. `docs/contrato-grafo.md`: 7.5 (`recuerdoId` y `tituloRecuerdo`) y 5.4 (prompt del extractor).
+1. `docs/especificaciones/contrato-historia-de-vida.md`: pasar a v5, marcar las secciones de la sección 0 como reemplazadas (con un puntero a este documento) e integrar lo que corresponda.
+2. `docs/especificaciones/contrato-grafo.md`: 7.5 (`recuerdoId` y `tituloRecuerdo`) y 5.4 (prompt del extractor).
 3. `docs/casos-de-uso.md`, tabla "Estado de implementación": columna Front de CU-02, CU-03 y CU-04. Sin cambiar los casos de uso: en CU-02 (criterio Nº 4) el ofrecimiento de seguir con la historia lo cubre el botón fijo y la invitación a pedido; en CU-04 el detalle sigue sin editar (el botón lleva al chat).
-4. `docs/contrato-chat.md` 7.2 (alarma, Swagger y `yaEscribio`) y `docs/contrato-historia-de-vida.md` 2.5 y 11.4: cerrar lo que quedó pendiente de la versión anterior.
+4. `docs/especificaciones/contrato-chat.md` 7.2 (alarma, Swagger y `yaEscribio`) y `docs/especificaciones/contrato-historia-de-vida.md` 2.5 y 11.4: cerrar lo que quedó pendiente de la versión anterior.
 5. `CLAUDE.md`: el enlace a este documento donde corresponda.
 
 **Hecho el 12/11/2026:** (1) `contrato-historia-de-vida.md` pasó a la v5, con las secciones reemplazadas marcadas y un puntero a este documento; (2) `contrato-grafo.md` ya tenía 7.5 y 5.4 al día (v17); (3) `casos-de-uso.md`: columna Front de CU-02, CU-03 y CU-04, sin tocar el texto de los casos; (4) `contrato-chat.md` 7.2, 11.1 y 11.4 (`alarma`, Swagger y `yaEscribio`) y `contrato-historia-de-vida.md` 2.5 y 11.4; (5) `CLAUDE.md` enlaza este documento y el de historia de vida.
@@ -415,17 +413,7 @@ El mapa se ve como la referencia en móvil y escritorio; con letra grande se ve 
 
 ---
 
-## Anexo A. Referencias visuales
-
-Carpeta `docs/referencias/`:
-
-| Archivo | Qué muestra |
-|---|---|
-| `mapa-pantalla-movil.png` | Pantalla móvil, con el panel cerrado (pastilla de aviso) y con el panel abierto en la etapa Infancia (tarjeta resaltada, fila con "Seguir completando este recuerdo"). |
-| `mapa-pantalla-movil.svg` | Fuente de la anterior, con las medidas exactas. |
-| `mapa-descarga.png` | La imagen descargable de 1920 × 1080 (maqueta aprobada): título "La vida de Ana", camino de dos tramos, seis banderines, recuerdos como paradas sueltas y firma "Alma Acompaña". Las medidas están en `descarga/diseno.ts`. |
-
-**Los nombres, títulos y años de las imágenes son de ejemplo.** Las tipografías de las imágenes son equivalentes a las de la app (Poppins; el texto en Inter en lugar de Source Sans 3). En la app se usan las de la app; Source Sans 3 es más angosta, así que los títulos entran con más caracteres.
+## Anexo A. Colores e ilustraciones
 
 ### Colores e ilustración por etapa (modo normal)
 

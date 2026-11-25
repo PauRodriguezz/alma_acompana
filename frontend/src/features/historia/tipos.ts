@@ -1,4 +1,4 @@
-// Depende de /api/historia (docs/contrato-historia-de-vida.md, sección 7, y docs/contrato-grafo.md, sección 7).
+// Depende de /api/historia (docs/especificaciones/contrato-historia-de-vida.md, sección 7, y docs/especificaciones/contrato-grafo.md, sección 7).
 
 /** Cuán segura es la fecha de un recuerdo (2.6.1). Puede llegar null si el grafo trae un valor desconocido. */
 export type PrecisionAnio = "EXACTA" | "CALCULADA_POR_EDAD" | "APROXIMADA" | "ESTIMADA"

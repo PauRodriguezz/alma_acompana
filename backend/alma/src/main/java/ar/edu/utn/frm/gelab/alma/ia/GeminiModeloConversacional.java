@@ -27,7 +27,7 @@ import com.google.genai.errors.ApiException;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
 
 /**
- * Habla con Gemini a través de Spring AI (docs/contrato-ia.md). Está activa con
+ * Habla con Gemini a través de Spring AI (docs/especificaciones/contrato-ia.md). Está activa con
  * {@code alma.ia.proveedor=gemini}, el valor por defecto. Aplica temperatura y tope de tokens, descarta las
  * partes de razonamiento, limpia la respuesta y la limita a un pedido a la vez. El tope de tiempo y la
  * ausencia de reintentos están en {@link ConfiguracionIa}.

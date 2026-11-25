@@ -2,7 +2,7 @@
 
 **Estado:** propuesta para revisar entre los dos. Es un cambio chico y previo al resto del trabajo de `feature/grafo`. Se hace en esa misma rama, **en un commit propio** (separado de los del grafo, para poder aislarlo si hace falta), y antes de empezar con el grafo. Si algo cambia, se cambia primero acá.
 
-**Fuente de verdad:** el diagrama de clases (`docs/Diagrama_de_clases/diagrama-de-clases.md`), donde `PersonaMayor.fecha_nacimiento` es un atributo de tipo `Date` sin marca de opcional, y `docs/contrato-login.md` (sección 4.4, perfil). Hoy la entidad y el perfil permiten que la fecha sea nula; este contrato lo corrige para que coincida con el diagrama.
+**Fuente de verdad:** el diagrama de clases (`docs/Diagrama_de_clases/diagrama-de-clases.md`), donde `PersonaMayor.fecha_nacimiento` es un atributo de tipo `Date` sin marca de opcional, y `docs/especificaciones/contrato-login.md` (sección 4.4, perfil). Hoy la entidad y el perfil permiten que la fecha sea nula; este contrato lo corrige para que coincida con el diagrama.
 
 **Rama:** `feature/grafo` (decisión del equipo; no se crea una rama aparte).
 
@@ -56,7 +56,7 @@ El módulo de historia de vida calcula el año de un recuerdo a partir de la eda
 
 **Documentos**
 
-- `docs/contrato-login.md`, sección 4.4: la fecha viene siempre como `yyyy-MM-dd`; quitar "o `null` si la persona no la tiene cargada". Agregar una entrada al historial de cambios.
+- `docs/especificaciones/contrato-login.md`, sección 4.4: la fecha viene siempre como `yyyy-MM-dd`; quitar "o `null` si la persona no la tiene cargada". Agregar una entrada al historial de cambios.
 - `docs/Diagrama_de_clases/diagrama-de-clases.md`: sin cambios (ya la muestra como obligatoria).
 
 **No se tocan:** `SecurityConfig`, `application.properties`, `pom.xml`, los demás módulos ni nada del grafo.
@@ -81,7 +81,7 @@ Con los datos de prueba (`ana` y `carlos` tienen fecha) no hace falta hacer nada
 
 **Manuales:** con el back y el front corriendo, `ana` entra a Perfil y ve su fecha de nacimiento (12/05/1950); no queda ningún texto del tipo "sin cargar" ni en el código ni en la pantalla. En el front, `pnpm lint` y `pnpm build` pasan.
 
-**Listo cuando:** el back arranca sobre una base con todas las fechas cargadas, todas las pruebas pasan, el perfil de `ana` y de `carlos` muestra la fecha, y `docs/contrato-login.md` ya no dice que puede ser `null`.
+**Listo cuando:** el back arranca sobre una base con todas las fechas cargadas, todas las pruebas pasan, el perfil de `ana` y de `carlos` muestra la fecha, y `docs/especificaciones/contrato-login.md` ya no dice que puede ser `null`.
 
 ## 7. Historial de cambios
 

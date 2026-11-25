@@ -1,4 +1,4 @@
-// Tipos según las respuestas del contrato (docs/contrato-recordatorios.md, sección 6).
+// Tipos según las respuestas del contrato (docs/especificaciones/contrato-recordatorios.md, sección 6).
 // Fechas como texto tal como llegan: "yyyy-MM-dd", "yyyy-MM-ddTHH:mm:ss" y "HH:mm:ss".
 
 export type TipoRecordatorio = "MEDICACION" | "CITA"

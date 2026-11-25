@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Prueba con Gemini real de la VOZ de las descripciones de los recuerdos (docs/contrato-grafo.md, v21):
+Prueba con Gemini real de la VOZ de las descripciones de los recuerdos (docs/especificaciones/contrato-grafo.md, v21):
 las descripciones tienen que salir en primera persona ("vivíamos con mi mamá"), sin "su/sus" y sin
 adjetivos ni participios con género referidos a quien responde ("contenta", "criada").
 

@@ -4,7 +4,7 @@
 
 **Fuente de verdad:** casos de uso CU-12 (login del administrador) y CU-14 (login y logout de la persona mayor), y el diagrama de clases (clase `Cuenta`). Si este contrato contradice esos documentos, ganan los documentos y se corrige el contrato.
 
-**Dónde va:** `docs/contrato-login.md`. El `CLAUDE.md` debe enlazarlo y tiene que estar en la **raíz** del repo, porque Claude Code lo lee desde la carpeta donde se lo abre.
+**Dónde va:** `docs/especificaciones/contrato-login.md`. El `CLAUDE.md` debe enlazarlo y tiene que estar en la **raíz** del repo, porque Claude Code lo lee desde la carpeta donde se lo abre.
 
 **Última revisión contra el repo:** commit `b47fe79` ("configuracion Swagger", 23/10/2026).
 
@@ -127,7 +127,7 @@ Datos personales de la persona del token, para la pantalla Perfil (CU-13 y CU-14
 { "nombre": "Ana", "apellido": "Pérez", "fechaNacimiento": "1950-05-12", "nombreUsuario": "ana" }
 ```
 
-- `fechaNacimiento` viene siempre como `yyyy-MM-dd` (es obligatoria en `PersonaMayor`; ver `docs/contrato-fecha-nacimiento.md`).
+- `fechaNacimiento` viene siempre como `yyyy-MM-dd` (es obligatoria en `PersonaMayor`; ver `docs/especificaciones/contrato-fecha-nacimiento.md`).
 - No incluye `id`, `rol` ni la contraseña.
 - `nombre` y `apellido` salen de `PersonaMayor`. `nombreUsuario` sale de `Cuenta`.
 
@@ -253,7 +253,7 @@ src/
 
 - **`lib/api.ts`:** base `/api`. Agrega `Authorization: Bearer` si hay token. Convierte las respuestas de error en un `ApiError` con `status`, `detail` y `errores`. Ante un `401` (salvo en `/auth/login`), borra el token y manda a `/login` con el aviso "Tu sesión terminó. Ingresá de nuevo."
 - **`AuthProvider`:** guarda el token con la clave `alma.token`, en `localStorage` si el usuario dejó tildado "Mantener sesión iniciada" y en `sessionStorage` si no. Al iniciar la app busca el token en ambos lugares; si hay, llama a `/api/auth/me` y, si falla, lo borra. Expone `usuario`, `cargando`, `login()` y `logout()`.
-- **Menú de las dos áreas (v8):** la persona mayor y el operador usan el mismo componente (`MenuPrincipal`, en `components/layout/`), con los destinos de cada rol en `components/layout/destinosMenu.ts` (íconos de Hugeicons, un ícono por destino, siempre con su texto en escritorio). En celular el de la persona mayor es una **barra inferior de solo íconos, de alto fijo**, como excepción a la regla de que un ícono nunca va solo (los cinco nombres no entran en 1/5 del ancho de 360 px, y menos con letra grande). La excepción se compensa así: cada destino tiene su nombre para el lector de pantalla, el activo lleva `aria-current="page"` y se distingue por más que el color (fondo, barra y, en alto contraste, borde de 2 px), y cada destino mide al menos 44 px (56 px de alto y 1/5 del ancho). El operador conserva en celular el botón "Menú" (con texto) y su hoja lateral. En las dos áreas el orden de Tab es "Saltar al contenido", el menú y el contenido. Los círculos chicos de Alma usan `AvatarAlma` (la cara, decorativa, de 40 px o 44 px fijos). Detalle del panel: `docs/contrato-panel-operador.md`, sección 6.
+- **Menú de las dos áreas (v8):** la persona mayor y el operador usan el mismo componente (`MenuPrincipal`, en `components/layout/`), con los destinos de cada rol en `components/layout/destinosMenu.ts` (íconos de Hugeicons, un ícono por destino, siempre con su texto en escritorio). En celular el de la persona mayor es una **barra inferior de solo íconos, de alto fijo**, como excepción a la regla de que un ícono nunca va solo (los cinco nombres no entran en 1/5 del ancho de 360 px, y menos con letra grande). La excepción se compensa así: cada destino tiene su nombre para el lector de pantalla, el activo lleva `aria-current="page"` y se distingue por más que el color (fondo, barra y, en alto contraste, borde de 2 px), y cada destino mide al menos 44 px (56 px de alto y 1/5 del ancho). El operador conserva en celular el botón "Menú" (con texto) y su hoja lateral. En las dos áreas el orden de Tab es "Saltar al contenido", el menú y el contenido. Los círculos chicos de Alma usan `AvatarAlma` (la cara, decorativa, de 40 px o 44 px fijos). Detalle del panel: `docs/especificaciones/contrato-panel-operador.md`, sección 6.
 - **Cerrar sesión:** el botón pide confirmación ("¿Querés cerrar sesión?") antes de llamar a `logout()`.
 - **`LoginPage`:** `react-hook-form` + `zod`. Campos: usuario, contraseña y casilla "Mantener sesión iniciada" (tildada de entrada). Después de ingresar redirige según el rol: `PERSONA_MAYOR` a `/`, `ADMINISTRADOR` a `/admin`. En error 401 muestra el mensaje genérico, sin indicar cuál campo falló.
 - **`ProtectedRoute`:** sin sesión manda a `/login`; con rol no permitido muestra una pantalla "No tenés permiso para ver esta pantalla."
@@ -318,10 +318,10 @@ Las personas mayores de prueba necesitan además `fechaNacimiento` (por ejemplo 
 ## 13. Cómo usar este documento con Claude Code
 
 **Back**
-> Leé `CLAUDE.md` y `docs/contrato-login.md`. Mostrame primero el plan para implementar la parte del back según la sección 8, y no escribas código hasta que lo apruebe.
+> Leé `CLAUDE.md` y `docs/especificaciones/contrato-login.md`. Mostrame primero el plan para implementar la parte del back según la sección 8, y no escribas código hasta que lo apruebe.
 
 **Front**
-> Leé `CLAUDE.md` y `docs/contrato-login.md`. Mostrame primero el plan para implementar la parte del front según la sección 9, y no escribas código hasta que lo apruebe.
+> Leé `CLAUDE.md` y `docs/especificaciones/contrato-login.md`. Mostrame primero el plan para implementar la parte del front según la sección 9, y no escribas código hasta que lo apruebe.
 
 Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay que cambiarlo, se edita este archivo.
 
@@ -332,7 +332,7 @@ Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay
 - **v8 (19/11/2026):** sección 9: menú compartido de la persona mayor y del operador, barra inferior de solo íconos como excepción documentada y orden de Tab. Solo cambia el front.
 - **v1 (23/10/2026):** primera propuesta.
 - **v2 (23/10/2026, contra el commit `b47fe79`):** se marcó lo que ya está hecho (springdoc, `OpenApiConfig`, parte de `SecurityConfig`), se agregó lo que falta en `SecurityConfig` y en Swagger, se aclaró que la zona horaria es la de Jackson, y se avisó que el `CLAUDE.md` debe estar en la raíz.
-- **v7 (08/11/2026):** sección 4.4: `fechaNacimiento` pasa a ser obligatoria y `GET /api/perfil` la devuelve siempre como `yyyy-MM-dd`, nunca `null` (`docs/contrato-fecha-nacimiento.md`).
+- **v7 (08/11/2026):** sección 4.4: `fechaNacimiento` pasa a ser obligatoria y `GET /api/perfil` la devuelve siempre como `yyyy-MM-dd`, nunca `null` (`docs/especificaciones/contrato-fecha-nacimiento.md`).
 - **v6 (28/10/2026):** se agregó `GET /api/perfil` (sección 4.4) para la pantalla Perfil, y la fila de accesibilidad y perfil en las reglas de acceso (sección 6).
 - **v5 (23/10/2026):** sección 7: el campo `type` no viaja cuando vale `about:blank` (comportamiento de Spring 7, equivalente según RFC 9457); se quitó de los ejemplos.
 - **v4 (23/10/2026):** se ajustó al diagrama de clases (DC_PPS_3): `nombre` y `apellido` salen de `PersonaMayor` y `Administrador`; las preferencias de accesibilidad quedan en `tamanioLetra` y `altoContraste` (se quitó `reducirMovimiento`), solo para `PERSONA_MAYOR`, y viajan en el login y en `/me`; se agregaron las entidades y el seed correspondiente.

@@ -1,4 +1,4 @@
-// Depende de /api/recordatorios del contrato (docs/contrato-recordatorios.md, sección 6).
+// Depende de /api/recordatorios del contrato (docs/especificaciones/contrato-recordatorios.md, sección 6).
 import { api } from "@/lib/api"
 
 import type {

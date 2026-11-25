@@ -3,9 +3,9 @@
 **Versión:** 5 (12/11/2026)
 **Rama:** `feature/historia-de-vida` (back y front)
 **Parte de:** `feature/grafo` (ver 2.12 y 15)
-**Complementa a:** `docs/contrato-grafo.md` (grafo, guion, extracción y repreguntas, endpoints 7.1 a 7.7), `docs/contrato-chat.md` (chat) y, desde la v5, `docs/contrato-mapa-de-vida.md` (mapa por etapas, descarga y mejoras del chat).
+**Complementa a:** `docs/especificaciones/contrato-grafo.md` (grafo, guion, extracción y repreguntas, endpoints 7.1 a 7.7), `docs/especificaciones/contrato-chat.md` (chat) y, desde la v5, `docs/especificaciones/contrato-mapa-de-vida.md` (mapa por etapas, descarga y mejoras del chat).
 **Casos de uso:** CU-02 (criterio de aceptación Nº 4), CU-03 (caminos A y B) y CU-04, en `docs/casos-de-uso.md`. Este contrato los sigue tal como están escritos: no hace falta modificarlos.
-**Versión 5:** el contrato del mapa de vida (`docs/contrato-mapa-de-vida.md`) reemplaza o amplía partes de este. Cada sección afectada lleva un aviso **«v5»** al principio con un puntero al texto vigente; el texto de la v4 que queda debajo de un aviso «reemplazada» es solo histórico. **Si algo de acá contradice al contrato del mapa de vida, gana el del mapa de vida.**
+**Versión 5:** el contrato del mapa de vida (`docs/especificaciones/contrato-mapa-de-vida.md`) reemplaza o amplía partes de este. Cada sección afectada lleva un aviso **«v5»** al principio con un puntero al texto vigente; el texto de la v4 que queda debajo de un aviso «reemplazada» es solo histórico. **Si algo de acá contradice al contrato del mapa de vida, gana el del mapa de vida.**
 
 Este contrato cierra la última funcionalidad: lo que la persona mayor **ve y hace** con la historia de vida. El grafo, el guion, la extracción de recuerdos y las repreguntas ya existen en el back (rama `feature/grafo`). Acá se agregan: la línea de tiempo y el detalle de un recuerdo (back y front), el guion y las repreguntas dentro del chat (front), la tarjeta de pregunta pendiente, y los recuerdos y el progreso dentro del prompt del chat (back).
 
@@ -296,7 +296,7 @@ Ejemplo de línea:
 - Mi maestra Elena (1957): Mi maestra de primer grado, que me enseñó a leer. Con Elena (maestra), en Escuela N° 12.
 ```
 
-**Voz de las descripciones (23/11/2026):** las descripciones de los recuerdos están en primera persona, con las palabras de la persona (`docs/contrato-grafo.md`, v21), igual que los títulos. En el prompt del chat esas líneas van tal cual: la regla 4 del system prompt le aclara a Alma que los recuerdos son de la persona y no suyos, y que habla de ellos en segunda persona (`docs/contrato-chat.md`, v10). Los recuerdos creados antes de la v21 siguen en tercera persona.
+**Voz de las descripciones (23/11/2026):** las descripciones de los recuerdos están en primera persona, con las palabras de la persona (`docs/especificaciones/contrato-grafo.md`, v21), igual que los títulos. En el prompt del chat esas líneas van tal cual: la regla 4 del system prompt le aclara a Alma que los recuerdos son de la persona y no suyos, y que habla de ellos en segunda persona (`docs/especificaciones/contrato-chat.md`, v10). Los recuerdos creados antes de la v21 siguen en tercera persona.
 
 #### 5.5.1 Frases de etapa
 
@@ -451,7 +451,7 @@ Listado para la línea de tiempo. Ordenado según 5.1.
 ```
 
 - `resumen` es la `descripcion` cortada a 140 caracteres (con "…" si se cortó).
-- `faltantes` (v5, `docs/contrato-mapa-de-vida.md`, 3.1): los datos que se pueden seguir completando en ese recuerdo (`"ANIO"`, `"LUGARES"`, `"PERSONAS"`), en el orden de la lista `repreguntas` de su pregunta de origen. Un dato figura cuando es candidato según 5.7 del contrato del grafo (sin considerar `excluir`): está en esa lista, falta y se preguntó menos de 2 veces. Si no hay ninguno, o el recuerdo no tiene pregunta de origen, `[]`. Se arma en la misma lectura de la lista, sin consultas por recuerdo.
+- `faltantes` (v5, `docs/especificaciones/contrato-mapa-de-vida.md`, 3.1): los datos que se pueden seguir completando en ese recuerdo (`"ANIO"`, `"LUGARES"`, `"PERSONAS"`), en el orden de la lista `repreguntas` de su pregunta de origen. Un dato figura cuando es candidato según 5.7 del contrato del grafo (sin considerar `excluir`): está en esa lista, falta y se preguntó menos de 2 veces. Si no hay ninguno, o el recuerdo no tiene pregunta de origen, `[]`. Se arma en la misma lectura de la lista, sin consultas por recuerdo.
 - Lista vacía → `{ "recuerdos": [] }` con 200.
 - El back ya los devuelve en el orden correcto; el front separa los que tienen `anio` (camino) de los que no (sección "Sin fecha").
 
@@ -477,7 +477,7 @@ Listado para la línea de tiempo. Ordenado según 5.1.
 ```
 
 - `personas` y `lugares`: listas, vacías si no hay.
-- `faltantes` (v5, `docs/contrato-mapa-de-vida.md`, 3.2): igual que en 7.3.
+- `faltantes` (v5, `docs/especificaciones/contrato-mapa-de-vida.md`, 3.2): igual que en 7.3.
 - `preguntaTexto` (v5): el texto de la pregunta del guion de la que surgió el recuerdo (relación `SURGIO_DE`); `null` si no se encuentra.
 - `vinculo`: puede ser `null`.
 - 404 si el recuerdo no existe o no es de la persona (5.2).
@@ -641,7 +641,7 @@ No se toca. 7.1 y 7.2 devuelven siempre cuerpo (`202` o `200`) y los salteos dev
 
 ### 11.8 Diferencias con el Figma
 
-> **v5: reemplazada.** **El Figma ya no es la referencia de la pantalla de Historia de vida** (mapa por etapas, panel, lista para letra grande, imagen descargable, botón fijo y burbujas del chat): lo son el contrato del mapa de vida y las imágenes de `docs/referencias/`. El Figma se actualiza al final (sección 8 del mapa de vida). Lo que sigue valiendo de la v4:
+> **v5: reemplazada.** **El Figma ya no es la referencia de la pantalla de Historia de vida** (mapa por etapas, panel, lista para letra grande, imagen descargable, botón fijo y burbujas del chat): lo es el contrato del mapa de vida. El Figma se actualiza al final (sección 8 del mapa de vida). Lo que sigue valiendo de la v4:
 
 | Figma | Contrato | Por qué |
 |---|---|---|
@@ -667,7 +667,7 @@ Pantallas y estados que **no están en el Figma** y se resuelven con los compone
 | `RecuerdosDePrueba.java` (test) | Helpers nuevos: `descripcion`, `etapa` y `agregarPersona` (con `CONOCE {vinculo}` y `PARTICIPA_EN`), para armar recuerdos con datos distintos. |
 | `frontend/src/App.tsx` | Rutas nuevas. |
 | `frontend/src/features/chat/*` | Modo guion (11.4). |
-| `docs/contrato-grafo.md` | Ajuste de 5.9 y nota en 7.3/7.6 (ver 14). |
+| `docs/especificaciones/contrato-grafo.md` | Ajuste de 5.9 y nota en 7.3/7.6 (ver 14). |
 | `docs/casos-de-uso.md` | Estado de CU-04 (ver 14). |
 | `CLAUDE.md` | Enlace a este contrato (ver 14). |
 
@@ -719,7 +719,7 @@ Pantallas y estados que **no están en el Figma** y se resuelven con los compone
 
 ## 14. Documentos a actualizar al cerrar la rama
 
-- `docs/contrato-grafo.md`: en 5.9, aclarar que las respuestas del guion pasan por el detector de riesgo del chat; en 7.3 y 7.6, agregar que la respuesta aceptada lleva cuerpo `{ "estado": "ACEPTADA" }` y que con alarma devuelve `200` (referencia a este contrato); subir la versión y agregar la línea al historial.
+- `docs/especificaciones/contrato-grafo.md`: en 5.9, aclarar que las respuestas del guion pasan por el detector de riesgo del chat; en 7.3 y 7.6, agregar que la respuesta aceptada lleva cuerpo `{ "estado": "ACEPTADA" }` y que con alarma devuelve `200` (referencia a este contrato); subir la versión y agregar la línea al historial.
 - `docs/casos-de-uso.md`: marcar lo implementado de CU-02 (criterio Nº 4), CU-03 y CU-04. No se cambia el texto de los casos.
 - `CLAUDE.md`: enlazar este contrato.
 - Este contrato: pasar a "implementado" con la versión final.
@@ -756,7 +756,7 @@ Pantallas y estados que **no están en el Figma** y se resuelven con los compone
 | 2 | Correcciones tras la revisión contra el código, los casos de uso y el Figma. **Código:** el chat está en `/`; el `preguntaOrigenId` se guarda para pedir la repregunta correcta; el mensaje de Alma lleva la introducción del back y el cierre sin preguntas usa el `mensajeFinal` del back; la respuesta aceptada sigue siendo 202 (ahora con cuerpo) y solo la alarma devuelve 200; `RecuerdosParaElChat` recibe `cuentaId`; el tope de espera pasa a 60 s; nombre y mensaje se normalizan con la misma función; texto de respuesta vacía en modo guion; tope de 1000 caracteres en modo guion; se quitó un 409 que no existe. **Casos de uso:** la invitación usa el texto del CU-02 y se muestra como mensaje de Alma a continuación de su respuesta; no se reofrece tras una alarma. **Figma:** camino de paradas con "Ver recuerdos anteriores", tarjeta "Próxima parada", botones "Otra pregunta" y "Volver a Historia de vida" (reemplazan al "Saltear" junto al campo), sección 11.8. **Privacidad:** decisión explícita en 2.13 (aclarando que lo que la persona cuenta viaja al modelo, en el chat y en la extracción). **Otros:** referencia cruzada del encabezado corregida, punto de corte móvil/escritorio definido (`lg`) y nota sobre los dos botones "Otra pregunta". Se quitó la sección "Cómo usar con Claude Code". |
 | 3 | Ajustes para que el contrato refleje lo que hizo el código al armar el back (sin cambiar el comportamiento pedido). **P11 no se implementa:** el estado vacío sale de P10 (secciones 2.8, 4, 5.3 y 10.2). **5.5:** el progreso se lee en solo lectura con `estadoDeTodas`, sin pasar por `/guion/estado`; una persona sin nodo queda en `No hay información.` sin que se le cree el nodo; formato de la línea del recuerdo (`En <lugar>` con lugar y sin personas, separadores `, `, persona sin nombre solo con el vínculo, sin punto doble, saltos de línea a espacios). **5.5.2:** corte a N más "…"; progreso y recuerdos fallan por separado; tope de 2 s y ejecutor de 4 hilos sin cola con rechazo inmediato; una lectura cancelada deja de ejecutar consultas al ser interrumpida; precisión y etapa tolerantes (`null` si el valor del grafo no es válido). **5.6, 6, 7.1, 7.2 y 9:** con riesgo detectado no se valida que la pregunta o el recuerdo existan ni que estén sin responder (`200 ALARMA`, la seguridad va primero; el `400` por largo va antes) y el texto sale de `ConfiguracionChat.Respuestas.para(TipoDeRiesgo)`. **10.5:** tope de 2000 ms y 4 hilos. **12:** `ConfiguracionChat` y `ChatService`, `RecuerdosDePrueba`, `HistoriaGuionIntegrationTests`, `RepreguntaEndpointsIntegrationTests` (la aserción de OpenAPI pasó a exigir el `200`) y que `ChatIntegrationTests` no se tocó. **13:** convención de nombres de pruebas y dónde viven las del prompt. **15:** límites nuevos (9 a 12). |
 | 4 | Lectura del grafo para el chat: una lectura cancelada por el tope se detecta con una bandera propia y no se registra como ERROR (5.5.2); calentamiento de Neo4j al arrancar (límite 12); sin cortacircuitos, anotado como límite 13. |
-| 5 | Mapa de vida (12/11/2026, `docs/contrato-mapa-de-vida.md`). **Back:** 7.3 (`GET /recuerdos`) agrega `faltantes` a cada recuerdo y 7.4 (`GET /recuerdos/{id}`) agrega `faltantes` y `preguntaTexto`; `GET /repreguntas/siguiente` (contrato del grafo, 7.5) acepta `recuerdoId` y devuelve `repregunta.tituloRecuerdo`; el extractor escribe descripciones de dos a cuatro oraciones. **Front:** mapa por etapas con panel, lista para letra grande y alto contraste (reemplaza al camino de paradas, 2.6); imagen descargable; "Seguir completando este recuerdo" y detalle ampliado (2.7); botón fijo (compacto en celular) e invitación **a pedido** en lugar de la automática (2.2); burbujas de lo que se toca y respuestas fijas de Alma (2.5); espera de 1 s y repreguntas con apertura (2.3). Se marcan las secciones reemplazadas (2.2, 2.6, 11.2, 11.4, 11.7 y 11.8) y ampliadas (2.1, 2.3, 2.5, 2.6.1, 2.7, 5.4 y 6) con un puntero al contrato del mapa de vida. |
+| 5 | Mapa de vida (12/11/2026, `docs/especificaciones/contrato-mapa-de-vida.md`). **Back:** 7.3 (`GET /recuerdos`) agrega `faltantes` a cada recuerdo y 7.4 (`GET /recuerdos/{id}`) agrega `faltantes` y `preguntaTexto`; `GET /repreguntas/siguiente` (contrato del grafo, 7.5) acepta `recuerdoId` y devuelve `repregunta.tituloRecuerdo`; el extractor escribe descripciones de dos a cuatro oraciones. **Front:** mapa por etapas con panel, lista para letra grande y alto contraste (reemplaza al camino de paradas, 2.6); imagen descargable; "Seguir completando este recuerdo" y detalle ampliado (2.7); botón fijo (compacto en celular) e invitación **a pedido** en lugar de la automática (2.2); burbujas de lo que se toca y respuestas fijas de Alma (2.5); espera de 1 s y repreguntas con apertura (2.3). Se marcan las secciones reemplazadas (2.2, 2.6, 11.2, 11.4, 11.7 y 11.8) y ampliadas (2.1, 2.3, 2.5, 2.6.1, 2.7, 5.4 y 6) con un puntero al contrato del mapa de vida. |
 
 ---
 

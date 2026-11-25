@@ -1,5 +1,5 @@
-// Depende de /api/chat del contrato (docs/contrato-chat.md, secciones 3 y 7) y, para el modo guion,
-// de docs/contrato-historia-de-vida.md (2.1 a 2.5 y 11.4).
+// Depende de /api/chat del contrato (docs/especificaciones/contrato-chat.md, secciones 3 y 7) y, para el modo guion,
+// de docs/especificaciones/contrato-historia-de-vida.md (2.1 a 2.5 y 11.4).
 import type { DatoFaltante } from "@/features/historia/tipos"
 
 /** Quién escribió un turno (el back usa el enum en mayúsculas). */

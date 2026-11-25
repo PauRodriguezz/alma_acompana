@@ -4,13 +4,13 @@
 
 **Por qué existe:** desde el 9 de noviembre de 2026 el modelo `gemma4:cloud` de Ollama Cloud dejó de ser gratuito (error `402 Payment Required` en las cuentas sin créditos). El chat dejó de responder. Este contrato agrega **Gemini** como proveedor del modelo y deja **Ollama** como alternativa, con un interruptor en el `.env`.
 
-**Fuente de verdad:** `docs/contrato-chat.md` (secciones 2, 5.6, 5.7, 5.8 y 10) y la documentación de arquitectura (sección 4: solo el paquete `ia/` conoce al modelo). Este contrato **solo** cambia de dónde sale el modelo; el comportamiento del chat, los guardrails, el system prompt, los endpoints y los textos no cambian. Si este contrato contradice al del chat en lo que toca al modelo, gana este.
+**Fuente de verdad:** `docs/especificaciones/contrato-chat.md` (secciones 2, 5.6, 5.7, 5.8 y 10) y la documentación de arquitectura (sección 4: solo el paquete `ia/` conoce al modelo). Este contrato **solo** cambia de dónde sale el modelo; el comportamiento del chat, los guardrails, el system prompt, los endpoints y los textos no cambian. Si este contrato contradice al del chat en lo que toca al modelo, gana este.
 
-**Dónde va:** `docs/contrato-ia.md`. El `CLAUDE.md` debe enlazarlo en la sección "Documentos".
+**Dónde va:** `docs/especificaciones/contrato-ia.md`. El `CLAUDE.md` debe enlazarlo en la sección "Documentos".
 
 **Última revisión contra el repo:** v1 contra el commit `d35f1a9` (merge del PR #7, `feature/microcapsulas`), `main` del 11/11/2026. Desde la v1.3 (11/11/2026) también refleja la rama `feature/historia-de-vida` (extracción de recuerdos, calentamientos y regla 7 del prompt), todavía sin commit al escribir esta revisión.
 
-**Contratos relacionados:** `docs/contrato-chat.md` (el módulo que consume el modelo) y `docs/contrato-login.md` (convenciones generales).
+**Contratos relacionados:** `docs/especificaciones/contrato-chat.md` (el módulo que consume el modelo) y `docs/especificaciones/contrato-login.md` (convenciones generales).
 
 **Aviso a Paula:** el paquete `ia/` es parte del módulo Chat. Este cambio agrega clases nuevas y toca **solo anotaciones y configuración** de lo que ya existe en `ia/`. Se avisa en la descripción del PR. Desde la v1.3 también hay en `ia/` la extracción con Gemini (`GeminiModeloConversacional`, `ConfiguracionIa`) y `CalentamientoDeGemini`, y en `chat/` el system prompt (regla 7) con su test (`SystemPromptDelChatTest`): también son del módulo Chat y hay que avisarle a Paula.
 
@@ -74,7 +74,7 @@
 IA_PROVEEDOR=gemini
 
 # Gemini (crear la clave en https://aistudio.google.com/apikey)
-# ATENCIÓN: el nivel gratuito de Gemini NO debe usarse con datos reales de personas (ver docs/contrato-ia.md, sección 5).
+# ATENCIÓN: el nivel gratuito de Gemini NO debe usarse con datos reales de personas (ver docs/especificaciones/contrato-ia.md, sección 5).
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-3.5-flash-lite
 
@@ -193,7 +193,7 @@ Con el nivel gratuito de Gemini todo lo anterior queda al alcance de Google (ver
 ## 7. Documentos a actualizar
 
 - `CLAUDE.md`: en el stack, "Spring AI con Gemini (por defecto) u Ollama, según `IA_PROVEEDOR`"; en "Decisiones tomadas", una línea: "El proveedor del modelo del chat es Gemini (`gemini-3.5-flash-lite`) u Ollama, según `IA_PROVEEDOR`; el nivel gratuito de Gemini no se usa con datos reales"; en "Documentos", este contrato.
-- `docs/contrato-chat.md`: en la decisión "Modelo y razonamiento" y en 5.6, una frase: "El proveedor del modelo (Gemini u Ollama) se elige con `IA_PROVEEDOR`; ver `docs/contrato-ia.md`"; entrada v4 en el historial.
+- `docs/especificaciones/contrato-chat.md`: en la decisión "Modelo y razonamiento" y en 5.6, una frase: "El proveedor del modelo (Gemini u Ollama) se elige con `IA_PROVEEDOR`; ver `docs/especificaciones/contrato-ia.md`"; entrada v4 en el historial.
 - `.env.example`: lo indicado en 3.1.
 
 ---
@@ -209,7 +209,7 @@ Texto sugerido para la sección de privacidad o limitaciones:
 ## 9. Cómo usar este documento con Claude Code
 
 **Back**
-> Leé `CLAUDE.md`, `docs/contrato-ia.md` y las secciones 2, 5.6, 5.7, 5.8 y 10 de `docs/contrato-chat.md`. Mostrame primero el plan del back según las secciones 2, 3 y 4, y no escribas código hasta que lo apruebe.
+> Leé `CLAUDE.md`, `docs/especificaciones/contrato-ia.md` y las secciones 2, 5.6, 5.7, 5.8 y 10 de `docs/especificaciones/contrato-chat.md`. Mostrame primero el plan del back según las secciones 2, 3 y 4, y no escribas código hasta que lo apruebe.
 
 Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay que cambiarlo, se edita este archivo.
 

@@ -4,11 +4,11 @@
 
 **Fuente de verdad:** caso de uso CU-05 (Realizar ejercicio de estimulación) y el diagrama de clases (clases `Ejercicio`, `OpcionRespuesta`, `IntentoEjercicio` y `ProgresoJuego`, y los enums `CategoriaEjercicio`, `FormatoEjercicio` y `NivelDificultad`). Si este contrato contradice esos documentos, ganan los documentos y se corrige el contrato. El Figma es ilustrativo: donde difiere en funcionalidad, ganan los documentos (ver sección 12).
 
-**Dónde va:** `docs/contrato-juegos.md`. El `CLAUDE.md` debe enlazarlo en la sección "Documentos".
+**Dónde va:** `docs/especificaciones/contrato-juegos.md`. El `CLAUDE.md` debe enlazarlo en la sección "Documentos".
 
 **Última revisión contra el repo:** commit `321a63f` (merge del PR #3, `feature/recordatorios`, 29/10/2026), `main` del 04/11/2026.
 
-**Contratos relacionados:** `docs/contrato-login.md` (token, roles, formato de errores, convenciones), `docs/contrato-panel-operador.md` (el catálogo de ejercicios y las imágenes que consume el juego) y `docs/contrato-recordatorios.md` (fechas y reloj). Todo lo que no se redefine acá sigue como está ahí.
+**Contratos relacionados:** `docs/especificaciones/contrato-login.md` (token, roles, formato de errores, convenciones), `docs/especificaciones/contrato-panel-operador.md` (el catálogo de ejercicios y las imágenes que consume el juego) y `docs/especificaciones/contrato-recordatorios.md` (fechas y reloj). Todo lo que no se redefine acá sigue como está ahí.
 
 ---
 
@@ -326,7 +326,7 @@ Todos los textos de las pantallas en `features/juegos/mensajes.ts` y `features/e
 | Figma | Contrato | Motivo |
 |---|---|---|
 | Pantallas de ejercicio y final solo en celular | Se arman también en escritorio, adaptando las de celular | Pedido del equipo |
-| La pantalla del ejercicio no muestra la navegación inferior | Se mantiene la del `LayoutPersona` (barra de solo íconos; ver `docs/contrato-login.md`, sección 9) | Layout compartido; no se toca en este módulo (pendiente 1) |
+| La pantalla del ejercicio no muestra la navegación inferior | Se mantiene la del `LayoutPersona` (barra de solo íconos; ver `docs/especificaciones/contrato-login.md`, sección 9) | Layout compartido; no se toca en este módulo (pendiente 1) |
 | Título "Acordate cómo sigue." y debajo la frase del refrán | Chip de categoría + `consigna` del catálogo (una sola línea grande) | Ganan los documentos: la consigna es un dato del ejercicio |
 | Panel "¡Muy bien!" muestra la frase completa del refrán | Muestra la explicación del ejercicio, que en el seed incluye la frase completa | La frase completa no es un dato del DC |
 | Panel de acierto igual al de error en estructura | "¡Muy bien!" y "¡Casi!" con "La respuesta era…"; solo cambia el tono | Una sola pieza de interfaz |
@@ -376,10 +376,10 @@ Todos los textos de las pantallas en `features/juegos/mensajes.ts` y `features/e
 ## 15. Cómo usar este documento con Claude Code
 
 **Back**
-> Leé `CLAUDE.md` y `docs/contrato-juegos.md`. Mostrame primero el plan del back según las secciones 5, 6 y 9, y no escribas código hasta que lo apruebe.
+> Leé `CLAUDE.md` y `docs/especificaciones/contrato-juegos.md`. Mostrame primero el plan del back según las secciones 5, 6 y 9, y no escribas código hasta que lo apruebe.
 
 **Front**
-> Leé `CLAUDE.md` y `docs/contrato-juegos.md`. Mostrame primero el plan del front según la sección 10, y no escribas código hasta que lo apruebe.
+> Leé `CLAUDE.md` y `docs/especificaciones/contrato-juegos.md`. Mostrame primero el plan del front según la sección 10, y no escribas código hasta que lo apruebe.
 
 Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay que cambiarlo, se edita este archivo.
 

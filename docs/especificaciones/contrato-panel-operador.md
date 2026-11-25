@@ -6,7 +6,7 @@
 
 **Rama:** `feature/panel-operador`, creada desde `main`. Esta rama cubre CU-10 (catálogo de ejercicios) y CU-11 (microcápsulas), el menú lateral del panel y la sección Perfil. El login (CU-12) ya está hecho.
 
-**Convenciones heredadas** de `docs/contrato-login.md`: rutas bajo `/api`, JSON en UTF-8 con `camelCase`, enums en `MAYUSCULAS_CON_GUION_BAJO`, fechas ISO 8601 (`yyyy-MM-dd` para fechas sin hora), ids `Long`, errores en Problem Details (`application/problem+json`), textos para la persona en español con voseo, token Bearer.
+**Convenciones heredadas** de `docs/especificaciones/contrato-login.md`: rutas bajo `/api`, JSON en UTF-8 con `camelCase`, enums en `MAYUSCULAS_CON_GUION_BAJO`, fechas ISO 8601 (`yyyy-MM-dd` para fechas sin hora), ids `Long`, errores en Problem Details (`application/problem+json`), textos para la persona en español con voseo, token Bearer.
 
 ---
 
@@ -167,7 +167,7 @@ Cuerpo:
 | Campo | Regla |
 |---|---|
 | `titulo` | Obligatorio, hasta 120 caracteres |
-| `texto` | Obligatorio, hasta 5000 caracteres. Es Markdown limitado (título `##`, subtítulo `###`, negrita, cursiva, listas y destacado `>`); si trae HTML, enlaces, imágenes, código u otros formatos, `400` con "El texto tiene un formato que no se puede usar. Usá solo título, subtítulo, negrita, cursiva, listas y destacado." La gramática completa está en `docs/contrato-microcapsulas.md`, sección 4 |
+| `texto` | Obligatorio, hasta 5000 caracteres. Es Markdown limitado (título `##`, subtítulo `###`, negrita, cursiva, listas y destacado `>`); si trae HTML, enlaces, imágenes, código u otros formatos, `400` con "El texto tiene un formato que no se puede usar. Usá solo título, subtítulo, negrita, cursiva, listas y destacado." La gramática completa está en `docs/especificaciones/contrato-microcapsulas.md`, sección 4 |
 | `categoria` | Obligatoria, valor del enum |
 | `imagen` | **Opcional**. Si viene, ruta devuelta por la subida de imágenes |
 | `fechaPublicacion` | Obligatoria, `yyyy-MM-dd`, no puede ser posterior a hoy (hora de Argentina) |
@@ -234,7 +234,7 @@ Paquete base: `ar.edu.utn.frm.gelab.alma`. Un paquete por módulo, con `controll
 - Entidades según el DC. `fechaAlta` y `fechaBaja` son `LocalDate`.
 - Las reglas de validación van en el servicio (o en validadores propios), para poder devolver los textos exactos de la sección 4.
 - **Archivos compartidos** (se modifican solo agregando, sin cambiar lo que ya existe): `application.properties` (carpeta de imágenes y tamaño máximo de subida), `SecurityConfig` (ruta pública `/imagenes/**`), `GlobalExceptionHandler` (si hace falta), `.gitignore` (carpeta `uploads/`) y `.env.example` (variable comentada).
-- **Seed de ejemplo** en una clase nueva, `config/DatosDeCatalogo`, con `@ConditionalOnProperty("alma.seed.enabled")` e idempotente: al menos un ejercicio por categoría (incluido uno de `ORDENAR`, y uno de `MEMORIA` con texto a memorizar) y 5 microcápsulas. No se edita `DatosDePrueba`. Desde la v5 el seed tiene 57 ejercicios (`config/DatosDeCatalogoJuegos` y `config/EjerciciosNuevos` suman a los 3 de `DatosDeCatalogo`) y un ejercicio se identifica por categoría, nivel y consigna; ver `docs/contrato-juegos.md`, anexo A.
+- **Seed de ejemplo** en una clase nueva, `config/DatosDeCatalogo`, con `@ConditionalOnProperty("alma.seed.enabled")` e idempotente: al menos un ejercicio por categoría (incluido uno de `ORDENAR`, y uno de `MEMORIA` con texto a memorizar) y 5 microcápsulas. No se edita `DatosDePrueba`. Desde la v5 el seed tiene 57 ejercicios (`config/DatosDeCatalogoJuegos` y `config/EjerciciosNuevos` suman a los 3 de `DatosDeCatalogo`) y un ejercicio se identifica por categoría, nivel y consigna; ver `docs/especificaciones/contrato-juegos.md`, anexo A.
 - Tests de integración con `@SpringBootTest` y MockMvc, igual que los del login.
 
 ---
@@ -323,7 +323,7 @@ Estas decisiones ya están tomadas; falta reflejarlas en `docs/casos-de-uso.md` 
 ## 10. Historial de cambios
 
 - **v1 (28/10/2026):** primera propuesta.
-- **v5 (24/11/2026):** el seed de ejercicios pasa a 57 (se retiran 9 y se suman 36) y su clave de identidad es (categoría, nivel, consigna). No cambia el catálogo del panel ni los endpoints. Ver `docs/contrato-juegos.md` (v1.4 y anexo A).
+- **v5 (24/11/2026):** el seed de ejercicios pasa a 57 (se retiran 9 y se suman 36) y su clave de identidad es (categoría, nivel, consigna). No cambia el catálogo del panel ni los endpoints. Ver `docs/especificaciones/contrato-juegos.md` (v1.4 y anexo A).
 - **v4 (19/11/2026):** el texto de la microcápsula admite formato (Markdown limitado), con barra de formato de solo íconos (excepción documentada en la sección 6) y vista previa fiel en el formulario (secciones 3.3 y 6). Ver `contrato-microcapsulas.md`, sección 4.
 - **v3 (19/11/2026):** menú compartido con la persona mayor (sección 6), `AvatarAlma` en la marca, barra superior del celular solo con el botón "Menú", "Saltar al contenido" y alto contraste del activo con borde; Perfil con título "Mi perfil" (3.5). Solo cambia el front.
 - **v2 (28/10/2026):** se aclaró que el catálogo va en `ejercicios/` y el juego de la persona mayor (CU-05) en `juegos/`; se explicó el uso de las imágenes (dos pasos) y por qué las opciones pueden tener imagen aunque el Figma no la dibuje; el panel es adaptable a celular y a computadora; se aceptaron las propuestas pendientes (explicación en CU-05, Perfil y panel en celular), que pasan a la lista de cosas a documentar.

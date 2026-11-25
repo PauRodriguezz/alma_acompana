@@ -31,7 +31,7 @@ El único dato compartido entre las dos bases es el **identificador de la person
 | `Persona` | `idPersona`, `nombre?`, `nombreNormalizado?` | El nombre puede faltar si solo se menciona el vínculo ("mi tío"). |
 | `Lugar` | `idLugar`, `nombre`, `nombreNormalizado` | |
 
-`?` indica propiedad opcional. **Identificadores:** `PersonaMayor.idPersonaMayor` es un `Long` (el mismo id que la persona mayor tiene en PostgreSQL); `PreguntaGuion.idPreguntaGuion` es un `Integer` fijo, definido en el archivo del guion; `Recuerdo`, `Persona` y `Lugar` llevan un UUID como `String`, generado por la aplicación (Neo4j no tiene un contador seguro: su número interno se puede reutilizar tras un borrado). El detalle está en `docs/contrato-grafo.md`, secciones 2 y 4.1.
+`?` indica propiedad opcional. **Identificadores:** `PersonaMayor.idPersonaMayor` es un `Long` (el mismo id que la persona mayor tiene en PostgreSQL); `PreguntaGuion.idPreguntaGuion` es un `Integer` fijo, definido en el archivo del guion; `Recuerdo`, `Persona` y `Lugar` llevan un UUID como `String`, generado por la aplicación (Neo4j no tiene un contador seguro: su número interno se puede reutilizar tras un borrado). El detalle está en `docs/especificaciones/contrato-grafo.md`, secciones 2 y 4.1.
 
 ## Relaciones
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Casos de prueba del chat con Gemini real (docs/contrato-chat.md, Anexo B).
+Casos de prueba del chat con Gemini real (docs/especificaciones/contrato-chat.md, Anexo B).
 Por defecto corre T1 a T16; con --extras suma T17 a T20.
 
 REQUISITOS

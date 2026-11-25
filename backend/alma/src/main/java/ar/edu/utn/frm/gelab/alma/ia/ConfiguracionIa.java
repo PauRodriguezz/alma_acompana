@@ -57,7 +57,7 @@ public class ConfiguracionIa {
             String proveedor = entorno.getProperty("alma.ia.proveedor", "gemini");
             if (!"gemini".equalsIgnoreCase(proveedor) && !"ollama".equalsIgnoreCase(proveedor)) {
                 throw new IllegalStateException("IA_PROVEEDOR tiene un valor no válido: \"" + proveedor
-                        + "\". Los valores posibles son \"gemini\" u \"ollama\" (ver docs/contrato-ia.md).");
+                        + "\". Los valores posibles son \"gemini\" u \"ollama\" (ver docs/especificaciones/contrato-ia.md).");
             }
         };
     }

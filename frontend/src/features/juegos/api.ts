@@ -1,4 +1,4 @@
-// Depende de /api/juegos del contrato (docs/contrato-juegos.md, sección 6).
+// Depende de /api/juegos del contrato (docs/especificaciones/contrato-juegos.md, sección 6).
 import { api } from "@/lib/api"
 
 import type { RespuestaCuerpo, ResultadoRespuesta, SiguienteEjercicio } from "./tipos"

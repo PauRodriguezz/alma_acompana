@@ -4,11 +4,11 @@
 
 **Fuente de verdad:** caso de uso CU-06 (Consultar microcápsulas disponibles) y el diagrama de clases (clases `Microcapsula` y `MicrocapsulaGuardada`, y el enum `CategoriaMicrocapsula`). Si este contrato contradice esos documentos, ganan los documentos y se corrige el contrato. El Figma es ilustrativo: donde difiere en funcionalidad, ganan los documentos (ver sección 12).
 
-**Dónde va:** `docs/contrato-microcapsulas.md`. El `CLAUDE.md` debe enlazarlo en la sección "Documentos".
+**Dónde va:** `docs/especificaciones/contrato-microcapsulas.md`. El `CLAUDE.md` debe enlazarlo en la sección "Documentos".
 
 **Última revisión contra el repo:** commit `3009290` (merge del PR #5, `feature/juegos`), `main` del 05/11/2026.
 
-**Contratos relacionados:** `docs/contrato-login.md` (token, roles, errores, convenciones), `docs/contrato-panel-operador.md` (el alta, la edición y la baja de las microcápsulas, CU-11, y las imágenes) y `docs/contrato-juegos.md` (la pantalla Entretenimiento y la estructura de un módulo de la persona mayor). Todo lo que no se redefine acá sigue como está ahí.
+**Contratos relacionados:** `docs/especificaciones/contrato-login.md` (token, roles, errores, convenciones), `docs/especificaciones/contrato-panel-operador.md` (el alta, la edición y la baja de las microcápsulas, CU-11, y las imágenes) y `docs/especificaciones/contrato-juegos.md` (la pantalla Entretenimiento y la estructura de un módulo de la persona mayor). Todo lo que no se redefine acá sigue como está ahí.
 
 ---
 
@@ -335,10 +335,10 @@ Todos en `features/lecturas/mensajes.ts`; los generales siguen en `lib/mensajes.
 ## 15. Cómo usar este documento con Claude Code
 
 **Back**
-> Leé `CLAUDE.md` y `docs/contrato-microcapsulas.md`. Mostrame primero el plan del back según las secciones 5, 6 y 9, y no escribas código hasta que lo apruebe.
+> Leé `CLAUDE.md` y `docs/especificaciones/contrato-microcapsulas.md`. Mostrame primero el plan del back según las secciones 5, 6 y 9, y no escribas código hasta que lo apruebe.
 
 **Front**
-> Leé `CLAUDE.md` y `docs/contrato-microcapsulas.md`. Mostrame primero el plan del front según la sección 10, y no escribas código hasta que lo apruebe.
+> Leé `CLAUDE.md` y `docs/especificaciones/contrato-microcapsulas.md`. Mostrame primero el plan del front según la sección 10, y no escribas código hasta que lo apruebe.
 
 Si Claude Code propone algo que contradice el contrato, gana el contrato. Si hay que cambiarlo, se edita este archivo.
 

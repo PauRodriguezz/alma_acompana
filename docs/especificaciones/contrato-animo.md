@@ -4,11 +4,11 @@
 
 **Fuente de verdad:** caso de uso CU-01 y diagrama de clases (clase `RegistroAnimo`, enum `NivelAnimo`). También se tuvieron en cuenta CU-02 (el widget vive dentro del chat), el documento de guardrails (sección 5.3, contexto controlado, y 5.4, privacidad) y la arquitectura (módulo Bienestar, PostgreSQL). Si este contrato contradice esos documentos, ganan los documentos y se corrige el contrato. El Figma es ilustrativo (ver 11.6).
 
-**Dónde va:** `docs/contrato-animo.md`. El `CLAUDE.md` debe enlazarlo en la sección "Documentos".
+**Dónde va:** `docs/especificaciones/contrato-animo.md`. El `CLAUDE.md` debe enlazarlo en la sección "Documentos".
 
 **Última revisión contra el repo:** commit `321a63f` (merge de `feature/recordatorios`, 29/10/2026).
 
-**Contratos relacionados:** `docs/contrato-login.md` (token, roles, errores, convenciones) y `docs/contrato-recordatorios.md` (mismo patrón de módulo). Todo lo que no se redefine acá sigue como está ahí.
+**Contratos relacionados:** `docs/especificaciones/contrato-login.md` (token, roles, errores, convenciones) y `docs/especificaciones/contrato-recordatorios.md` (mismo patrón de módulo). Todo lo que no se redefine acá sigue como está ahí.
 
 **Responsable:** Paula (módulo Bienestar). Rama: `feature/animo`. La rama siguiente, `feature/chat` (CU-02), parte de esta ya integrada en `main`.
 

@@ -29,7 +29,7 @@ alma_acompana/
 ├── backend/alma/        Spring Boot (código en src/main/java/ar/edu/utn/frm/gelab/alma/)
 │   └── scripts/         ver-y-limpiar-historia.cypher (se corre a mano en el navegador de Neo4j)
 ├── frontend/            Vite + React (código en src/)
-├── docs/                contratos, casos de uso, diagramas y checklist (ver "Documentos")
+├── docs/                contratos, casos de uso y diagramas (ver "Documentos")
 ├── docker-compose.yml   postgres, neo4j, ollama
 ├── Dockerfile           vacío
 ├── .env / .env.example  variables (el .env no se sube)
@@ -96,21 +96,19 @@ Estamos en Windows y esta herramienta usa Git Bash: usá `./mvnw`, no `.\mvnw`. 
 
 ## Documentos
 
-- `docs/contrato-login.md`: contrato de autenticación. Leelo antes de tocar el login, la seguridad o las rutas protegidas.
-- `docs/contrato-recordatorios.md`: contrato del módulo de recordatorios (medicación, citas y avisos). Leelo antes de tocar `recordatorios/` o la agenda que usa el chat.
-- `docs/contrato-panel-operador.md`: contrato del panel de operador (resumen, ejercicios, microcápsulas, imágenes y perfil del administrador). Leelo antes de tocar `features/admin/`, `features/ejercicios/`, `features/microcapsulas/`, `common/imagenes/` o `/api/admin/**`.
-- `docs/contrato-animo.md`: contrato del registro de ánimo (CU-01: niveles, "Cambiar cómo me siento", pregunta contextual y widget). Leelo antes de tocar `bienestar/` o `features/bienestar/`.
+- `docs/especificaciones/contrato-login.md`: contrato de autenticación. Leelo antes de tocar el login, la seguridad o las rutas protegidas.
+- `docs/especificaciones/contrato-recordatorios.md`: contrato del módulo de recordatorios (medicación, citas y avisos). Leelo antes de tocar `recordatorios/` o la agenda que usa el chat.
+- `docs/especificaciones/contrato-panel-operador.md`: contrato del panel de operador (resumen, ejercicios, microcápsulas, imágenes y perfil del administrador). Leelo antes de tocar `features/admin/`, `features/ejercicios/`, `features/microcapsulas/`, `common/imagenes/` o `/api/admin/**`.
+- `docs/especificaciones/contrato-animo.md`: contrato del registro de ánimo (CU-01: niveles, "Cambiar cómo me siento", pregunta contextual y widget). Leelo antes de tocar `bienestar/` o `features/bienestar/`.
 - Casos de uso (CU-xx) y diagrama de clases (`DC_PPS`) del informe: son la fuente de verdad funcional. En el repo: `docs/casos-de-uso.md`, `docs/Diagrama_de_clases/` y `docs/Modelo_de_grafo/`.
-- `docs/contrato-ia.md`: contrato del proveedor de IA (Gemini u Ollama, interruptor `IA_PROVEEDOR`). Leelo antes de tocar `ia/`.
-- `docs/contrato-fecha-nacimiento.md`: fecha de nacimiento obligatoria de la persona mayor.
-- `docs/CHECKLIST-fix-demo1.md`: lista de lo que falta para cerrar la entrega.
-- `docs/contrato-juegos.md`: contrato del juego de estimulación (CU-05). Leelo antes de tocar el juego, el selector de ejercicios o el hub de Entretenimiento.
-- `docs/contrato-chat.md`: contrato del chat con Alma (CU-02: saludo, guardrails, contexto del modelo y pantalla del chat). Leelo antes de tocar `chat/`, `ia/` o `features/chat/`.
-- `docs/contrato-grafo.md`: contrato de la historia de vida (CU-03: grafo en Neo4j, guion y progreso, extractor, cola y repreguntas). Leelo antes de tocar `historia/` o el límite de pedidos de `ia/`.
-
-- `docs/contrato-microcapsulas.md`: contrato de la lectura de microcápsulas (CU-06). Leelo antes de tocar el listado, el detalle o las guardadas de la persona mayor.
-- `docs/contrato-historia-de-vida.md`: contrato de lo que la persona mayor ve y hace con su historia de vida (CU-02 criterio Nº 4, CU-03 y CU-04: guion y repreguntas en el chat, detalle del recuerdo, recuerdos en el prompt). Está en la v5: las secciones que reemplaza el mapa de vida llevan un aviso. Leelo antes de tocar `features/historia/`, el modo guion de `features/chat/` o `historia/`.
-- `docs/contrato-mapa-de-vida.md`: contrato del mapa de vida (v5 de la historia de vida: mapa por etapas con panel, lista para letra grande, imagen descargable, "Seguir completando este recuerdo", botón fijo e invitación a pedido, burbujas y respuestas fijas del chat). **Gana sobre el contrato de historia de vida** donde difieren. Las imágenes de `docs/referencias/` son parte del contrato. Leelo antes de tocar la pantalla Historia de vida, `features/historia/` o el modo guion del chat.
+- `docs/especificaciones/contrato-ia.md`: contrato del proveedor de IA (Gemini u Ollama, interruptor `IA_PROVEEDOR`). Leelo antes de tocar `ia/`.
+- `docs/especificaciones/contrato-fecha-nacimiento.md`: fecha de nacimiento obligatoria de la persona mayor.
+- `docs/especificaciones/contrato-juegos.md`: contrato del juego de estimulación (CU-05). Leelo antes de tocar el juego, el selector de ejercicios o el hub de Entretenimiento.
+- `docs/especificaciones/contrato-chat.md`: contrato del chat con Alma (CU-02: saludo, guardrails, contexto del modelo y pantalla del chat). Leelo antes de tocar `chat/`, `ia/` o `features/chat/`.
+- `docs/especificaciones/contrato-grafo.md`: contrato de la historia de vida (CU-03: grafo en Neo4j, guion y progreso, extractor, cola y repreguntas). Leelo antes de tocar `historia/` o el límite de pedidos de `ia/`.
+- `docs/especificaciones/contrato-microcapsulas.md`: contrato de la lectura de microcápsulas (CU-06). Leelo antes de tocar el listado, el detalle o las guardadas de la persona mayor.
+- `docs/especificaciones/contrato-historia-de-vida.md`: contrato de lo que la persona mayor ve y hace con su historia de vida (CU-02 criterio Nº 4, CU-03 y CU-04: guion y repreguntas en el chat, detalle del recuerdo, recuerdos en el prompt). Está en la v5: las secciones que reemplaza el mapa de vida llevan un aviso. Leelo antes de tocar `features/historia/`, el modo guion de `features/chat/` o `historia/`.
+- `docs/especificaciones/contrato-mapa-de-vida.md`: contrato del mapa de vida (v5 de la historia de vida: mapa por etapas con panel, lista para letra grande, imagen descargable, "Seguir completando este recuerdo", botón fijo e invitación a pedido, burbujas y respuestas fijas del chat). **Gana sobre el contrato de historia de vida** donde difieren. Leelo antes de tocar la pantalla Historia de vida, `features/historia/` o el modo guion del chat.
 
 ## Plan por etapas
 
