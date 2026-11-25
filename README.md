@@ -1,4 +1,4 @@
-# Alma Acompaña
+# Alma Acompaña 🤖💜
 
 Compañero digital para personas mayores. Una asistente llamada **Alma** conversa con la persona, le recuerda sus medicamentos y citas médicas, registra su ánimo, le propone ejercicios de memoria, le ofrece lecturas cortas (microcápsulas) y la ayuda a armar su **historia de vida** como un mapa de recuerdos.
 
