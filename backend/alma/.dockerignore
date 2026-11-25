@@ -1,0 +1,14 @@
+target
+uploads
+.mvn/wrapper/maven-wrapper.jar
+HELP.md
+scripts
+.git
+.gitignore
+.gitattributes
+.idea
+.vscode
+.env
+.env.*
+Dockerfile
+.dockerignore
