@@ -2,7 +2,6 @@ import { useId } from "react"
 
 import { Button } from "@/components/ui/button"
 import { InvitacionHistoria } from "@/features/historia/components/InvitacionHistoria"
-import { BOTON_EN_ESPERA, BOTON_TEXTO_LARGO } from "@/features/historia/estilos"
 import {
   AYUDA_PREGUNTA,
   CONTARTE_ALGO_MAS,
@@ -10,11 +9,9 @@ import {
   SALTEAR,
   VOLVER_A_HISTORIA,
 } from "@/features/historia/mensajes"
-import { cn } from "@/lib/utils"
 
 import { useChat } from "../useChat"
 
-const ESTILO = cn(BOTON_TEXTO_LARGO, BOTON_EN_ESPERA)
 
 /**
  * Lo que se puede tocar debajo del último mensaje de Alma en el modo guion (contrato de historia de vida,
@@ -64,7 +61,8 @@ export function AccionesDelGuion() {
             variant="secondary"
             aria-disabled={deshabilitado}
             aria-describedby={idAyuda}
-            className={ESTILO}
+            tamanio="textoLargo"
+            enEspera
             onClick={protegido(conFoco(chat.otraPregunta))}
           >
             {OTRA_PREGUNTA}
@@ -73,7 +71,8 @@ export function AccionesDelGuion() {
             variant="outline"
             aria-disabled={deshabilitado}
             aria-describedby={idAyuda}
-            className={ESTILO}
+            tamanio="textoLargo"
+            enEspera
             onClick={protegido(chat.volverAHistoria)}
           >
             {VOLVER_A_HISTORIA}
@@ -89,7 +88,8 @@ export function AccionesDelGuion() {
         <Button
           variant="secondary"
           aria-disabled={deshabilitado}
-          className={ESTILO}
+          tamanio="textoLargo"
+            enEspera
           onClick={protegido(conFoco(chat.saltearRepregunta))}
         >
           {SALTEAR}
@@ -97,7 +97,8 @@ export function AccionesDelGuion() {
         <Button
           variant="outline"
           aria-disabled={deshabilitado}
-          className={ESTILO}
+          tamanio="textoLargo"
+            enEspera
           onClick={protegido(chat.volverAHistoria)}
         >
           {VOLVER_A_HISTORIA}
@@ -112,7 +113,8 @@ export function AccionesDelGuion() {
         <Button
           variant="secondary"
           aria-disabled={deshabilitado}
-          className={ESTILO}
+          tamanio="textoLargo"
+            enEspera
           onClick={protegido(conFoco(chat.contarAlgoMas))}
         >
           {CONTARTE_ALGO_MAS}
@@ -120,7 +122,8 @@ export function AccionesDelGuion() {
         <Button
           variant="outline"
           aria-disabled={deshabilitado}
-          className={ESTILO}
+          tamanio="textoLargo"
+            enEspera
           onClick={protegido(conFoco(chat.otraPreguntaDespuesDelCierre))}
         >
           {OTRA_PREGUNTA}

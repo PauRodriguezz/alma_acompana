@@ -35,6 +35,23 @@ export const IMAGEN_ALTERNATIVO = "Imagen de la microcápsula"
 export const ETIQUETA_FECHA_PUBLICACION = "Fecha de publicación"
 export const AVISO_SE_PUBLICA = "Se publica apenas la guardás. No queda como borrador."
 
+// Barra de formato del texto
+export const FORMATO_ETIQUETA = "Formato del texto"
+export const FORMATO_TITULO = "Título"
+export const FORMATO_SUBTITULO = "Subtítulo"
+export const FORMATO_NEGRITA = "Negrita"
+export const FORMATO_CURSIVA = "Cursiva"
+export const FORMATO_LISTA = "Lista"
+export const FORMATO_LISTA_NUMERADA = "Lista numerada"
+export const FORMATO_DESTACADO = "Destacado"
+export const FORMATO_TEXTO_EJEMPLO = "texto"
+export const AYUDA_FORMATO =
+  "Elegí un texto y tocá un botón para darle formato. En la vista previa ves cómo lo va a leer la persona."
+export const FORMATO_NO_PERMITIDO =
+  "El texto tiene un formato que no se puede usar. Usá solo título, subtítulo, negrita, cursiva, listas y destacado."
+
 // Vista previa
+export const PREVIA_LISTA = "En la lista"
+export const PREVIA_LECTURA = "Al leerla"
 export const PREVIA_TITULO = "Acá aparece el título"
 export const PREVIA_LEER = "Leer"

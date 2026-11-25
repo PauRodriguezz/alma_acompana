@@ -1,4 +1,4 @@
-// Depende de /api/historia (docs/contrato-historia-de-vida.md, sección 7, y docs/contrato-grafo.md, sección 7).
+// Depende de /api/historia (docs/especificaciones/contrato-historia-de-vida.md, sección 7, y docs/especificaciones/contrato-grafo.md, sección 7).
 
 /** Cuán segura es la fecha de un recuerdo (2.6.1). Puede llegar null si el grafo trae un valor desconocido. */
 export type PrecisionAnio = "EXACTA" | "CALCULADA_POR_EDAD" | "APROXIMADA" | "ESTIMADA"
@@ -24,7 +24,8 @@ export type ListaDeRecuerdos = {
 
 export type PersonaDeRecuerdo = {
   id: string
-  nombre: string
+  /** Puede llegar null: el recuerdo menciona a alguien solo por su vínculo ("una amiga"). */
+  nombre: string | null
   vinculo: string | null
 }
 

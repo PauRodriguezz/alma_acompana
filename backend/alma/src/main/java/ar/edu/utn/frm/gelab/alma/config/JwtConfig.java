@@ -20,7 +20,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 
 /**
- * Firma y validación del JWT con HS256 (ver docs/contrato-login.md, sección 5).
+ * Firma y validación del JWT con HS256 (ver docs/especificaciones/contrato-login.md, sección 5).
  */
 @Configuration
 @EnableConfigurationProperties(JwtProperties.class)

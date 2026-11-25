@@ -29,6 +29,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -398,7 +399,7 @@ class RepreguntaEndpointsIntegrationTests {
 
         mockMvc.perform(con(responder(id, "ANIO", cuerpo("Fue en 1962")), tokenA))
                 .andExpect(status().isAccepted())
-                .andExpect(content().json("{\"estado\":\"ACEPTADA\"}", true));
+                .andExpect(content().json("{\"estado\":\"ACEPTADA\"}", JsonCompareMode.STRICT));
         esperarCola();
 
         assertThat(recuerdos.propiedades(id)).containsEntry("anio", 1962L).containsEntry("precision", "EXACTA")

@@ -74,7 +74,7 @@ class ExtractorDeRecuerdosTest {
         extraer(VALIDO, RESPUESTA);
 
         ModeloDePrueba.Pedido pedido = modelo.pedidos().get(0);
-        assertThat(pedido.instrucciones()).contains("Devolvés SOLO un objeto JSON", "No asumas el género");
+        assertThat(pedido.instrucciones()).contains("Devolvés SOLO un objeto JSON", "No reveles el género");
         assertThat(pedido.mensaje()).contains(PREGUNTA).contains(RESPUESTA);
         assertThat(pedido.opciones().temperatura()).isEqualTo(0.1);
         assertThat(pedido.opciones().maxTokens()).isEqualTo(800);

@@ -18,8 +18,6 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
-import com.google.genai.errors.ApiException;
-
 /**
  * Calienta Gemini al arrancar, para que el primer mensaje del chat no pague la primera generación (en la prueba real,
  * unos 3,5 s contra 0,8 s las siguientes; pedir solo los metadatos del modelo no alcanzó). Hace un
@@ -84,30 +82,11 @@ public class CalentamientoDeGemini {
                 limitador.ejecutarEnSegundoPlano(() -> modelo.call(pedido));
                 log.info("Gemini calentado en {} ms", milisDesde(inicio));
             } catch (RuntimeException e) {
-                Integer codigo = codigoHttpDe(e);
+                Integer codigo = ErroresTransitorios.codigoHttp(e);
                 log.warn("No se pudo calentar Gemini tras {} ms (error: {}, código HTTP: {})", milisDesde(inicio),
-                        causaRaiz(e).getClass().getSimpleName(), codigo != null ? codigo : "s/d");
+                        ErroresTransitorios.causaRaiz(e).getClass().getSimpleName(), codigo != null ? codigo : "s/d");
             }
         }
-    }
-
-    private static Throwable causaRaiz(Throwable e) {
-        Throwable actual = e;
-        for (int i = 0; i < 20 && actual.getCause() != null && actual.getCause() != actual; i++) {
-            actual = actual.getCause();
-        }
-        return actual;
-    }
-
-    private static Integer codigoHttpDe(Throwable e) {
-        Throwable actual = e;
-        for (int i = 0; i < 20 && actual != null; i++) {
-            if (actual instanceof ApiException api) {
-                return api.code();
-            }
-            actual = actual.getCause() != actual ? actual.getCause() : null;
-        }
-        return null;
     }
 
     private static long milisDesde(long inicioNanos) {

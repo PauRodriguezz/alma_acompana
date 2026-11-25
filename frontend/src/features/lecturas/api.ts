@@ -1,4 +1,4 @@
-// Depende de /api/microcapsulas del contrato (docs/contrato-microcapsulas.md, sección 6).
+// Depende de /api/microcapsulas del contrato (docs/especificaciones/contrato-microcapsulas.md, sección 6).
 // El panel de operador usa /api/admin/microcapsulas (features/microcapsulas): no se mezclan.
 import { api } from "@/lib/api"
 

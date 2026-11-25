@@ -1,6 +1,6 @@
 import { useContext } from "react"
 
-import { AvisoContext } from "./aviso-context"
+import { AvisoContext } from "./avisoContext"
 
 export function useAviso() {
   const contexto = useContext(AvisoContext)

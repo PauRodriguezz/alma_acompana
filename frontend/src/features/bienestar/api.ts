@@ -1,4 +1,4 @@
-// Depende de /api/animo del contrato (docs/contrato-animo.md, sección 7).
+// Depende de /api/animo del contrato (docs/especificaciones/contrato-animo.md, sección 7).
 import { api } from "@/lib/api"
 
 import type { NivelAnimo, RegistroAnimo } from "./tipos"

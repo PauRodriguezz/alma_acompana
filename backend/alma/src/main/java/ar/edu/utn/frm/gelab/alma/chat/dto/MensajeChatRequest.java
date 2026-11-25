@@ -12,5 +12,5 @@ import jakarta.validation.constraints.NotBlank;
  */
 public record MensajeChatRequest(
         @NotBlank(message = MensajesChat.MENSAJE_OBLIGATORIO) String mensaje,
-        @Valid List<@Valid TurnoRequest> conversacion) {
+        List<@Valid TurnoRequest> conversacion) {
 }

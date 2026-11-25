@@ -1,4 +1,4 @@
-// Depende de POST /api/auth/login y GET /api/auth/me del contrato (docs/contrato-login.md).
+// Depende de POST /api/auth/login y GET /api/auth/me del contrato (docs/especificaciones/contrato-login.md).
 import type { PreferenciasAccesibilidad } from "@/features/accesibilidad/tipos"
 import { api } from "@/lib/api"
 

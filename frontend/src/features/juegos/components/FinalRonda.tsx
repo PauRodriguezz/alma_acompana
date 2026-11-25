@@ -70,7 +70,7 @@ export function FinalRonda({
         alt=""
         className="relative h-[calc(150rem/17)] w-auto object-contain lg:h-[calc(176rem/17)]"
       />
-      <h1 ref={tituloRef} tabIndex={-1} className="relative outline-none lg:text-h1-desktop">
+      <h1 ref={tituloRef} tabIndex={-1} className="relative outline-none">
         {jugasteHoy(jugadosHoy)}
       </h1>
       <p className="relative text-muted-foreground">{FINAL_TEXTO}</p>

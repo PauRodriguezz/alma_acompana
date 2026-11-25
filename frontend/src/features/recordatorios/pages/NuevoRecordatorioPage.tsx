@@ -2,13 +2,19 @@ import { useState } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { MedicineBottle01Icon, Stethoscope02Icon } from "@hugeicons/core-free-icons"
 
+import { EnlaceVolver } from "@/components/EnlaceVolver"
+import { OpcionRadio } from "@/components/formularios/OpcionRadio"
 import { RadioGroup } from "@/components/ui/radio-group"
-import { OpcionRadio } from "@/components/alma/opcion-radio"
 
-import { EnlaceVolver } from "../components/EnlaceVolver"
 import { FormularioCita } from "../components/FormularioCita"
 import { FormularioMedicacion } from "../components/FormularioMedicacion"
-import { BOTON_NUEVO, OPCION_CITA, OPCION_MEDICACION, TIPO_DE_RECORDATORIO } from "../mensajes"
+import {
+  BOTON_NUEVO,
+  OPCION_CITA,
+  OPCION_MEDICACION,
+  TIPO_DE_RECORDATORIO,
+  VOLVER_A_RECORDATORIOS,
+} from "../mensajes"
 import type { TipoRecordatorio } from "../tipos"
 
 const PASTILLA =
@@ -20,7 +26,7 @@ export function NuevoRecordatorioPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-(--narrow-max) flex-col gap-4 lg:mx-0">
-      <EnlaceVolver />
+      <EnlaceVolver to="/recordatorios" texto={VOLVER_A_RECORDATORIOS} />
       <h1>{BOTON_NUEVO}</h1>
 
       <RadioGroup

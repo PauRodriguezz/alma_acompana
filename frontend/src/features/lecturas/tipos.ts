@@ -1,4 +1,4 @@
-// Tipos según las respuestas del contrato (docs/contrato-microcapsulas.md, sección 6).
+// Tipos según las respuestas del contrato (docs/especificaciones/contrato-microcapsulas.md, sección 6).
 // No llegan fechaPublicacion ni fechaBaja: la persona no los usa.
 import type { CategoriaMicrocapsula } from "@/features/admin/etiquetas"
 

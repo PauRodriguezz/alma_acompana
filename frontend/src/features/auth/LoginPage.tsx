@@ -4,19 +4,30 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { Navigate, useLocation } from "react-router-dom"
 
 import alma from "@/assets/alma_acompana.webp"
-import { BotonAccesibilidad } from "@/components/alma/boton-accesibilidad"
-import { CampoTexto } from "@/components/alma/campo-texto"
+import { BotonAccesibilidad } from "@/components/accesibilidad/BotonAccesibilidad"
+import { CampoTexto } from "@/components/formularios/CampoTexto"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Casilla } from "@/components/ui/casilla"
 import { ApiError } from "@/lib/api"
 
+import {
+  LOGIN_CONEXION,
+  LOGIN_CONTRASENIA,
+  LOGIN_CONTRASENIA_EJEMPLO,
+  LOGIN_CREDENCIALES,
+  LOGIN_INDICACION,
+  LOGIN_INGRESANDO,
+  LOGIN_INGRESAR,
+  LOGIN_MANTENER_SESION,
+  LOGIN_MOSTRAR_CONTRASENIA,
+  LOGIN_SALUDO,
+  LOGIN_USUARIO,
+  LOGIN_USUARIO_EJEMPLO,
+} from "./mensajes"
 import { rutaInicio } from "./rutas"
 import { esquemaLogin, type DatosLogin } from "./schemas"
 import { useAuth } from "./useAuth"
-
-const TEXTO_CREDENCIALES = "Usuario o contraseña incorrectos. Intentá nuevamente."
-const TEXTO_CONEXION = "No pudimos conectarnos. Probá de nuevo en un rato."
 
 const ID_ERROR = "login-error"
 
@@ -62,7 +73,7 @@ export function LoginPage() {
   return (
     <main className="min-h-dvh w-full lg:flex lg:items-center lg:justify-center lg:px-(--page-x) lg:py-(--page-top)">
       {/* CU-13: botón flotante de accesibilidad. En celular queda sobre la banda de color. */}
-      <BotonAccesibilidad />
+      <BotonAccesibilidad variante="flotante" />
       <div className="mx-auto flex min-h-dvh w-full flex-col lg:min-h-0 lg:max-w-(--content-max) lg:flex-row lg:rounded-xl lg:bg-card lg:[box-shadow:var(--sombra-tarjeta)] contraste-alto:lg:border-2 contraste-alto:lg:border-foreground">
         {/* Panel de color, con degradé. Sin overflow oculto: Alma se sale de él a propósito. */}
         <div className="relative h-[calc(190rem/17)] shrink-0 bg-[linear-gradient(160deg,var(--banda-arriba),var(--banda-abajo))] lg:h-auto lg:w-2/5 lg:rounded-l-xl contraste-alto:lg:rounded-l-[calc(22rem/17)] contraste-alto:lg:border-r-2 contraste-alto:lg:border-foreground">
@@ -79,20 +90,20 @@ export function LoginPage() {
         <div className="flex flex-col items-center gap-2 text-center lg:items-start lg:text-left">
           {/* Celular */}
           <div className="flex flex-col items-center gap-2 lg:hidden">
-            <h1>¡Hola! Soy Alma</h1>
-            <p className="text-muted-foreground">Ingresá con tu usuario y tu contraseña.</p>
+            <h1>{LOGIN_SALUDO}</h1>
+            <p className="text-muted-foreground">{LOGIN_INDICACION}</p>
           </div>
           {/* Escritorio */}
           <div className="hidden flex-col items-start gap-0.5 lg:flex">
             <h1 className="text-h2-desktop">¡Hola! Soy Alma</h1>
-            <p className="text-muted-foreground">Ingresá con tu usuario y tu contraseña.</p>
+            <p className="text-muted-foreground">{LOGIN_INDICACION}</p>
           </div>
         </div>
 
         {aviso ? <Alert variant="atencion">{aviso}</Alert> : null}
         {falla ? (
           <Alert variant="error" id={ID_ERROR}>
-            {falla === "credenciales" ? TEXTO_CREDENCIALES : TEXTO_CONEXION}
+            {falla === "credenciales" ? LOGIN_CREDENCIALES : LOGIN_CONEXION}
           </Alert>
         ) : null}
 
@@ -102,22 +113,22 @@ export function LoginPage() {
           className="flex flex-col gap-5 lg:gap-4"
         >
           <CampoTexto
-            label="Usuario"
+            label={LOGIN_USUARIO}
             type="text"
             autoComplete="username"
             autoCapitalize="none"
             spellCheck={false}
-            placeholder="Escribí tu usuario"
+            placeholder={LOGIN_USUARIO_EJEMPLO}
             error={errors.nombreUsuario?.message}
             invalido={falla === "credenciales"}
             aria-describedby={describedBy}
             {...register("nombreUsuario")}
           />
           <CampoTexto
-            label="Contraseña"
+            label={LOGIN_CONTRASENIA}
             type={mostrarContrasenia ? "text" : "password"}
             autoComplete="current-password"
-            placeholder="Escribí tu contraseña"
+            placeholder={LOGIN_CONTRASENIA_EJEMPLO}
             error={errors.contrasenia?.message}
             invalido={falla === "credenciales"}
             aria-describedby={describedBy}
@@ -126,7 +137,7 @@ export function LoginPage() {
 
           <div className="flex flex-col">
             <Casilla
-              label="Mostrar contraseña"
+              label={LOGIN_MOSTRAR_CONTRASENIA}
               checked={mostrarContrasenia}
               onCheckedChange={(marcada) => setMostrarContrasenia(marcada)}
             />
@@ -136,7 +147,7 @@ export function LoginPage() {
               name="mantenerSesion"
               render={({ field }) => (
                 <Casilla
-                  label="Mantener sesión iniciada"
+                  label={LOGIN_MANTENER_SESION}
                   name={field.name}
                   ref={field.ref}
                   checked={field.value}
@@ -148,7 +159,7 @@ export function LoginPage() {
           </div>
 
           <Button type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? "Ingresando…" : "Ingresar"}
+            {isSubmitting ? LOGIN_INGRESANDO : LOGIN_INGRESAR}
           </Button>
         </form>
         </div>

@@ -87,7 +87,7 @@ export function PanelDeEtapa({ grupo, modo, onCerrar }: Props) {
             <li key={recuerdo.id} className="flex flex-col border-t border-border pb-1 first:border-t-0">
               <Link
                 to={rutaDeRecuerdo(recuerdo.id)}
-                className="flex min-h-[2.75rem] items-center gap-3 rounded-md py-3"
+                className="flex min-h-(--tactil) items-center gap-3 rounded-md py-3"
               >
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="wrap-break-word font-semibold text-heading">{recuerdo.titulo}</span>

@@ -1,23 +1,34 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useId, useRef, useState, type RefObject } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { Controller, useForm, useWatch, type DefaultValues } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import {
+  Heading01Icon,
+  Heading02Icon,
+  LeftToRightListBulletIcon,
+  LeftToRightListNumberIcon,
+  QuoteDownIcon,
+  TextBoldIcon,
+  TextItalicIcon,
+} from "@hugeicons/core-free-icons"
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { CampoAreaTexto } from "@/components/alma/campo-area-texto"
-import { CampoTexto } from "@/components/alma/campo-texto"
-import { SelectorChips } from "@/components/alma/selector-chips"
-import { SubirImagen } from "@/components/alma/subir-imagen"
+import { CampoAreaTexto } from "@/components/formularios/CampoAreaTexto"
+import { CampoTexto } from "@/components/formularios/CampoTexto"
+import { SelectorChips } from "@/components/formularios/SelectorChips"
+import { SubirImagen } from "@/components/formularios/SubirImagen"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
-import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
+import { PaginaDeFormulario } from "@/features/admin/EncabezadoPagina"
 import { mensajeDeError } from "@/lib/errores"
 import { hoyArgentina } from "@/lib/fechas"
 import { CATEGORIAS_MICROCAPSULA, TEXTO_CATEGORIA_MICROCAPSULA } from "@/features/admin/etiquetas"
 import { useAviso } from "@/features/avisos/useAviso"
 import { ApiError } from "@/lib/api"
+import { cn } from "@/lib/utils"
 
 import {
   CLAVES_MICROCAPSULAS,
@@ -37,12 +48,20 @@ import { VistaPreviaMicrocapsula } from "./VistaPreviaMicrocapsula"
 import {
   ACCION_CANCELAR,
   ACCION_GUARDANDO,
-  ESTADO_CARGANDO,
   ETIQUETA_CATEGORIA,
-  MENSAJE_NO_ENCONTRADO,
 } from "@/lib/mensajes"
 import { ADMIN_MICROCAPSULAS, ADMIN_PANEL } from "@/features/admin/mensajes"
 import {
+  AYUDA_FORMATO,
+  FORMATO_CURSIVA,
+  FORMATO_DESTACADO,
+  FORMATO_ETIQUETA,
+  FORMATO_LISTA,
+  FORMATO_LISTA_NUMERADA,
+  FORMATO_NEGRITA,
+  FORMATO_SUBTITULO,
+  FORMATO_TEXTO_EJEMPLO,
+  FORMATO_TITULO,
   AVISO_ACTUALIZADA,
   AVISO_PUBLICADA,
   AVISO_SE_PUBLICA,
@@ -60,6 +79,163 @@ import {
   TITULO_EDITAR,
   VOLVER_A_MICROCAPSULAS,
 } from "./mensajes"
+
+// Barra de formato del texto (contrato de microcápsulas, sección 4): escribe la marca de Markdown
+// en el área de texto (##, ###, **, *, -, 1., >). El área es de react-hook-form y no se vuelve a
+// montar: se cambia su valor desde acá (alCambiar) y se deja la selección donde estaba.
+// Sin tamaños ni colores: solo la gramática que muestra TextoLectura.
+
+type Seleccion = { texto: string; desde: number; hasta: number }
+
+const PREFIJO_DE_BLOQUE = /^(#{2,3} |[-*] |\d+\. |> )/
+
+type Bloque = { prefijo: (n: number) => string; reconoce: RegExp }
+
+const TITULO: Bloque = { prefijo: () => "## ", reconoce: /^## / }
+const SUBTITULO: Bloque = { prefijo: () => "### ", reconoce: /^### / }
+const LISTA: Bloque = { prefijo: () => "- ", reconoce: /^[-*] / }
+const NUMERADA: Bloque = { prefijo: (n) => `${n}. `, reconoce: /^\d+\. / }
+const DESTACADO: Bloque = { prefijo: () => "> ", reconoce: /^> / }
+
+/** Envuelve la selección (o un texto de ejemplo, que queda seleccionado) con la marca. */
+function envolver(area: HTMLTextAreaElement, marca: string): Seleccion {
+  const { value, selectionStart: i, selectionEnd: f } = area
+  const elegido = value.slice(i, f) || FORMATO_TEXTO_EJEMPLO
+  const texto = value.slice(0, i) + marca + elegido + marca + value.slice(f)
+  return { texto, desde: i + marca.length, hasta: i + marca.length + elegido.length }
+}
+
+/** Pone (o saca, si todas las líneas ya lo tienen) el prefijo del bloque en cada línea elegida. */
+function aplicarBloque(area: HTMLTextAreaElement, bloque: Bloque): Seleccion {
+  const { value, selectionStart: i, selectionEnd: f } = area
+  const inicio = value.lastIndexOf("\n", i - 1) + 1
+  let fin = value.indexOf("\n", f > i && value[f - 1] === "\n" ? f - 1 : f)
+  if (fin === -1) fin = value.length
+
+  const lineas = value.slice(inicio, fin).split("\n")
+  const conTexto = lineas.filter((linea) => linea.trim() !== "")
+  const yaLoTienen = conTexto.length > 0 && conTexto.every((linea) => bloque.reconoce.test(linea))
+
+  let n = 0
+  const nuevas = lineas.map((linea) => {
+    if (linea.trim() === "") return linea
+    const limpia = linea.replace(PREFIJO_DE_BLOQUE, "")
+    if (yaLoTienen) return limpia
+    n += 1
+    return bloque.prefijo(n) + limpia
+  })
+  const bloqueNuevo = nuevas.join("\n")
+  return {
+    texto: value.slice(0, inicio) + bloqueNuevo + value.slice(fin),
+    desde: inicio,
+    hasta: inicio + bloqueNuevo.length,
+  }
+}
+
+type BarraFormatoProps = {
+  areaRef: RefObject<HTMLTextAreaElement | null>
+  /** id del área de texto que formatea (aria-controls). */
+  controla: string
+  /** Recibe el texto completo ya con el formato aplicado. */
+  alCambiar: (texto: string) => void
+}
+
+/**
+ * Barra de solo íconos pegada arriba del área de texto: forma con ella un solo bloque (barra de
+ * borde redondeado arriba y campo abajo, como un editor de texto enriquecido).
+ * Es una excepción a "un ícono nunca va solo" (contrato del panel, sección 6): cada botón tiene
+ * aria-label con el nombre del formato y una etiqueta que aparece al pasar el mouse y al enfocar con
+ * el teclado (aria-hidden: el lector de pantalla ya lee el aria-label). Se opera con Tab y Enter o
+ * Espacio. Cada botón mide 44 px como mínimo y escala con la letra.
+ */
+export function BarraFormato({ areaRef, controla, alCambiar }: BarraFormatoProps) {
+  function aplicar(cambio: (area: HTMLTextAreaElement) => Seleccion) {
+    const area = areaRef.current
+    if (!area) return
+    const { texto, desde, hasta } = cambio(area)
+    alCambiar(texto)
+    // El valor ya cambió; se devuelve el foco al área con la selección en el texto tocado.
+    requestAnimationFrame(() => {
+      area.focus()
+      area.setSelectionRange(desde, hasta)
+    })
+  }
+
+  return (
+    <div
+      role="toolbar"
+      aria-label={FORMATO_ETIQUETA}
+      aria-controls={controla}
+      aria-orientation="horizontal"
+      className="flex flex-wrap items-center gap-y-1 rounded-t-md border-2 border-b-0 border-input bg-secondary p-1 contraste-alto:border-foreground contraste-alto:bg-card"
+    >
+      {GRUPOS.map((grupo, i) => (
+        <div
+          key={i}
+          className={cn(
+            "flex items-center gap-1",
+            i > 0 && "ml-1 border-l-2 border-border pl-1 contraste-alto:border-foreground"
+          )}
+        >
+          {grupo.map(({ etiqueta, icono, cambio }) => (
+            <button
+              key={etiqueta}
+              type="button"
+              aria-label={etiqueta}
+              onClick={() => aplicar(cambio)}
+              className="group relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border-2 border-transparent text-heading hover:bg-outline-hover contraste-alto:hover:border-foreground"
+            >
+              <HugeiconsIcon icon={icono} className="size-6" aria-hidden="true" />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 rounded-md bg-foreground px-2 py-1 text-caption font-semibold whitespace-nowrap text-background group-hover:block group-focus-visible:block contraste-alto:border-2 contraste-alto:border-foreground contraste-alto:bg-card contraste-alto:text-foreground"
+              >
+                {etiqueta}
+              </span>
+            </button>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+type BotonFormato = {
+  etiqueta: string
+  icono: IconSvgElement
+  cambio: (area: HTMLTextAreaElement) => Seleccion
+}
+
+// Títulos | estilo | listas | destacado
+const GRUPOS: BotonFormato[][] = [
+  [
+    { etiqueta: FORMATO_TITULO, icono: Heading01Icon, cambio: (a) => aplicarBloque(a, TITULO) },
+    {
+      etiqueta: FORMATO_SUBTITULO,
+      icono: Heading02Icon,
+      cambio: (a) => aplicarBloque(a, SUBTITULO),
+    },
+  ],
+  [
+    { etiqueta: FORMATO_NEGRITA, icono: TextBoldIcon, cambio: (a) => envolver(a, "**") },
+    { etiqueta: FORMATO_CURSIVA, icono: TextItalicIcon, cambio: (a) => envolver(a, "*") },
+  ],
+  [
+    { etiqueta: FORMATO_LISTA, icono: LeftToRightListBulletIcon, cambio: (a) => aplicarBloque(a, LISTA) },
+    {
+      etiqueta: FORMATO_LISTA_NUMERADA,
+      icono: LeftToRightListNumberIcon,
+      cambio: (a) => aplicarBloque(a, NUMERADA),
+    },
+  ],
+  [
+    {
+      etiqueta: FORMATO_DESTACADO,
+      icono: QuoteDownIcon,
+      cambio: (a) => aplicarBloque(a, DESTACADO),
+    },
+  ],
+]
 
 const RUTA_LISTA = "/admin/microcapsulas"
 const CAMPOS: (keyof EntradaMicrocapsula)[] = [
@@ -102,7 +278,8 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
     handleSubmit,
     getValues,
     setError,
-    formState: { errors },
+    setValue,
+    formState: { errors, isSubmitted },
   } = useForm<EntradaMicrocapsula, unknown, DatosMicrocapsula>({
     resolver: zodResolver(esquemaMicrocapsula),
     defaultValues: inicial,
@@ -110,10 +287,18 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
     shouldFocusError: false,
   })
 
-  const [titulo, categoria, imagen] = useWatch({
+  const [titulo, texto, categoria, imagen] = useWatch({
     control,
-    name: ["titulo", "categoria", "imagen"],
+    name: ["titulo", "texto", "categoria", "imagen"],
   })
+
+  // El área de texto la maneja react-hook-form; la barra de formato necesita el elemento para leer
+  // la selección, así que se guarda también acá.
+  const areaTexto = useRef<HTMLTextAreaElement | null>(null)
+  const idTexto = useId()
+  const { ref: refTextoForm, ...registroTexto } = register("texto")
+  const aplicarFormato = (nuevo: string) =>
+    setValue("texto", nuevo, { shouldDirty: true, shouldValidate: isSubmitted })
 
   useEffect(() => {
     if (franja) refFranja.current?.focus()
@@ -173,11 +358,18 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
             {...register("titulo")}
           />
           <CampoAreaTexto
+            id={idTexto}
             label={ETIQUETA_TEXTO}
+            ayuda={AYUDA_FORMATO}
+            barra={<BarraFormato areaRef={areaTexto} controla={idTexto} alCambiar={aplicarFormato} />}
             placeholder={EJEMPLO_TEXTO}
-            rows={6}
+            rows={10}
             error={errors.texto?.message}
-            {...register("texto")}
+            {...registroTexto}
+            ref={(el) => {
+              refTextoForm(el)
+              areaTexto.current = el
+            }}
           />
           <Controller
             control={control}
@@ -219,7 +411,7 @@ function FormularioMicrocapsula({ id, inicial }: FormularioMicrocapsulaProps) {
           </Alert>
         </Card>
 
-        <VistaPreviaMicrocapsula titulo={titulo} categoria={categoria} imagen={imagen} />
+        <VistaPreviaMicrocapsula titulo={titulo} texto={texto} categoria={categoria} imagen={imagen} />
       </div>
 
       <div className="flex flex-wrap justify-end gap-3">
@@ -247,22 +439,20 @@ export function MicrocapsulaFormPage() {
     enabled: editando && idValido,
   })
 
-  const titulo = editando ? TITULO_EDITAR : NUEVA_MICROCAPSULA
-  const encabezado = (
-    <EncabezadoPagina
-      titulo={titulo}
+  return (
+    <PaginaDeFormulario
+      titulo={editando ? TITULO_EDITAR : NUEVA_MICROCAPSULA}
       migas={[
         { texto: ADMIN_PANEL, a: "/admin" },
         { texto: ADMIN_MICROCAPSULAS, a: RUTA_LISTA },
         { texto: editando ? MIGA_EDITAR : MIGA_NUEVA },
       ]}
-    />
-  )
-
-  if (!editando) {
-    return (
-      <>
-        {encabezado}
+      editando={editando}
+      idValido={idValido}
+      detalle={detalle}
+      rutaLista={RUTA_LISTA}
+      textoVolver={VOLVER_A_MICROCAPSULAS}
+      formularioNuevo={
         <FormularioMicrocapsula
           inicial={{
             titulo: "",
@@ -272,50 +462,20 @@ export function MicrocapsulaFormPage() {
             fechaPublicacion: hoyArgentina(),
           }}
         />
-      </>
-    )
-  }
-
-  if (!idValido || detalle.isError) {
-    return (
-      <>
-        {encabezado}
-        <Alert variant="error">
-          <div className="flex flex-col items-start gap-3">
-            <p>{idValido ? mensajeDeError(detalle.error) : MENSAJE_NO_ENCONTRADO}</p>
-            <Link to={RUTA_LISTA} className={buttonVariants({ variant: "outline" })}>
-              {VOLVER_A_MICROCAPSULAS}
-            </Link>
-          </div>
-        </Alert>
-      </>
-    )
-  }
-
-  if (detalle.isPending) {
-    return (
-      <>
-        {encabezado}
-        <p role="status">{ESTADO_CARGANDO}</p>
-      </>
-    )
-  }
-
-  const m = detalle.data
-  return (
-    <>
-      {encabezado}
-      <FormularioMicrocapsula
-        key={m.id}
-        id={m.id}
-        inicial={{
-          titulo: m.titulo,
-          texto: m.texto,
-          categoria: m.categoria,
-          imagen: m.imagen,
-          fechaPublicacion: m.fechaPublicacion,
-        }}
-      />
-    </>
+      }
+      formularioEditar={(m) => (
+        <FormularioMicrocapsula
+          key={m.id}
+          id={m.id}
+          inicial={{
+            titulo: m.titulo,
+            texto: m.texto,
+            categoria: m.categoria,
+            imagen: m.imagen,
+            fechaPublicacion: m.fechaPublicacion,
+          }}
+        />
+      )}
+    />
   )
 }

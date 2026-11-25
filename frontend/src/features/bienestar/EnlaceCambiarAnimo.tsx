@@ -14,7 +14,7 @@ export function EnlaceCambiarAnimo({ onClick }: Props) {
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex min-h-[calc(44rem/17)] items-center self-start font-semibold text-heading underline underline-offset-4"
+      className="inline-flex min-h-(--tactil) items-center self-start font-semibold text-heading underline underline-offset-4"
     >
       {CAMBIAR_ANIMO}
     </button>

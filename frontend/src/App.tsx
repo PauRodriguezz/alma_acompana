@@ -1,7 +1,7 @@
+import { lazy, Suspense } from "react"
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 
-import { LayoutPersona } from "@/components/alma/layout-persona"
-import { RutasAdmin } from "@/features/admin/RutasAdmin"
+import { LayoutPersona } from "@/components/layout/LayoutPersona"
 import { AuthProvider } from "@/features/auth/AuthProvider"
 import { LoginPage } from "@/features/auth/LoginPage"
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute"
@@ -30,6 +30,10 @@ import {
   NuevoRecordatorioPage,
   RecordatoriosPage,
 } from "@/features/recordatorios"
+import { ESTADO_CARGANDO } from "@/lib/mensajes"
+
+// El panel del operador se descarga recién cuando se entra a /admin: la persona mayor nunca lo necesita.
+const RutasAdmin = lazy(() => import("@/features/admin/RutasAdmin").then((m) => ({ default: m.RutasAdmin })))
 
 function App() {
   return (
@@ -63,7 +67,20 @@ function App() {
             </Route>
           </Route>
           <Route element={<ProtectedRoute roles={["ADMINISTRADOR"]} />}>
-            <Route path="/admin/*" element={<RutasAdmin />} />
+            <Route
+              path="/admin/*"
+              element={
+                <Suspense
+                  fallback={
+                    <p role="status" className="p-(--page-x)">
+                      {ESTADO_CARGANDO}
+                    </p>
+                  }
+                >
+                  <RutasAdmin />
+                </Suspense>
+              }
+            />
           </Route>
           <Route element={<ProtectedRoute />}>
             <Route path="/sin-permiso" element={<SinPermisoPage />} />

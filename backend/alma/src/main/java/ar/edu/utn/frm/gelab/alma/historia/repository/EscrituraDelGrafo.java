@@ -174,24 +174,24 @@ public class EscrituraDelGrafo {
         String cipolletti = crearLugar("Cipolletti");
 
         String nacimiento = crearRecuerdo(personaId, 1, ahora.minusMinutes(49), "Nací en Cipolletti",
-                "Nació en Cipolletti.", 1950, PrecisionAnio.ESTIMADA, EtapaDeVida.INFANCIA, 0);
+                "Nací en Cipolletti.", 1950, PrecisionAnio.ESTIMADA, EtapaDeVida.INFANCIA, 0);
         enlazarLugar(nacimiento, cipolletti);
 
         String casa = crearRecuerdo(personaId, 2, ahora.minusMinutes(39), "La casa de la calle San Martín",
-                "Una casa chica con patio, donde vivía con su madre y su hermana.", 1958,
+                "Una casa chica con patio, donde vivía con mi mamá y mi hermana.", 1958,
                 PrecisionAnio.APROXIMADA, EtapaDeVida.INFANCIA, 0);
         crearPersona(personaId, casa, "Marta", "hermana");
         crearPersona(personaId, casa, "Rosa", "madre");
         enlazarLugar(casa, cipolletti);
 
         String maestra = crearRecuerdo(personaId, 7, ahora.minusMinutes(29), "Mi maestra Elena",
-                "Su maestra de primer grado, que le enseñó a leer.", 1957, PrecisionAnio.EXACTA,
+                "Mi maestra de primer grado, que me enseñó a leer.", 1957, PrecisionAnio.EXACTA,
                 EtapaDeVida.INFANCIA, 0);
         crearPersona(personaId, maestra, "Elena", "maestra");
         enlazarLugar(maestra, crearLugar("Escuela N° 12"));
 
         String viaje = crearRecuerdo(personaId, 17, ahora.minusMinutes(9), "Un viaje a la costa",
-                "Un viaje a la costa con su marido, con el recuerdo del mar.", null, null, null, 1);
+                "Un viaje a la costa con mi marido, con el recuerdo del mar.", null, null, null, 1);
         crearPersona(personaId, viaje, null, "marido");
         enlazarLugar(viaje, crearLugar("la costa"));
 

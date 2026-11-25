@@ -1,8 +1,8 @@
-import type { ReactNode } from "react"
+import { lazy, Suspense, type ReactNode } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 
-import { EnlaceVolver } from "@/components/alma/enlace-volver"
-import { TituloConFoco } from "@/components/alma/titulo-con-foco"
+import { EnlaceVolver } from "@/components/EnlaceVolver"
+import { TituloConFoco } from "@/components/accesibilidad/NavegacionPorTeclado"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { buttonVariants } from "@/components/ui/button-variants"
@@ -19,6 +19,9 @@ import { AVISO_GUARDADA, AVISO_QUITADA, TITULO_LEER, VOLVER_A_LEER } from "../me
 import { conPestania, pestaniaDe } from "../pestanias"
 import type { LecturaDetalle } from "../tipos"
 import { useCambiarGuardada, useLectura } from "../useLecturas"
+
+// react-markdown pesa bastante: se descarga recién cuando hay un texto con formato para mostrar.
+const TextoLectura = lazy(() => import("@/components/TextoLectura").then((m) => ({ default: m.TextoLectura })))
 
 // Ancho de lectura (PROPUESTO, no está en el Figma): unos 70 caracteres por línea.
 const ANCHO_LECTURA = "max-w-[calc(680rem/17)]"
@@ -103,21 +106,10 @@ function Lectura({ lectura }: { lectura: LecturaDetalle }) {
         <img src={lectura.imagen} alt="" className="aspect-video w-full rounded-lg object-cover" />
       ) : null}
 
-      <div className="flex flex-col gap-4 text-body">
-        {parrafos(lectura.texto).map((parrafo, i) => (
-          <p key={i} className="whitespace-pre-line wrap-break-word">
-            {parrafo}
-          </p>
-        ))}
-      </div>
+      {/* Markdown limitado (contrato de microcápsulas, sección 4): los textos viejos, sin marcas, son párrafos */}
+      <Suspense fallback={<p role="status">{ESTADO_CARGANDO}</p>}>
+        <TextoLectura texto={lectura.texto} />
+      </Suspense>
     </article>
   )
-}
-
-/** Los párrafos van separados por una línea en blanco; un salto simple se respeta dentro del párrafo. */
-function parrafos(texto: string): string[] {
-  return texto
-    .split(/\n\s*\n/)
-    .map((parrafo) => parrafo.trim())
-    .filter((parrafo) => parrafo !== "")
 }

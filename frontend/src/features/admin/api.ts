@@ -1,4 +1,4 @@
-// Depende de GET /api/admin/panel/resumen (docs/contrato-panel-operador.md, sección 3.1).
+// Depende de GET /api/admin/panel/resumen (docs/especificaciones/contrato-panel-operador.md, sección 3.1).
 import { api } from "@/lib/api"
 
 export type ResumenPanel = {

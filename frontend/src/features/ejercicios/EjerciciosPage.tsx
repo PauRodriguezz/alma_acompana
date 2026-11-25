@@ -2,13 +2,14 @@ import { useState, type ReactElement } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Delete02Icon, PencilEdit02Icon } from "@hugeicons/core-free-icons"
+import { Delete02Icon } from "@hugeicons/core-free-icons"
+import { ICONO_EDITAR } from "@/components/iconos"
 
-import { DialogoConfirmar } from "@/components/alma/dialogo-confirmar"
-import { SelectorChips } from "@/components/alma/selector-chips"
+import { DialogoConfirmar } from "@/components/DialogoConfirmar"
+import { SelectorChips } from "@/components/formularios/SelectorChips"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { buttonVariants } from "@/components/ui/button-variants"
+import { botonIconoVariants, buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
 import {
   Table,
@@ -22,7 +23,6 @@ import {
 import { useAviso } from "@/features/avisos/useAviso"
 import { EncabezadoPagina } from "@/features/admin/EncabezadoPagina"
 import { mensajeDeError } from "@/lib/errores"
-import { estiloBotonIcono } from "@/components/alma/estilos"
 import {
   CATEGORIAS_EJERCICIO,
   TEXTO_CATEGORIA_EJERCICIO,
@@ -231,9 +231,9 @@ export function EjerciciosPage() {
                         <Link
                           to={`${RUTA_LISTA}/${e.id}/editar`}
                           aria-label={ariaEditar(e.consigna)}
-                          className={`${estiloBotonIcono} text-heading`}
+                          className={botonIconoVariants({ tono: "editar" })}
                         >
-                          <HugeiconsIcon icon={PencilEdit02Icon} aria-hidden="true" />
+                          <HugeiconsIcon icon={ICONO_EDITAR} aria-hidden="true" />
                         </Link>
                         <DialogoEliminar
                           ejercicio={e}
@@ -242,7 +242,7 @@ export function EjerciciosPage() {
                             <button
                               type="button"
                               aria-label={ariaEliminar(e.consigna)}
-                              className={`${estiloBotonIcono} text-destructive`}
+                              className={botonIconoVariants({ tono: "eliminar" })}
                             >
                               <HugeiconsIcon icon={Delete02Icon} aria-hidden="true" />
                             </button>
@@ -281,7 +281,7 @@ export function EjerciciosPage() {
                       aria-label={ariaEditar(e.consigna)}
                       className={buttonVariants({ variant: "outline" })}
                     >
-                      <HugeiconsIcon icon={PencilEdit02Icon} className="size-6" aria-hidden="true" />
+                      <HugeiconsIcon icon={ICONO_EDITAR} className="size-6" aria-hidden="true" />
                       {ACCION_EDITAR}
                     </Link>
                     <DialogoEliminar

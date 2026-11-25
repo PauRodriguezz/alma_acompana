@@ -1,4 +1,4 @@
-// Depende de /api/animo del contrato (docs/contrato-animo.md, secciones 4 y 7).
+// Depende de /api/animo del contrato (docs/especificaciones/contrato-animo.md, secciones 4 y 7).
 
 /** Escala de ánimo del back (de menos a más). La API usa el enum, no el número. */
 export type NivelAnimo = "MUY_MAL" | "MAL" | "NEUTRO" | "BIEN" | "MUY_BIEN"

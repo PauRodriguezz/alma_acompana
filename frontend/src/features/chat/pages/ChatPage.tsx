@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 
-import { MensajeAlma } from "@/components/alma/mensaje-alma"
+import { MensajeAlma } from "@/components/alma/Alma"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { BurbujaAnimo, EnlaceCambiarAnimo, WidgetAnimo } from "@/features/bienestar"

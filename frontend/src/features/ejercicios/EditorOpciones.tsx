@@ -1,9 +1,9 @@
 import { useId, useRef } from "react"
 import { Controller, useFieldArray, useWatch, type UseFormReturn } from "react-hook-form"
 
-import { CampoTexto } from "@/components/alma/campo-texto"
-import { MensajeError } from "@/components/alma/mensaje-error"
-import { SubirImagen } from "@/components/alma/subir-imagen"
+import { CampoTexto } from "@/components/formularios/CampoTexto"
+import { MensajeError } from "@/components/formularios/MensajeError"
+import { SubirImagen } from "@/components/formularios/SubirImagen"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"

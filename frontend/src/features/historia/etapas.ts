@@ -7,20 +7,22 @@ export type Etapa = {
   id: IdEtapa
   nombre: string
   rango: string
-  /** Banderín, borde de la etapa elegida y texto fuerte (contrato, Anexo A). Contraste con blanco: 6,2 a 7,0. */
+  /** Banderín, borde de la etapa elegida y texto fuerte: `var(--etapa-<id>-fuerte)` de `index.css` (contrato, Anexo A). */
   fuerte: string
-  /** Fondo del círculo de la ilustración y borde de la tarjeta. */
+  /** Fondo del círculo de la ilustración y borde de la tarjeta: `var(--etapa-<id>-claro)` de `index.css`. */
   claro: string
 }
 
-/** Orden del camino (contrato, 2.1). */
+const colores = (id: string) => ({ fuerte: `var(--etapa-${id}-fuerte)`, claro: `var(--etapa-${id}-claro)` })
+
+/** Orden del camino (contrato, 2.1). Los colores no están acá: salen de los tokens de `index.css`. */
 export const ETAPAS: readonly Etapa[] = [
-  { id: "INFANCIA", nombre: "Infancia", rango: "0 a 11 años", fuerte: "#993C1D", claro: "#F5C4B3" },
-  { id: "ADOLESCENCIA", nombre: "Adolescencia", rango: "12 a 17 años", fuerte: "#534AB7", claro: "#CECBF6" },
-  { id: "JUVENTUD", nombre: "Juventud", rango: "18 a 29 años", fuerte: "#185FA5", claro: "#B5D4F4" },
-  { id: "ADULTEZ", nombre: "Adultez", rango: "30 a 59 años", fuerte: "#0F6E56", claro: "#9FE1CB" },
-  { id: "VEJEZ", nombre: "Vejez", rango: "60 años o más", fuerte: "#854F0B", claro: "#FAC775" },
-  { id: "OTROS", nombre: "Otros momentos", rango: "Todavía sin etapa", fuerte: "#5F5E5A", claro: "#D3D1C7" },
+  { id: "INFANCIA", nombre: "Infancia", rango: "0 a 11 años", ...colores("infancia") },
+  { id: "ADOLESCENCIA", nombre: "Adolescencia", rango: "12 a 17 años", ...colores("adolescencia") },
+  { id: "JUVENTUD", nombre: "Juventud", rango: "18 a 29 años", ...colores("juventud") },
+  { id: "ADULTEZ", nombre: "Adultez", rango: "30 a 59 años", ...colores("adultez") },
+  { id: "VEJEZ", nombre: "Vejez", rango: "60 años o más", ...colores("vejez") },
+  { id: "OTROS", nombre: "Otros momentos", rango: "Todavía sin etapa", ...colores("otros") },
 ]
 
 export function etapaDe(id: IdEtapa): Etapa {

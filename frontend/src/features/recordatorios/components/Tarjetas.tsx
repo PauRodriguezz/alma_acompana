@@ -11,7 +11,7 @@ import {
 import { Link } from "react-router-dom"
 import { cn } from "@/lib/utils"
 
-import { Chip } from "@/components/alma/chip"
+import { Chip } from "@/components/Chip"
 import { Button } from "@/components/ui/button"
 
 import { fechaCompleta, horaDeFechaHora, horaDeToma, textoPasoHace } from "../fechas"

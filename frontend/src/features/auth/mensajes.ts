@@ -1,0 +1,13 @@
+// Textos de la pantalla de ingreso (contrato de login, sección 8).
+export const LOGIN_CREDENCIALES = "Usuario o contraseña incorrectos. Intentá nuevamente."
+export const LOGIN_CONEXION = "No pudimos conectarnos. Probá de nuevo en un rato."
+export const LOGIN_SALUDO = "¡Hola! Soy Alma"
+export const LOGIN_INDICACION = "Ingresá con tu usuario y tu contraseña."
+export const LOGIN_USUARIO = "Usuario"
+export const LOGIN_USUARIO_EJEMPLO = "Escribí tu usuario"
+export const LOGIN_CONTRASENIA = "Contraseña"
+export const LOGIN_CONTRASENIA_EJEMPLO = "Escribí tu contraseña"
+export const LOGIN_MOSTRAR_CONTRASENIA = "Mostrar contraseña"
+export const LOGIN_MANTENER_SESION = "Mantener sesión iniciada"
+export const LOGIN_INGRESANDO = "Ingresando…"
+export const LOGIN_INGRESAR = "Ingresar"

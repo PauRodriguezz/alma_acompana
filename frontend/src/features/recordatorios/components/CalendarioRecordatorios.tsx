@@ -41,8 +41,11 @@ const ESCRITORIO = "(min-width: 64rem)"
 
 // En celular el calendario ocupa todo el ancho de la pantalla (sin los márgenes de la página):
 // con letra "Muy grande" esos márgenes crecen y siete columnas de 44 px ya no entrarían.
+// En escritorio el calendario y el día elegido son dos columnas iguales (mismo crecimiento, piso
+// de 340 px = 7 días de 44 px más el relleno). Si no entran las dos (letra "Muy grande"), la fila
+// se parte (flex-wrap) y el día queda debajo, como en celular.
 const TARJETA =
-  "bg-card py-4 [box-shadow:var(--sombra-sm)] contraste-alto:border-y-2 contraste-alto:border-foreground max-lg:-mx-(--page-x) lg:mx-auto lg:max-w-[calc(560rem/17)] lg:rounded-lg lg:px-4 lg:contraste-alto:border-2"
+  "bg-card py-4 [box-shadow:var(--sombra-sm)] contraste-alto:border-y-2 contraste-alto:border-foreground max-lg:-mx-(--page-x) lg:max-w-[calc(560rem/17)] lg:flex-[1_1_340px] lg:rounded-lg lg:px-4 lg:contraste-alto:border-2"
 
 /**
  * Calendario (Figma): el mes con un punto en los días con cita y, debajo, el detalle del día
@@ -138,70 +141,72 @@ export function CalendarioRecordatorios() {
       </p>
       {citasDelMes.error ? <Alert variant="error">{mensajeDeError(citasDelMes.error)}</Alert> : null}
 
-      <div className={TARJETA}>
-        <div ref={mesRef} className={cn(modo === "semana" && "max-lg:hidden")}>
-          <Calendar
-            mode="single"
-            required
-            selected={dia}
-            onSelect={(elegido) => {
-              if (elegido) setDia(elegido)
-            }}
-            onDayClick={tocarDiaDelMes}
-            month={mes}
-            onMonthChange={setMes}
-            today={hoy}
-            modifiers={{ marcado: diasConCita }}
-            labels={{
-              labelDayButton: (fecha, modificadores) =>
-                nombreDelDia(fecha, modificadores, NOMBRE_DIA_CON_CITA),
-            }}
-          />
-        </div>
-        {modo === "semana" ? (
-          <div
-            ref={tiraRef}
-            className="lg:hidden motion-safe:animate-in motion-safe:duration-150 motion-safe:fade-in-0 motion-safe:slide-in-from-top-1"
-          >
-            <TiraSemana
-              dia={dia}
-              hoy={hoy}
-              diasConCita={diasConCita}
-              onElegir={setDia}
-              onSemana={moverSemana}
-              onVerMes={verElMes}
+      <div className="flex flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-start lg:gap-x-(--slot)">
+        <div className={TARJETA}>
+          <div ref={mesRef} className={cn(modo === "semana" && "max-lg:hidden")}>
+            <Calendar
+              mode="single"
+              required
+              selected={dia}
+              onSelect={(elegido) => {
+                if (elegido) setDia(elegido)
+              }}
+              onDayClick={tocarDiaDelMes}
+              month={mes}
+              onMonthChange={setMes}
+              today={hoy}
+              modifiers={{ marcado: diasConCita }}
+              labels={{
+                labelDayButton: (fecha, modificadores) =>
+                  nombreDelDia(fecha, modificadores, NOMBRE_DIA_CON_CITA),
+              }}
             />
           </div>
-        ) : null}
-        <p className="px-(--page-x) pt-3 text-muted-foreground lg:px-0">{LEYENDA_PUNTO}</p>
-      </div>
+          {modo === "semana" ? (
+            <div
+              ref={tiraRef}
+              className="lg:hidden motion-safe:animate-in motion-safe:duration-150 motion-safe:fade-in-0 motion-safe:slide-in-from-top-1"
+            >
+              <TiraSemana
+                dia={dia}
+                hoy={hoy}
+                diasConCita={diasConCita}
+                onElegir={setDia}
+                onSemana={moverSemana}
+                onVerMes={verElMes}
+              />
+            </div>
+          ) : null}
+          <p className="px-(--page-x) pt-3 text-muted-foreground lg:px-0">{LEYENDA_PUNTO}</p>
+        </div>
 
-      <section aria-labelledby="calendario-dia" className="flex flex-col gap-3">
-        <h2 id="calendario-dia" className="text-h3">
-          {tituloDelDia(esHoy, fechaCompleta(diaTexto))}
-        </h2>
-        {errorEstado ? <Alert variant="error">{mensajeDeError(errorEstado)}</Alert> : null}
-        {delDia.isPending ? (
-          <p role="status" className="text-muted-foreground">
-            {ESTADO_CARGANDO}
-          </p>
-        ) : null}
-        {/* Si ya falló el mes, el aviso de arriba alcanza: no se repite el mismo texto */}
-        {delDia.error && !citasDelMes.error ? (
-          <Alert variant="error">{mensajeDeError(delDia.error)}</Alert>
-        ) : null}
-        {delDia.data && delDia.data.length === 0 ? (
-          <p className="text-muted-foreground">{SIN_AVISOS_DEL_DIA}</p>
-        ) : null}
-        {delDia.data && delDia.data.length > 0 ? (
-          <LineaDeTiempoDelDia
-            items={delDia.data}
-            ahora={ahora}
-            ocupadoId={ocupadoId}
-            onCambiarEstado={esHoy ? cambiar : undefined}
-          />
-        ) : null}
-      </section>
+        <section aria-labelledby="calendario-dia" className="flex min-w-0 flex-col gap-3 lg:flex-[1_1_340px]">
+          <h2 id="calendario-dia" className="text-h3">
+            {tituloDelDia(esHoy, fechaCompleta(diaTexto))}
+          </h2>
+          {errorEstado ? <Alert variant="error">{mensajeDeError(errorEstado)}</Alert> : null}
+          {delDia.isPending ? (
+            <p role="status" className="text-muted-foreground">
+              {ESTADO_CARGANDO}
+            </p>
+          ) : null}
+          {/* Si ya falló el mes, el aviso de arriba alcanza: no se repite el mismo texto */}
+          {delDia.error && !citasDelMes.error ? (
+            <Alert variant="error">{mensajeDeError(delDia.error)}</Alert>
+          ) : null}
+          {delDia.data && delDia.data.length === 0 ? (
+            <p className="text-muted-foreground">{SIN_AVISOS_DEL_DIA}</p>
+          ) : null}
+          {delDia.data && delDia.data.length > 0 ? (
+            <LineaDeTiempoDelDia
+              items={delDia.data}
+              ahora={ahora}
+              ocupadoId={ocupadoId}
+              onCambiarEstado={esHoy ? cambiar : undefined}
+            />
+          ) : null}
+        </section>
+      </div>
     </div>
   )
 }

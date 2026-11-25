@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom"
 
 import almaSaludo from "@/assets/alma_acompana_saludo.webp"
-import { EnlaceVolver } from "@/components/alma/enlace-volver"
+import { EnlaceVolver } from "@/components/EnlaceVolver"
 import { buttonVariants } from "@/components/ui/button-variants"
 import { Card } from "@/components/ui/card"
 import { RUTA_ENTRETENIMIENTO, RUTA_JUGAR } from "@/features/entretenimiento/rutas"
@@ -18,7 +18,7 @@ export function JuegosInicioPage() {
   return (
     <div className="flex flex-col gap-4">
       <EnlaceVolver to={RUTA_ENTRETENIMIENTO} texto={NAVEGACION_ENTRETENIMIENTO} />
-      <h1 className="lg:text-h1-desktop">{TITULO_JUEGOS}</h1>
+      <h1>{TITULO_JUEGOS}</h1>
 
       <Card className="items-center text-center max-lg:rounded-lg">
         <img

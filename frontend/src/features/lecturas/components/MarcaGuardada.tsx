@@ -1,6 +1,6 @@
 import { Bookmark02Icon } from "@hugeicons/core-free-icons"
 
-import { Chip } from "@/components/alma/chip"
+import { Chip } from "@/components/Chip"
 
 import { MARCA_GUARDADA } from "../mensajes"
 

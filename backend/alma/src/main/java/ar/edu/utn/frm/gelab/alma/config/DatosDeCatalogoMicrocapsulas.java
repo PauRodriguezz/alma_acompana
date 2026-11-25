@@ -1,6 +1,7 @@
 package ar.edu.utn.frm.gelab.alma.config;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,14 +18,29 @@ import ar.edu.utn.frm.gelab.alma.microcapsulas.repository.MicrocapsulaRepository
 /**
  * Microcápsulas de ejemplo para la pantalla Leer (contrato de microcápsulas, anexo A). Se suman a las 5
  * de DatosDeCatalogo: así cada categoría tiene al menos una y hay textos de distinto largo, con párrafos.
+ * Los textos están en {@code src/main/resources/microcapsulas/} (uno por archivo).
  * Solo con alma.seed.enabled=true. Es idempotente por título, aunque la microcápsula esté dada de baja
- * (así no se recrea lo que la persona operadora eliminó).
+ * (así no se recrea lo que la persona operadora eliminó). Si un título ya existe, no se toca su texto.
  */
 @Component
 @ConditionalOnProperty(name = "alma.seed.enabled", havingValue = "true")
 public class DatosDeCatalogoMicrocapsulas implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DatosDeCatalogoMicrocapsulas.class);
+
+    /** Las microcápsulas que carga este seed (también las usa la prueba de límites y formato). */
+    public static final List<MicrocapsulaSemilla> SEMILLAS = List.of(
+            new MicrocapsulaSemilla("Un botiquín listo en casa", CategoriaMicrocapsula.CUIDADO_HOGAR,
+                    LocalDate.of(2026, 10, 6), "botiquin-listo-en-casa.txt"),
+            new MicrocapsulaSemilla("Preguntá todo lo que quieras en la consulta",
+                    CategoriaMicrocapsula.RECOMENDACIONES,
+                    LocalDate.of(2026, 10, 7), "preguntar-en-la-consulta.txt"),
+            new MicrocapsulaSemilla("Levantate despacio", CategoriaMicrocapsula.PREVENCION_CAIDAS,
+                    LocalDate.of(2026, 10, 8), "levantate-despacio.txt"),
+            new MicrocapsulaSemilla("Comer bien todos los días", CategoriaMicrocapsula.ALIMENTACION,
+                    LocalDate.of(2026, 10, 9), "comer-bien-todos-los-dias.txt"),
+            new MicrocapsulaSemilla("Ejercicios suaves para empezar el día", CategoriaMicrocapsula.ACTIVIDAD_FISICA,
+                    LocalDate.of(2026, 10, 10), "ejercicios-suaves-para-empezar-el-dia.txt"));
 
     private final MicrocapsulaRepository microcapsulaRepository;
 
@@ -36,53 +52,23 @@ public class DatosDeCatalogoMicrocapsulas implements ApplicationRunner {
     @Transactional
     public void run(ApplicationArguments args) {
         int creadas = 0;
-        creadas += microcapsula("Un botiquín listo en casa", CategoriaMicrocapsula.CUIDADO_HOGAR,
-                LocalDate.of(2026, 10, 6),
-                "Tené en un lugar fijo y a mano un termómetro, gasas, curitas y alcohol en gel. "
-                        + "Sumá una lista con los teléfonos de tu médico y de un familiar.\n\n"
-                        + "Revisá de vez en cuando las fechas de vencimiento de lo que guardás.\n\n"
-                        + "Guardá los medicamentos en su caja original, lejos del calor y de la humedad.");
-        creadas += microcapsula("Preguntá todo lo que quieras en la consulta", CategoriaMicrocapsula.RECOMENDACIONES,
-                LocalDate.of(2026, 10, 7),
-                "Antes de ir al médico, anotá tus dudas y los medicamentos que tomás. "
-                        + "Llevá esa lista y mostrásela.\n\n"
-                        + "Si no entendés algo, pedí que te lo expliquen de nuevo con palabras simples. "
-                        + "Es tu derecho y es parte de cuidarte.\n\n"
-                        + "Podés ir acompañado por alguien de confianza. Al terminar, pedí que te dejen "
-                        + "las indicaciones por escrito para no olvidarte de nada.");
-        creadas += microcapsula("Levantate despacio", CategoriaMicrocapsula.PREVENCION_CAIDAS,
-                LocalDate.of(2026, 10, 8),
-                "Al salir de la cama o de una silla, quedate un momento sentado en el borde y respirá tranquilo.\n\n"
-                        + "Después apoyá bien los pies en el piso y ponete de pie despacio, "
-                        + "con algo firme para agarrarte.\n\n"
-                        + "Así se evitan los mareos y los tropiezos. Si te mareás seguido, contáselo a tu médico.");
-        creadas += microcapsula("Comer bien todos los días", CategoriaMicrocapsula.ALIMENTACION,
-                LocalDate.of(2026, 10, 9),
-                "Tratá de sumar verduras y frutas de distintos colores en tus comidas.\n\n"
-                        + "Repartí lo que comés en varias veces al día, sin saltearte ninguna.\n\n"
-                        + "Para darle sabor a la comida, probá con limón, ajo o hierbas en lugar de sal.\n\n"
-                        + "Si tenés una dieta indicada por tu médico, seguí lo que te recomendó.");
-        creadas += microcapsula("Ejercicios suaves para empezar el día", CategoriaMicrocapsula.ACTIVIDAD_FISICA,
-                LocalDate.of(2026, 10, 10),
-                "Antes de empezar el día, mové con suavidad el cuello, los hombros, los brazos y las piernas. "
-                        + "Podés hacerlo sentado o parado con un apoyo.\n\n"
-                        + "No hace falta forzar nada ni sentir dolor: unos pocos minutos alcanzan.\n\n"
-                        + "Si algún movimiento te duele, dejalo y consultá con tu médico.");
+        for (MicrocapsulaSemilla semilla : SEMILLAS) {
+            creadas += microcapsula(semilla);
+        }
         if (creadas > 0) {
             log.info("Microcápsulas de lectura de ejemplo: {} creadas", creadas);
         }
     }
 
-    private int microcapsula(String titulo, CategoriaMicrocapsula categoria, LocalDate fechaPublicacion,
-                             String texto) {
-        if (microcapsulaRepository.existsByTitulo(titulo)) {
+    private int microcapsula(MicrocapsulaSemilla semilla) {
+        if (microcapsulaRepository.existsByTitulo(semilla.titulo())) {
             return 0;
         }
         Microcapsula microcapsula = new Microcapsula();
-        microcapsula.setTitulo(titulo);
-        microcapsula.setTexto(texto);
-        microcapsula.setCategoria(categoria);
-        microcapsula.setFechaPublicacion(fechaPublicacion);
+        microcapsula.setTitulo(semilla.titulo());
+        microcapsula.setTexto(TextosDeMicrocapsulas.leer(semilla.archivo()));
+        microcapsula.setCategoria(semilla.categoria());
+        microcapsula.setFechaPublicacion(semilla.fechaPublicacion());
         microcapsulaRepository.save(microcapsula);
         return 1;
     }

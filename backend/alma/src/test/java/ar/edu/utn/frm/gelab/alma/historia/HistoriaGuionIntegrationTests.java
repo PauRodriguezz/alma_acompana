@@ -34,6 +34,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -351,7 +352,7 @@ class HistoriaGuionIntegrationTests {
         mockMvc.perform(pedir(post("/api/historia/guion/1/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
                         .content(cuerpo("Nací en un pueblo.")))
                 .andExpect(status().isAccepted())
-                .andExpect(content().json("{\"estado\":\"ACEPTADA\"}", true));
+                .andExpect(content().json("{\"estado\":\"ACEPTADA\"}", JsonCompareMode.STRICT));
         mockMvc.perform(pedir(post("/api/historia/guion/2/salteo"), tokenA))
                 .andExpect(status().isNoContent())
                 .andExpect(content().string(""));
@@ -373,7 +374,7 @@ class HistoriaGuionIntegrationTests {
         mockMvc.perform(pedir(post("/api/historia/guion/10/respuesta"), tokenA).contentType(MediaType.APPLICATION_JSON)
                         .content(cuerpo("No me acuerdo.")))
                 .andExpect(status().isAccepted())
-                .andExpect(content().json("{\"estado\":\"ACEPTADA\"}", true));
+                .andExpect(content().json("{\"estado\":\"ACEPTADA\"}", JsonCompareMode.STRICT));
         esperarCola();
 
         assertThat(relacionesDeTipo(personaA, 10, "SALTEO")).isEqualTo(1);

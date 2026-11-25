@@ -4,7 +4,7 @@ import { Bookmark02Icon, Note01Icon } from "@hugeicons/core-free-icons"
 import type { UseQueryResult } from "@tanstack/react-query"
 import { useSearchParams } from "react-router-dom"
 
-import { EnlaceVolver } from "@/components/alma/enlace-volver"
+import { EnlaceVolver } from "@/components/EnlaceVolver"
 import { Alert } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs"
@@ -54,7 +54,7 @@ export function LecturasPage() {
   return (
     <div className="flex flex-col gap-4">
       <EnlaceVolver to={RUTA_ENTRETENIMIENTO} texto={NAVEGACION_ENTRETENIMIENTO} />
-      <h1 ref={tituloRef} tabIndex={-1} className="outline-none lg:text-h1-desktop">
+      <h1 ref={tituloRef} tabIndex={-1} className="outline-none">
         {TITULO_LEER}
       </h1>
 

@@ -1,62 +1,63 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef } from "react"
 import { Outlet } from "react-router-dom"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Menu01Icon } from "@hugeicons/core-free-icons"
 
-import alma from "@/assets/alma_acompana.webp"
-import { BotonAccesibilidad } from "@/components/alma/boton-accesibilidad"
-import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { BotonAccesibilidad } from "@/components/accesibilidad/BotonAccesibilidad"
+import { destinosOperador, ICONO_CERRAR_SESION } from "@/components/layout/destinosMenu"
+import { BotonItemMenu, MenuPrincipal } from "@/components/layout/MenuPrincipal"
+import { SaltarAlContenido } from "@/components/accesibilidad/NavegacionPorTeclado"
+import { DialogoCerrarSesion } from "@/features/auth/DialogoCerrarSesion"
 import { AvisoProvider } from "@/features/avisos/AvisoProvider"
+import { CERRAR_SESION } from "@/lib/mensajes"
 
-import { MenuAdmin } from "./MenuAdmin"
 import {
   ADMIN_CERRAR_MENU,
+  ADMIN_EJERCICIOS,
   ADMIN_MARCA,
   ADMIN_MENU,
+  ADMIN_MENU_NAVEGACION,
+  ADMIN_MENU_PANEL,
+  ADMIN_MICROCAPSULAS,
   ADMIN_PANEL,
-  ADMIN_SALTAR_AL_CONTENIDO,
+  ADMIN_PERFIL,
   ADMIN_TITULO_APP,
 } from "./mensajes"
 
 // Título de la pestaña fuera del panel (el de index.html)
 const TITULO_APP = ADMIN_TITULO_APP
 
-/**
- * Marca del Figma (40:316): avatar de Alma, "Alma" en h2-desktop y "Panel de operador".
- * El avatar es el de LayoutPersona (alma_acompana.webp en un círculo accent-soft).
- * PENDIENTE: alma-marca.svg quedó sin uso.
- * compacta: en la barra de celular el avatar se oculta en pantallas muy angostas, para que
- * con letra grande entren "Menú", la marca y el botón de accesibilidad.
- */
-function Marca({ compacta = false }: { compacta?: boolean }) {
+/** "Cerrar sesión" al pie del menú: abre el diálogo de confirmación. Mismo ítem que los destinos. */
+function ItemCerrarSesion() {
   return (
-    <div className="flex min-w-0 items-center gap-3">
-      {/* Como en LayoutPersona: círculo accent-soft con Alma adentro y borde en alto contraste */}
-      <span
-        className={`size-12 shrink-0 items-center justify-center rounded-full bg-accent-soft contraste-alto:border-2 contraste-alto:border-foreground ${compacta ? "hidden sm:inline-flex" : "inline-flex"}`}
-      >
-        <img src={alma} alt="" className="size-10 object-contain" />
-      </span>
-      <div className="flex min-w-0 flex-col">
-        <span className="font-heading text-h2-desktop font-medium text-heading">{ADMIN_MARCA}</span>
-        <span className="text-caption text-muted-foreground">{ADMIN_PANEL}</span>
-      </div>
-    </div>
+    <DialogoCerrarSesion
+      disparador={
+        <BotonItemMenu icono={ICONO_CERRAR_SESION}>{CERRAR_SESION}</BotonItemMenu>
+      }
+    />
   )
 }
 
 /**
- * Layout del panel de operador (contrato del panel, sección 6).
- * - Escritorio (desde 1024 px): menú lateral fijo de ancho --sidebar, como el Figma (51:1409).
- * - Celular (PROPUESTO): barra superior con la marca y un botón "Menú" que abre el mismo
- *   menú en un panel lateral.
- * - PROPUESTO: el botón de accesibilidad (CU-13) también está en el panel; para el
- *   ADMINISTRADOR las preferencias quedan solo en el dispositivo (ver useAccesibilidad).
+ * Layout del panel de operador (contrato del panel, sección 6). El menú es MenuPrincipal, el mismo componente
+ * que usa la persona mayor, con los destinos del operador:
+ * - Escritorio (desde 1024 px): idéntico al de la persona, salvo el fondo beige (Figma 51:1409) y el subtítulo
+ *   "Panel de operador" debajo de "Alma".
+ * - Celular: barra superior con el botón "Menú" (con texto), que abre una hoja lateral con los mismos destinos. En la
+ *   barra no va la marca ("Alma / Panel de operador"): con letra grande dejaba demasiado texto arriba.
+ * - PROPUESTO: el botón de accesibilidad (CU-13) también está en el panel, flotante; para el ADMINISTRADOR las
+ *   preferencias quedan solo en el dispositivo (ver useAccesibilidad).
  */
 export function AdminLayout() {
-  const [menuAbierto, setMenuAbierto] = useState(false)
   const contenidoRef = useRef<HTMLElement>(null)
+  const destinos = useMemo(
+    () =>
+      destinosOperador({
+        panel: ADMIN_MENU_PANEL,
+        ejercicios: ADMIN_EJERCICIOS,
+        microcapsulas: ADMIN_MICROCAPSULAS,
+        perfil: ADMIN_PERFIL,
+      }),
+    []
+  )
 
   // Al salir del panel la pestaña vuelve a su título. Los datos guardados se borran en el
   // logout de AuthProvider.
@@ -69,54 +70,31 @@ export function AdminLayout() {
 
   return (
     <AvisoProvider contenidoRef={contenidoRef} posicion="panel">
-    <div className="min-h-dvh lg:flex">
-      <a
-        href="#contenido"
-        className="sr-only z-50 rounded-md bg-card px-4 py-3 font-semibold text-heading focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
-      >
-        {ADMIN_SALTAR_AL_CONTENIDO}
-      </a>
+      <div className="min-h-dvh lg:pl-(--sidebar)">
+        <SaltarAlContenido />
+        <BotonAccesibilidad variante="flotante" />
+        <MenuPrincipal
+          rol="operador"
+          destinos={destinos}
+          etiquetaNavegacion={ADMIN_MENU_NAVEGACION}
+          marca={{ nombre: ADMIN_MARCA, subtitulo: ADMIN_PANEL }}
+          pie={<ItemCerrarSesion />}
+          textosCelularOperador={{ menu: ADMIN_MENU, cerrarMenu: ADMIN_CERRAR_MENU }}
+        />
 
-      <BotonAccesibilidad />
-
-      {/* Escritorio: menú lateral */}
-      <aside className="sticky top-0 hidden h-dvh w-(--sidebar) shrink-0 flex-col gap-2 overflow-y-auto border-r-2 border-border bg-secondary px-4 py-6 lg:flex">
-        <div className="px-2 pb-6">
-          <Marca />
-        </div>
-        <MenuAdmin />
-      </aside>
-
-      {/* Celular: barra superior. A la derecha queda lugar para el botón de accesibilidad. */}
-      <header className="flex items-center gap-3 border-b-2 border-border bg-secondary py-3 pr-[calc(var(--page-x)+calc(56rem/17))] pl-(--page-x) lg:hidden">
-        <Sheet open={menuAbierto} onOpenChange={setMenuAbierto}>
-          <SheetTrigger render={<Button variant="outline" className="mb-0" />}>
-            <HugeiconsIcon icon={Menu01Icon} className="size-6" aria-hidden="true" />
-            {ADMIN_MENU}
-          </SheetTrigger>
-          <SheetContent side="left" textoCerrar={ADMIN_CERRAR_MENU} className="px-4 pb-6">
-            <SheetHeader className="px-2">
-              <SheetTitle>{ADMIN_MENU}</SheetTitle>
-            </SheetHeader>
-            <MenuAdmin alNavegar={() => setMenuAbierto(false)} />
-          </SheetContent>
-        </Sheet>
-        <Marca compacta />
-      </header>
-
-      <main
-        ref={contenidoRef}
-        id="contenido"
-        tabIndex={-1}
-        className="min-w-0 flex-1 px-(--page-x) pt-(--page-top) pb-24 outline-none"
-      >
-        {/* @container: las pantallas se acomodan al ancho del contenido medido en rem, que
-            crece con el tamaño de letra (los cortes lg:/xl: miran la ventana en px). */}
-        <div className="@container mx-auto flex w-full max-w-(--content-max) flex-col gap-6">
-          <Outlet />
-        </div>
-      </main>
-    </div>
+        <main
+          ref={contenidoRef}
+          id="contenido"
+          tabIndex={-1}
+          className="min-w-0 px-(--page-x) pt-(--page-top) pb-24 outline-none"
+        >
+          {/* @container: las pantallas se acomodan al ancho del contenido medido en rem, que
+              crece con el tamaño de letra (los cortes lg:/xl: miran la ventana en px). */}
+          <div className="@container mx-auto lg:mx-0 flex w-full max-w-(--content-max) flex-col gap-6">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </AvisoProvider>
   )
 }

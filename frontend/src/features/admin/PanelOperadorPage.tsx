@@ -20,6 +20,7 @@ import {
   ADMIN_VER_MICROCAPSULAS,
 } from "./mensajes"
 
+
 type TarjetaConteoProps = {
   titulo: string
   cantidad: number | undefined
@@ -35,7 +36,7 @@ type TarjetaConteoProps = {
  */
 function TarjetaConteo({ titulo, cantidad, cargando, ver, nuevo }: TarjetaConteoProps) {
   return (
-    <Card className="flex-1 gap-4 p-8">
+    <Card className="flex-1 gap-4 p-5 @xl:p-8">
       <div className="flex flex-col-reverse gap-1">
         <h2 className="font-sans text-body font-bold text-foreground">{titulo}</h2>
         {cargando ? (
@@ -49,10 +50,11 @@ function TarjetaConteo({ titulo, cantidad, cargando, ver, nuevo }: TarjetaConteo
         )}
       </div>
       <div className="flex flex-wrap gap-3">
-        <Link to={ver.a} className={buttonVariants({ variant: "outline" })}>
+        {/* El texto puede partirse en dos líneas: con letra muy grande en celular "Nueva microcápsula" no entra en una */}
+        <Link to={ver.a} className={buttonVariants({ variant: "outline", tamanio: "textoLargo" })}>
           {ver.texto}
         </Link>
-        <Link to={nuevo.a} className={buttonVariants()}>
+        <Link to={nuevo.a} className={buttonVariants({ tamanio: "textoLargo" })}>
           {nuevo.texto}
         </Link>
       </div>

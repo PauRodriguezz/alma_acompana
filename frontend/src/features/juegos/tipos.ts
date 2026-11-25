@@ -1,4 +1,4 @@
-// Tipos según las respuestas del contrato (docs/contrato-juegos.md, sección 6).
+// Tipos según las respuestas del contrato (docs/especificaciones/contrato-juegos.md, sección 6).
 // Nunca llegan esCorrecta, ordenCorrecto ni el nivel: la respuesta la valida el back.
 import type { CategoriaEjercicio, FormatoEjercicio } from "@/features/admin/etiquetas"
 

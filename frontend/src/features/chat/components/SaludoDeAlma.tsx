@@ -6,7 +6,9 @@ import { useSaludo } from "../useSaludo"
 
 /**
  * Saludo inicial de Alma (Figma): la ilustración a la izquierda, y a su lado el saludo como título y
- * el mensaje. Mientras carga muestra "Cargando…". Si no se pudo cargar, muestra "Hola, soy Alma" sin
+ * el mensaje. La ilustración es decorativa y mide un tamaño fijo en px (no en rem): con letra "Muy
+ * grande" crecía hasta dejar 83 px al texto y el título se salía de la pantalla a 360 px. El texto sí
+ * escala (excepción documentada en el contrato del chat, sección 11). Mientras carga muestra "Cargando…". Si no se pudo cargar, muestra "Hola, soy Alma" sin
  * mensaje y sin aviso de error: el chat sigue funcionando (11.2).
  */
 export function SaludoDeAlma() {
@@ -17,7 +19,7 @@ export function SaludoDeAlma() {
       <img
         src={almaSaludo}
         alt=""
-        className="h-[calc(132rem/17)] w-auto shrink-0 object-contain lg:h-[calc(145rem/17)]"
+        className="h-[132px] w-auto shrink-0 object-contain lg:h-[145px]"
       />
       <div className="flex min-w-0 flex-col gap-1">
         {saludo.isPending ? (
@@ -26,7 +28,7 @@ export function SaludoDeAlma() {
           </p>
         ) : (
           <>
-            <h1 className="lg:text-h1-desktop">{saludo.data?.saludo ?? SALUDO_SIN_CARGAR}</h1>
+            <h1>{saludo.data?.saludo ?? SALUDO_SIN_CARGAR}</h1>
             {saludo.data ? <p className="text-foreground lg:text-muted-foreground">{saludo.data.mensaje}</p> : null}
           </>
         )}

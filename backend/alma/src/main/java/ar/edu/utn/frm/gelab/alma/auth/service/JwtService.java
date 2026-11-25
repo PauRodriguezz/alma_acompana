@@ -14,7 +14,7 @@ import ar.edu.utn.frm.gelab.alma.auth.domain.Cuenta;
 import ar.edu.utn.frm.gelab.alma.config.JwtProperties;
 
 /**
- * Emite el JWT con los claims del contrato (sección 5): iss, sub, rol, iat y exp.
+ * Emite el JWT con los claims: iss, sub, rol, iat y exp.
  */
 @Service
 public class JwtService {

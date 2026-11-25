@@ -1,4 +1,4 @@
-// Depende de /api/admin/ejercicios (docs/contrato-panel-operador.md, sección 3.2).
+// Depende de /api/admin/ejercicios (docs/especificaciones/contrato-panel-operador.md, sección 3.2).
 import type { QueryClient } from "@tanstack/react-query"
 
 import { CLAVE_RESUMEN } from "@/features/admin/api"

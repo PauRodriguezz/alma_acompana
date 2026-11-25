@@ -8,7 +8,6 @@ export const ADMIN_MICROCAPSULAS = "Microcápsulas"
 export const ADMIN_PERFIL = "Perfil"
 
 // Layout y menú
-export const ADMIN_SALTAR_AL_CONTENIDO = "Saltar al contenido"
 export const ADMIN_MARCA = "Alma"
 export const ADMIN_MENU = "Menú"
 export const ADMIN_CERRAR_MENU = "Cerrar menú"
@@ -22,6 +21,8 @@ export const ADMIN_VER_MICROCAPSULAS = "Ver microcápsulas"
 export const ADMIN_NUEVA_MICROCAPSULA = "Nueva microcápsula"
 
 // Perfil de la persona administradora
+export const ADMIN_PERFIL_TITULO = "Mi perfil"
+export const ADMIN_PERFIL_SUBTITULO = "Administrador de contenidos (operador)"
 export const ADMIN_PERFIL_NOMBRE = "Nombre"
 export const ADMIN_PERFIL_APELLIDO = "Apellido"
 export const ADMIN_PERFIL_NOMBRE_USUARIO = "Nombre de usuario"

@@ -22,6 +22,14 @@ public final class MensajesError {
     public static final String TITULO_IMAGEN_PESADA = "Imagen muy pesada";
     public static final String IMAGEN_PESADA = "La imagen no puede pesar más de 2 MB.";
 
+    public static final String IMAGEN_TIPO_INVALIDO = "La imagen tiene que ser JPG, PNG o WEBP.";
+
+    // --- Validación del login y de las preferencias de accesibilidad ---
+    public static final String INGRESA_USUARIO = "Ingresá tu nombre de usuario.";
+    public static final String INGRESA_CONTRASENIA = "Ingresá tu contraseña.";
+    public static final String ELEGI_TAMANIO_LETRA = "Elegí un tamaño de letra.";
+    public static final String INDICA_ALTO_CONTRASTE = "Indicá si querés alto contraste.";
+
     private MensajesError() {
     }
 }

@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useState, type ReactNode, type RefObject } from "react"
 
-import { AvisoFlotante } from "@/components/alma/aviso-flotante"
+import { AvisoFlotante } from "@/components/AvisoFlotante"
 
-import { AvisoContext, type AvisoValor } from "./aviso-context"
+import { AvisoContext, type AvisoValor } from "./avisoContext"
 
 type Aviso = { clave: number; texto: string }
 
@@ -17,7 +17,7 @@ let contador = 0
 const POSICION = {
   persona: "bottom-[calc(var(--nav-inferior)+env(safe-area-inset-bottom)+1rem)]",
   panel:
-    "bottom-[calc(env(safe-area-inset-bottom)+1rem)] lg:bottom-[calc(1.5rem+calc(44rem/17)+1rem)]",
+    "bottom-[calc(env(safe-area-inset-bottom)+1rem)] lg:bottom-[calc(1.5rem+var(--tactil)+1rem)]",
 } as const
 
 /**

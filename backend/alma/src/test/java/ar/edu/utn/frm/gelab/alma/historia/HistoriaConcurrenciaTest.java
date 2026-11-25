@@ -18,7 +18,6 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import ar.edu.utn.frm.gelab.alma.auth.repository.CuentaRepository;
 import ar.edu.utn.frm.gelab.alma.historia.ParejasConcurrentes.Accion;
 import ar.edu.utn.frm.gelab.alma.historia.ParejasConcurrentes.Resumen;
-import ar.edu.utn.frm.gelab.alma.historia.PersonasDeHistoria.Persona;
 import ar.edu.utn.frm.gelab.alma.historia.extraccion.ColaDeExtracciones;
 import ar.edu.utn.frm.gelab.alma.historia.service.HistoriaDeVidaService;
 import ar.edu.utn.frm.gelab.alma.persona.repository.PersonaMayorRepository;

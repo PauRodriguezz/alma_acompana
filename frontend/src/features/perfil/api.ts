@@ -1,4 +1,4 @@
-// Depende de GET /api/perfil del contrato (docs/contrato-login.md, sección 4.4).
+// Depende de GET /api/perfil del contrato (docs/especificaciones/contrato-login.md, sección 4.4).
 import { api } from "@/lib/api"
 
 export type Perfil = {

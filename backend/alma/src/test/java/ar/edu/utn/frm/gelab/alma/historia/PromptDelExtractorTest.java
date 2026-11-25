@@ -45,7 +45,7 @@ class PromptDelExtractorTest {
 
     @Test
     void elEsquemaPideDeDosACuatroOracionesSoloConLoQueLaPersonaContoYYaNoUnaODos() {
-        assertThat(plano).contains("\"descripcion\": de dos a cuatro oraciones, en tercera persona, solo con lo que la persona contó");
+        assertThat(plano).contains("\"descripcion\": de dos a cuatro oraciones, en primera persona (con la voz de quien responde), solo con lo que la persona contó");
         assertThat(plano).doesNotContain("una o dos oraciones");
     }
 

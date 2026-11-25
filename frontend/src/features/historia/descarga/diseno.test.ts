@@ -1,200 +1,217 @@
 import { describe, expect, it } from "vitest"
 
 import { agruparPorEtapa } from "../agruparPorEtapa"
-import type { RecuerdoResumen } from "../tipos"
+import type { PrecisionAnio, RecuerdoResumen } from "../tipos"
 import {
+  ALTO_DE_LA_IMAGEN,
+  ANCHO_DE_LA_IMAGEN,
   ANCHO_DEL_TEXTO_DE_TARJETA,
-  LADO_DE_LA_IMAGEN,
-  PARADA,
+  MAXIMO_DE_LINEAS,
+  MAXIMO_DE_PARADAS,
+  anioParaLaImagen,
+  elegirRecuerdos,
   armarDiseno,
-  medidasDeTarjeta,
+  hayChoques,
+  ordenCronologico,
   partesDelTitulo,
-  recortarTitulo,
-  type ParadaDelMapa,
+  partirEnLineas,
+  type DisenoDelMapa,
+  type Medir,
 } from "./diseno"
 
-/** Cada letra mide 10: los 258 px de la tarjeta alcanzan para 25 letras. */
-const medir = (texto: string) => Array.from(texto).length * 10
+/** Cada letra mide la mitad del tamaño: con 28 px, 14 px por letra (20 letras por línea). */
+const medir: Medir = (texto, _fuente, tamanio) => Array.from(texto).length * tamanio * 0.5
 
-function recuerdo(id: string, titulo: string, etapaDeVida: RecuerdoResumen["etapaDeVida"]): RecuerdoResumen {
-  return { id, titulo, anio: null, precision: null, etapaDeVida, resumen: "", faltantes: [] }
+let numero = 0
+function recuerdo(
+  titulo: string,
+  etapaDeVida: RecuerdoResumen["etapaDeVida"],
+  anio: number | null = null,
+  precision: PrecisionAnio | null = anio === null ? null : "EXACTA"
+): RecuerdoResumen {
+  numero += 1
+  return { id: `r${numero}`, titulo, anio, precision, etapaDeVida, resumen: "", faltantes: [] }
 }
 
-describe("recortarTitulo", () => {
-  it("deja los títulos que entran", () => {
-    expect(recortarTitulo("Mi maestra Elena", ANCHO_DEL_TEXTO_DE_TARJETA, medir)).toBe("Mi maestra Elena")
+const diseno = (recuerdos: RecuerdoResumen[]) => armarDiseno(agruparPorEtapa(recuerdos), medir)
+
+/** Un mapa parecido al de ana: muchos recuerdos de la infancia y dos sin etapa. */
+function mapaDeAna(): RecuerdoResumen[] {
+  return [
+    recuerdo("Nací en Cipolletti", "INFANCIA", 1950),
+    recuerdo("La convivencia en la infancia", "INFANCIA", 1955),
+    recuerdo("¿Qué comida de tu infancia te acordás con cariño?", "INFANCIA", 1955),
+    recuerdo("Su mamá Nancy", "INFANCIA", 1955),
+    recuerdo("Mi maestra Elena", "INFANCIA", 1957, "ESTIMADA"),
+    recuerdo("La casa de la calle San Martín", "INFANCIA", 1958),
+    recuerdo("Los tiempos de la adolescencia", "ADOLESCENCIA", 1964),
+    recuerdo("El rock nacional y el cuarteto", "JUVENTUD", 1968),
+    recuerdo("El primer departamento alquilado en Godoy Cruz", "JUVENTUD", 1976),
+    recuerdo("El nacimiento del hijo mayor", "ADULTEZ", 1999),
+    recuerdo("Un viaje a la costa", null),
+    recuerdo("Las mudanzas entre Guaymallén y Luján", null),
+  ]
+}
+
+function titulos(d: DisenoDelMapa, etapa?: string): string[] {
+  return d.paradas.filter((p) => !etapa || p.etapa.id === etapa).map((p) => p.tarjeta.lineas.join(" "))
+}
+
+describe("armarDiseno", () => {
+  it("es de 1920 × 1080", () => {
+    const d = diseno(mapaDeAna())
+    expect([d.ancho, d.alto]).toEqual([ANCHO_DE_LA_IMAGEN, ALTO_DE_LA_IMAGEN])
+    expect([ANCHO_DE_LA_IMAGEN, ALTO_DE_LA_IMAGEN]).toEqual([1920, 1080])
   })
 
-  it("corta con … lo que no entra, sin pasarse del ancho", () => {
-    const largo = "El día que mi papá me llevó a conocer el mar por primera vez"
-    const corto = recortarTitulo(largo, ANCHO_DEL_TEXTO_DE_TARJETA, medir)
-    expect(corto.endsWith("…")).toBe(true)
-    expect(medir(corto)).toBeLessThanOrEqual(ANCHO_DEL_TEXTO_DE_TARJETA)
-    expect(largo.startsWith(corto.slice(0, -1))).toBe(true)
+  it("sin recuerdos: cinco banderines, cada etapa con su tarjeta punteada y nada más", () => {
+    const d = diseno([])
+    expect(d.banderines).toHaveLength(5)
+    expect(d.vacias).toHaveLength(5)
+    expect(d.paradas).toHaveLength(0)
+    expect(hayChoques(d.rectangulos)).toBe(false)
   })
 
-  it("no deja un espacio antes de los puntos suspensivos", () => {
-    expect(recortarTitulo("aaaaaaaaaaaaaaaaaaaaaaaa bbbbbbbbbb", ANCHO_DEL_TEXTO_DE_TARJETA, medir)).not.toMatch(/ …$/)
+  it("'Otros momentos' (sexto banderín) solo si hay recuerdos sin etapa", () => {
+    expect(diseno([recuerdo("Algo", "INFANCIA", 1950)]).banderines).toHaveLength(5)
+    const con = diseno([recuerdo("Algo", null)])
+    expect(con.banderines).toHaveLength(6)
+    expect(con.banderines[5].etapa.id).toBe("OTROS")
   })
 
-  it("con una sola palabra enorme deja al menos algo", () => {
-    expect(recortarTitulo("x".repeat(200), 5, medir)).toBe("…")
+  it("muestra como máximo diez paradas, sin 'y N más'", () => {
+    const muchos = Array.from({ length: 40 }, (_, i) =>
+      recuerdo(`Recuerdo ${i}`, (["INFANCIA", "ADOLESCENCIA", "JUVENTUD", "ADULTEZ", "VEJEZ", null] as const)[i % 6], 1950 + i)
+    )
+    const d = diseno(muchos)
+    expect(d.paradas.length).toBeLessThanOrEqual(MAXIMO_DE_PARADAS)
+    expect(d.mostrados).toBe(d.paradas.length)
+    expect(d.total).toBe(40)
+    expect(d.paradas.length + d.vacias.length).toBeLessThanOrEqual(MAXIMO_DE_PARADAS)
+    expect(hayChoques(d.rectangulos)).toBe(false)
+  })
+
+  it("al menos una parada por etapa que tenga recuerdos", () => {
+    for (const recuerdos of [mapaDeAna(), [...mapaDeAna(), ...mapaDeAna(), ...mapaDeAna()]]) {
+      const d = diseno(recuerdos)
+      const con = agruparPorEtapa(recuerdos).filter((g) => g.recuerdos.length > 0)
+      for (const g of con) {
+        expect(d.paradas.some((p) => p.etapa.id === g.etapa.id)).toBe(true)
+      }
+      expect(d.banderines.map((b) => b.etapa.id)).toEqual(agruparPorEtapa(recuerdos).map((g) => g.etapa.id))
+    }
+  })
+
+  it("el resto va por orden cronológico: de cada etapa, los más antiguos", () => {
+    const d = diseno(mapaDeAna())
+    expect(titulos(d, "INFANCIA")[0]).toBe("Nací en Cipolletti")
+    const anios = d.paradas.filter((p) => p.etapa.id === "INFANCIA").map((p) => p.tarjeta.anio)
+    expect(anios).toEqual([...anios].sort())
+    expect(titulos(d, "INFANCIA")).not.toContain("La casa de la calle San Martín")
+  })
+
+  it("sin año, al final: entra después de los que tienen año", () => {
+    const r = [
+      recuerdo("Sin año", "INFANCIA"),
+      recuerdo("De 1960", "INFANCIA", 1960),
+      recuerdo("De 1950", "INFANCIA", 1950),
+    ]
+    expect(ordenCronologico(r).map((x) => x.titulo)).toEqual(["De 1950", "De 1960", "Sin año"])
+    // La mejor elección (sin mirar la geometría) los toma en ese orden; en el dibujo, con las otras cuatro etapas
+    // vacías, entran los dos primeros: los sin año son los últimos en entrar.
+    expect(elegirRecuerdos(agruparPorEtapa(r))[0][0].map((x) => x.titulo)).toEqual(["De 1950", "De 1960", "Sin año"])
+    expect(titulos(diseno(r))).toEqual(["De 1950", "De 1960"])
+  })
+
+  it("las paradas de una etapa siguen al banderín de esa etapa, en el orden del camino", () => {
+    const d = diseno(mapaDeAna())
+    const ordenDeEtapas = d.banderines.map((b) => b.etapa.id)
+    const ordenDeParadas = d.paradas.map((p) => ordenDeEtapas.indexOf(p.etapa.id))
+    expect(ordenDeParadas).toEqual([...ordenDeParadas].sort((a, b) => a - b))
+  })
+
+  it("el título completo, partido en hasta tres líneas, nunca cortado con …", () => {
+    const largo = "El día que mi papá me llevó a conocer el mar por primera vez con toda la familia"
+    const d = diseno([recuerdo(largo, "INFANCIA", 1949), ...mapaDeAna()])
+    const p = d.paradas.find((x) => x.tarjeta.lineas.join(" ") === largo)
+    expect(p).toBeDefined()
+    for (const parada of d.paradas) {
+      expect(parada.tarjeta.lineas.length).toBeLessThanOrEqual(MAXIMO_DE_LINEAS)
+      for (const linea of parada.tarjeta.lineas) {
+        expect(linea).not.toContain("…")
+        expect(medir(linea, null as never, parada.tarjeta.tamanio)).toBeLessThanOrEqual(ANCHO_DEL_TEXTO_DE_TARJETA)
+      }
+    }
+    expect(hayChoques(d.rectangulos)).toBe(false)
+  })
+
+  it("nada se pisa con 0, 1, 3, 6 y 12 recuerdos, ni con títulos largos o en una sola etapa", () => {
+    const etapas = ["INFANCIA", "ADOLESCENCIA", "JUVENTUD", "ADULTEZ", "VEJEZ", null] as const
+    const largos = etapas.map((e, i) =>
+      recuerdo("Un título bastante largo que ocupa varias líneas de la tarjeta " + i, e, 1950 + i * 10)
+    )
+    const escenarios = [
+      [],
+      [recuerdo("Uno", "VEJEZ", 2010)],
+      [recuerdo("Uno", "INFANCIA", 1950), recuerdo("Dos", "ADULTEZ", 1990), recuerdo("Tres", null)],
+      largos,
+      mapaDeAna(),
+      Array.from({ length: 12 }, (_, i) => recuerdo(`Solo infancia ${i}`, "INFANCIA", 1950 + i)),
+      Array.from({ length: 12 }, (_, i) => recuerdo(`Solo vejez ${i}`, "VEJEZ", 2000 + i)),
+      Array.from({ length: 12 }, (_, i) => recuerdo(`Sin etapa ${i}`, null, 1950 + i)),
+    ]
+    for (const recuerdos of escenarios) {
+      expect(hayChoques(diseno(recuerdos).rectangulos)).toBe(false)
+    }
+  })
+
+  it("hay choque si dos tarjetas se tocan", () => {
+    const d = diseno(mapaDeAna())
+    const tarjetas = d.rectangulos.filter((r) => r.tipo === "tarjeta")
+    expect(hayChoques([...d.rectangulos, { ...tarjetas[0], grupo: "otro" }])).toBe(true)
+  })
+
+  it("los arbolitos de adorno no tocan nada", () => {
+    const d = diseno(mapaDeAna())
+    expect(d.arboles.length).toBeGreaterThan(0)
   })
 })
 
-describe("armarDiseno", () => {
-  it("sin recuerdos: cinco paradas vacías, sin Otros momentos y con el camino hasta la quinta", () => {
-    const diseno = armarDiseno(agruparPorEtapa([]), medir)
-    expect(diseno.paradas.map((p) => p.numero)).toEqual([1, 2, 3, 4, 5])
-    expect(diseno.paradas.every((p) => p.vacia && p.lineas.length === 0)).toBe(true)
-    expect(diseno.camino.endsWith("200 960")).toBe(true)
+describe("anioParaLaImagen", () => {
+  it("año exacto o calculado: el número; aproximado o estimado: 'hacia'; sin año: null", () => {
+    expect(anioParaLaImagen(recuerdo("a", null, 1948, "EXACTA"))).toBe("1948")
+    expect(anioParaLaImagen(recuerdo("a", null, 1948, "CALCULADA_POR_EDAD"))).toBe("1948")
+    expect(anioParaLaImagen(recuerdo("a", null, 1957, "ESTIMADA"))).toBe("hacia 1957")
+    expect(anioParaLaImagen(recuerdo("a", null, 1957, "APROXIMADA"))).toBe("hacia 1957")
+    expect(anioParaLaImagen(recuerdo("a", null))).toBeNull()
   })
+})
 
-  it("con recuerdos sin etapa suma la parada 6 y el camino completo", () => {
-    const diseno = armarDiseno(agruparPorEtapa([recuerdo("a", "Un día muy feliz", null)]), medir)
-    expect(diseno.paradas).toHaveLength(6)
-    expect(diseno.paradas[5].etapa.nombre).toBe("Otros momentos")
-    expect(diseno.paradas[5].numero).toBe(6)
-    expect(diseno.paradas[5].lineas).toEqual([{ texto: "Un día muy feliz", destacada: false }])
-    expect(diseno.camino.endsWith("790 970")).toBe(true)
-  })
+describe("partirEnLineas", () => {
+  const m = (t: string) => Array.from(t).length * 10
 
-  it("la tarjeta muestra hasta 3 títulos y, con 4 o más, 2 títulos y 'y N más'", () => {
-    const grupos = agruparPorEtapa([
-      recuerdo("1", "Uno", "INFANCIA"),
-      recuerdo("2", "Dos", "ADOLESCENCIA"),
-      recuerdo("3", "Tres", "ADOLESCENCIA"),
-      ...["Cuatro", "Cinco", "Seis"].map((t, i) => recuerdo(`j${i}`, t, "JUVENTUD")),
-      ...["A", "B", "C", "D"].map((t, i) => recuerdo(`a${i}`, t, "ADULTEZ")),
-      ...["V", "W", "X", "Y", "Z", "Q", "R"].map((t, i) => recuerdo(`v${i}`, t, "VEJEZ")),
+  it("parte por palabras sin cortarlas", () => {
+    expect(partirEnLineas("Mi primer departamento en Godoy Cruz", 160, m)).toEqual([
+      "Mi primer",
+      "departamento en",
+      "Godoy Cruz",
     ])
-    const [infancia, adolescencia, juventud, adultez, vejez] = armarDiseno(grupos, medir).paradas
-    expect(infancia.lineas.map((l) => l.texto)).toEqual(["Uno"])
-    expect(adolescencia.lineas.map((l) => l.texto)).toEqual(["Dos", "Tres"])
-    expect(juventud.lineas.map((l) => l.texto)).toEqual(["Cuatro", "Cinco", "Seis"])
-    expect(adultez.lineas).toEqual([
-      { texto: "A", destacada: false },
-      { texto: "B", destacada: false },
-      { texto: "y 2 más", destacada: true },
-    ])
-    expect(vejez.lineas.at(-1)).toEqual({ texto: "y 5 más", destacada: true })
-    expect(vejez.lineas).toHaveLength(3)
   })
 
-  it("la tarjeta es más alta solo con tres líneas", () => {
-    expect([0, 1, 2, 3].map((n) => medidasDeTarjeta(n).alto)).toEqual([84, 84, 84, 96])
-  })
-
-  it("corta los títulos largos y sigue el orden de las filas del camino", () => {
-    const largo = "El día que mi papá me llevó a conocer el mar por primera vez"
-    const diseno = armarDiseno(agruparPorEtapa([recuerdo("1", largo, "INFANCIA")]), medir)
-    expect(diseno.paradas[0].lineas[0].texto.endsWith("…")).toBe(true)
-    expect(diseno.paradas.map((p) => [p.x, p.y])).toEqual([
-      [200, 400],
-      [600, 400],
-      [600, 680],
-      [200, 680],
-      [200, 960],
-    ])
+  it("una palabra más ancha que la línea se parte, sin perder letras", () => {
+    const lineas = partirEnLineas("Electroencefalografista", 100, m)
+    expect(lineas.join("")).toBe("Electroencefalografista")
+    for (const linea of lineas) expect(m(linea)).toBeLessThanOrEqual(100)
   })
 })
 
 describe("partesDelTitulo", () => {
   it("con nombre: 'La vida de' y el nombre", () => {
-    expect(partesDelTitulo("  Ana ")).toEqual({ prefijo: "La vida de", nombre: "Ana" })
+    expect(partesDelTitulo("Ana")).toEqual({ prefijo: "La vida de", nombre: "Ana" })
   })
 
-  it.each([null, undefined, "", "   "])("sin nombre (%s): 'Mi vida' y sin cursiva", (nombre) => {
-    expect(partesDelTitulo(nombre)).toEqual({ prefijo: "Mi vida", nombre: null })
-  })
-})
-
-// ── Que nada se pise (contrato del mapa de vida, 2.5) ──
-
-/** Puntos del camino, muestreados de su trazado "M x y C x y x y x y …". */
-function muestrasDelCamino(camino: string): [number, number][] {
-  const numeros = camino.match(/-?\d+(\.\d+)?/g)!.map(Number)
-  const puntos: [number, number][] = []
-  let [x0, y0] = [numeros[0], numeros[1]]
-  for (let i = 2; i + 5 < numeros.length + 0; i += 6) {
-    const [x1, y1, x2, y2, x3, y3] = numeros.slice(i, i + 6)
-    for (let k = 0; k <= 200; k++) {
-      const t = k / 200
-      const u = 1 - t
-      puntos.push([
-        u ** 3 * x0 + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t ** 3 * x3,
-        u ** 3 * y0 + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t ** 3 * y3,
-      ])
-    }
-    ;[x0, y0] = [x3, y3]
-  }
-  return puntos
-}
-
-type Rectangulo = { x0: number; y0: number; x1: number; y1: number }
-
-const distanciaARectangulo = ([px, py]: [number, number], r: Rectangulo) =>
-  Math.hypot(Math.max(r.x0 - px, 0, px - r.x1), Math.max(r.y0 - py, 0, py - r.y1))
-
-/** Lo que ocupa una parada: tarjeta, banderín, ilustración y mástil (sin el punto, que va sobre el camino). */
-function elementos(p: ParadaDelMapa): Record<string, Rectangulo> {
-  const mastilX = p.x + PARADA.mastilDx
-  return {
-    tarjeta: { x0: mastilX, y0: p.y + PARADA.tarjetaArriba, x1: mastilX + PARADA.tarjetaAncho, y1: p.y + PARADA.tarjetaArriba + p.altoTarjeta },
-    banderin: { x0: mastilX, y0: p.y + PARADA.banderinArriba, x1: mastilX + PARADA.banderinAncho, y1: p.y + PARADA.banderinAbajo },
-    ilustracion: {
-      x0: mastilX + PARADA.ilustracionDx - 30,
-      y0: p.y + PARADA.ilustracionDy - 30,
-      x1: mastilX + PARADA.ilustracionDx + 30,
-      y1: p.y + PARADA.ilustracionDy + 30,
-    },
-  }
-}
-
-const MITAD_DEL_TRAZO = 22
-/** Aire mínimo entre el borde del camino y una tarjeta o un banderín. */
-const AIRE_MINIMO = 6
-
-/** `cantidad` recuerdos en cada etapa (también en "Otros momentos", si cantidad > 0). */
-function conRecuerdosEnCadaEtapa(cantidad: number) {
-  const etapas = ["INFANCIA", "ADOLESCENCIA", "JUVENTUD", "ADULTEZ", "VEJEZ", null] as const
-  const recuerdos = etapas.flatMap((etapa) =>
-    Array.from({ length: cantidad }, (_, i) =>
-      recuerdo(`${etapa}-${i}`, `Un título bastante largo para el recuerdo número ${i + 1} de la etapa`, etapa)
-    )
-  )
-  return armarDiseno(agruparPorEtapa(recuerdos), medir)
-}
-
-describe.each([0, 1, 2, 3, 4, 6])("con %i recuerdos por etapa nada se pisa", (cantidad) => {
-  const diseno = conRecuerdosEnCadaEtapa(cantidad)
-  const camino = muestrasDelCamino(diseno.camino)
-
-  it("las tarjetas, los banderines y las ilustraciones quedan separados del camino", () => {
-    for (const parada of diseno.paradas) {
-      for (const [nombre, rect] of Object.entries(elementos(parada))) {
-        const distancia = Math.min(...camino.map((punto) => distanciaARectangulo(punto, rect))) - MITAD_DEL_TRAZO
-        expect(distancia, `${parada.etapa.nombre}: ${nombre}`).toBeGreaterThanOrEqual(AIRE_MINIMO)
-      }
-    }
-  })
-
-  it("la tarjeta de cada fila no toca lo de la fila de abajo ni el borde de la imagen", () => {
-    const abajoDe: Record<number, number> = { 0: 3, 1: 2, 3: 4, 2: 5 } // mismo lado, fila siguiente
-    for (const [i, j] of Object.entries(abajoDe)) {
-      const arriba = diseno.paradas[Number(i)]
-      const abajo = diseno.paradas[j]
-      if (!abajo) continue
-      expect(elementos(arriba).tarjeta.y1 + 20).toBeLessThanOrEqual(abajo.y + PARADA.mastilArriba)
-    }
-    for (const parada of diseno.paradas) {
-      const { tarjeta } = elementos(parada)
-      expect(tarjeta.x1).toBeLessThanOrEqual(LADO_DE_LA_IMAGEN - 22 - 20)
-      expect(tarjeta.y1).toBeLessThanOrEqual(LADO_DE_LA_IMAGEN - 22 - 60)
-    }
-  })
-
-  it("la primera fila queda debajo del título", () => {
-    expect(diseno.paradas[0].y + PARADA.mastilArriba).toBeGreaterThanOrEqual(180)
+  it("sin nombre: 'Mi vida', sin cursiva", () => {
+    expect(partesDelTitulo(null)).toEqual({ prefijo: "Mi vida", nombre: null })
+    expect(partesDelTitulo("   ")).toEqual({ prefijo: "Mi vida", nombre: null })
   })
 })

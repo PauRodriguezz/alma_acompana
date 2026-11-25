@@ -34,6 +34,27 @@ final class ErroresTransitorios {
         return false;
     }
 
+    /** Causa raíz de un error (para registrar solo su clase, nunca el mensaje). */
+    static Throwable causaRaiz(Throwable error) {
+        Throwable actual = error;
+        for (int i = 0; i < PROFUNDIDAD_MAXIMA && actual.getCause() != null && actual.getCause() != actual; i++) {
+            actual = actual.getCause();
+        }
+        return actual;
+    }
+
+    /** Código HTTP del primer {@link ApiException} de la cadena de causas, o {@code null} si no hay. */
+    static Integer codigoHttp(Throwable error) {
+        Throwable actual = error;
+        for (int i = 0; i < PROFUNDIDAD_MAXIMA && actual != null; i++) {
+            if (actual instanceof ApiException api) {
+                return api.code();
+            }
+            actual = actual.getCause() != actual ? actual.getCause() : null;
+        }
+        return null;
+    }
+
     /** Ollama: Spring AI lanza {@link TransientAiException} para los 5xx. */
     static boolean deOllama(Throwable error) {
         Throwable actual = error;

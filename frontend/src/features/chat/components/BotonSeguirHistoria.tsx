@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, type RefObject } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { BookOpen01Icon } from "@hugeicons/core-free-icons"
+import { ICONO_HISTORIA_DE_VIDA } from "@/components/iconos"
 
 import { Button } from "@/components/ui/button"
-import { BOTON_EN_ESPERA, BOTON_TEXTO_LARGO } from "@/features/historia/estilos"
 import { SEGUIR_MI_HISTORIA } from "@/features/historia/mensajes"
 import { useEsEscritorio } from "@/lib/useEsEscritorio"
 import { cn } from "@/lib/utils"
@@ -65,7 +64,9 @@ export function BotonSeguirHistoria() {
         variant="secondary"
         aria-disabled={deshabilitado}
         onClick={seguir}
-        className={cn("self-start", BOTON_TEXTO_LARGO, BOTON_EN_ESPERA)}
+        className="self-start"
+        tamanio="textoLargo"
+        enEspera
       >
         {SEGUIR_MI_HISTORIA}
       </Button>
@@ -108,7 +109,9 @@ function BotonFlotante({ deshabilitado, onSeguir }: { deshabilitado: boolean; on
             onSeguir()
             setDesplegado(false)
           }}
-          className={cn("min-w-0 shrink [box-shadow:var(--sombra-tarjeta)]", BOTON_TEXTO_LARGO, BOTON_EN_ESPERA)}
+          className="min-w-0 shrink [box-shadow:var(--sombra-tarjeta)]"
+          tamanio="textoLargo"
+          enEspera
         >
           {SEGUIR_MI_HISTORIA}
         </Button>
@@ -125,7 +128,7 @@ function BotonFlotante({ deshabilitado, onSeguir }: { deshabilitado: boolean; on
           "hover:bg-primary-hover contraste-alto:border-2 contraste-alto:border-foreground"
         )}
       >
-        <HugeiconsIcon icon={BookOpen01Icon} className="size-7" aria-hidden="true" />
+        <HugeiconsIcon icon={ICONO_HISTORIA_DE_VIDA} className="size-7" aria-hidden="true" />
       </button>
     </div>
   )
